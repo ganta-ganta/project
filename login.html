@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phone OTP Login - Firebase</title>
+    <title>Phone & Google Login - Firebase</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -27,7 +27,7 @@
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             width: 100%;
-            max-width: 500px;
+            max-width: 450px;
             overflow: hidden;
         }
         
@@ -122,6 +122,7 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
+            margin-bottom: 15px;
         }
         
         .btn:hover {
@@ -139,6 +140,38 @@
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
+        }
+        
+        .btn-google {
+            background: white;
+            color: #757575;
+            border: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn-google:hover {
+            background: #f5f5f5;
+        }
+        
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+        }
+        
+        .divider-line {
+            flex: 1;
+            height: 1px;
+            background-color: #ddd;
+        }
+        
+        .divider-text {
+            padding: 0 15px;
+            color: #777;
+            font-size: 14px;
         }
         
         .step {
@@ -244,8 +277,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Phone Number Login</h1>
-            <p>Enter your phone number and verify with OTP</p>
+            <h1>Login with Phone or Google</h1>
+            <p>Choose your preferred login method</p>
         </div>
         
         <div class="form-container">
@@ -259,6 +292,16 @@
                     </div>
                 </div>
                 <button class="btn" id="send-otp">Send OTP</button>
+                
+                <div class="divider">
+                    <div class="divider-line"></div>
+                    <div class="divider-text">OR</div>
+                    <div class="divider-line"></div>
+                </div>
+                
+                <button class="btn btn-google" id="google-signin">
+                    <i class="fab fa-google"></i> Sign in with Google
+                </button>
             </div>
             
             <!-- Step 2: OTP Verification -->
@@ -322,6 +365,7 @@
         const phoneInput = document.getElementById('phone');
         const sendOtpBtn = document.getElementById('send-otp');
         const verifyOtpBtn = document.getElementById('verify-otp');
+        const googleSignInBtn = document.getElementById('google-signin');
         const otpInputs = document.querySelectorAll('.otp-input input');
         const errorMessage = document.getElementById('error-message');
         const successMessage = document.getElementById('success-message');
@@ -383,6 +427,9 @@
 
         // Verify OTP button click
         verifyOtpBtn.addEventListener('click', verifyOtp);
+
+        // Google Sign-In button click
+        googleSignInBtn.addEventListener('click', signInWithGoogle);
 
         // Resend OTP
         resendOtp.addEventListener('click', function() {
@@ -545,6 +592,57 @@
                     showError(errorMsg);
                     verifyOtpBtn.disabled = false;
                     verifyOtpBtn.textContent = 'Verify & Login';
+                });
+        }
+
+        // Function to sign in with Google
+        function signInWithGoogle() {
+            googleSignInBtn.disabled = true;
+            googleSignInBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+            hideError();
+            
+            addDebugInfo("Starting Google Sign-In flow");
+            
+            // Create Google provider
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Add scopes if needed
+            provider.addScope('profile');
+            provider.addScope('email');
+            
+            // Sign in with popup
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    // User signed in successfully
+                    addDebugInfo("Google Sign-In successful! User: " + result.user.displayName);
+                    showSuccess("Google login successful! Redirecting...");
+                    
+                    // Redirect to index.html after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 2000);
+                })
+                .catch((error) => {
+                    console.error("Error with Google Sign-In:", error);
+                    addDebugInfo("Google Sign-In error: " + error.message + " (Code: " + error.code + ")");
+                    
+                    let errorMsg = "Google Sign-In failed. ";
+                    
+                    // Handle specific error cases
+                    switch (error.code) {
+                        case 'auth/popup-closed-by-user':
+                            errorMsg += "Popup was closed before completing sign-in.";
+                            break;
+                        case 'auth/unauthorized-domain':
+                            errorMsg += "This domain is not authorized for Google Sign-In.";
+                            break;
+                        default:
+                            errorMsg += "Please try again.";
+                    }
+                    
+                    showError(errorMsg);
+                    googleSignInBtn.disabled = false;
+                    googleSignInBtn.innerHTML = '<i class="fab fa-google"></i> Sign in with Google';
                 });
         }
 
