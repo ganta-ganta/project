@@ -1,0 +1,1910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TeamFlow - Comprehensive Project Management</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Your existing CSS remains the same */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        :root {
+            --primary: #4361ee;
+            --secondary: #3a0ca3;
+            --success: #06d6a0;
+            --warning: #f72585;
+            --danger: #e63946;
+            --info: #4cc9f0;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --gray: #6c757d;
+            --light-gray: #e9ecef;
+            --border-radius: 12px;
+            --shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            --shadow-hover: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: var(--dark);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Rest of your CSS remains the same */
+        /* ... */
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-project-diagram"></i>
+                    <span>TeamFlow</span>
+                </div>
+                <nav id="navMenu" style="display: none;">
+                    <ul>
+                        <li><a href="#" class="nav-link active" data-section="dashboard">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a></li>
+                        <li><a href="#" class="nav-link" data-section="issues">
+                            <i class="fas fa-bug"></i> Issues
+                        </a></li>
+                        <li><a href="#" class="nav-link" data-section="projects">
+                            <i class="fas fa-folder"></i> Projects
+                        </a></li>
+                        <li><a href="#" class="nav-link" data-section="team">
+                            <i class="fas fa-users"></i> Team
+                        </a></li>
+                    </ul>
+                </nav>
+                <div class="user-actions" id="userActions">
+                    <button class="btn btn-outline" id="loginBtn">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+                    <button class="btn btn-primary" id="registerBtn">
+                        <i class="fas fa-user-plus"></i> Register
+                    </button>
+                </div>
+                <div class="user-info" id="userInfo" style="display: none;">
+                    <div class="user-avatar" id="userAvatar">JD</div>
+                    <div>
+                        <div id="userName" style="font-weight: 600; color: var(--dark);">John Doe</div>
+                        <div id="userPosition" style="font-size: 12px; color: var(--gray);">Developer</div>
+                    </div>
+                    <button class="btn btn-outline" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Auth Forms -->
+        <section class="auth-container" id="authSection">
+            <!-- Login Form -->
+            <div class="auth-form" id="loginForm">
+                <h2><i class="fas fa-sign-in-alt"></i> Welcome Back</h2>
+                <div class="form-group">
+                    <label for="loginEmail">
+                        <i class="fas fa-envelope"></i> Email Address
+                    </label>
+                    <input type="email" id="loginEmail" placeholder="Enter your email" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">
+                        <i class="fas fa-lock"></i> Password
+                    </label>
+                    <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                </div>
+                <button class="auth-submit" id="loginSubmit">
+                    <span class="btn-text">Sign In</span>
+                    <div class="loading" style="display: none;"></div>
+                </button>
+                <div class="auth-switch">
+                    Don't have an account? 
+                    <a href="#" id="switchToRegister">Create one here</a>
+                </div>
+
+                <!-- Demo Credentials -->
+                <div style="margin-top: 25px; padding: 20px; background: rgba(67, 97, 238, 0.1); border-radius: 8px; border-left: 4px solid var(--primary);">
+                    <h4 style="margin-bottom: 10px; color: var(--primary);">Demo Credentials:</h4>
+                    <p style="margin: 5px 0; font-size: 14px;"><strong>Email:</strong> admin@teamflow.com</p>
+                    <p style="margin: 5px 0; font-size: 14px;"><strong>Password:</strong> admin123</p>
+                    <button class="btn btn-outline" id="useDemoCredentials" style="margin-top: 10px; font-size: 12px; padding: 6px 12px;">
+                        Use Demo Credentials
+                    </button>
+                </div>
+            </div>
+
+            <!-- Register Form -->
+            <div class="auth-form" id="registerForm" style="display: none;">
+                <h2><i class="fas fa-user-plus"></i> Join TeamFlow</h2>
+                <div class="form-group">
+                    <label for="registerName">
+                        <i class="fas fa-user"></i> Full Name
+                    </label>
+                    <input type="text" id="registerName" placeholder="Enter your full name" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerEmail">
+                        <i class="fas fa-envelope"></i> Email Address
+                    </label>
+                    <input type="email" id="registerEmail" placeholder="Enter your email" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">
+                        <i class="fas fa-lock"></i> Password
+                    </label>
+                    <input type="password" id="registerPassword" placeholder="Create a password" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerPosition">
+                        <i class="fas fa-briefcase"></i> Position
+                    </label>
+                    <select id="registerPosition" required>
+                        <option value="">Select your position</option>
+                        <option value="Developer">Developer</option>
+                        <option value="Designer">Designer</option>
+                        <option value="Project Manager">Project Manager</option>
+                        <option value="Quality Assurance">Quality Assurance</option>
+                        <option value="DevOps Engineer">DevOps Engineer</option>
+                        <option value="Business Analyst">Business Analyst</option>
+                    </select>
+                </div>
+                <button class="auth-submit" id="registerSubmit">
+                    <span class="btn-text">Create Account</span>
+                    <div class="loading" style="display: none;"></div>
+                </button>
+                <div class="auth-switch">
+                    Already have an account? 
+                    <a href="#" id="switchToLogin">Sign in here</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dashboard -->
+        <section class="dashboard container" id="dashboardSection" style="display: none;">
+            <!-- Dashboard Header -->
+            <div class="dashboard-header">
+                <div>
+                    <h2><i class="fas fa-tachometer-alt"></i> Project Dashboard</h2>
+                    <p style="color: var(--gray); margin-top: 5px;">Manage your projects, issues, and team efficiently</p>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-success" id="addIssueBtn">
+                        <i class="fas fa-plus"></i> New Issue
+                    </button>
+                    <button class="btn btn-primary" id="addProjectBtn">
+                        <i class="fas fa-folder-plus"></i> New Project
+                    </button>
+                    <button class="btn btn-warning" id="addTeamBtn">
+                        <i class="fas fa-user-plus"></i> Add Member
+                    </button>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="stats-container">
+                <div class="stat-card">
+                    <i class="fas fa-tasks"></i>
+                    <h3 id="totalIssues">0</h3>
+                    <p>Total Issues</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <h3 id="inProgressIssues">0</h3>
+                    <p>In Progress</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-check-circle"></i>
+                    <h3 id="completedIssues">0</h3>
+                    <p>Completed</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-users"></i>
+                    <h3 id="teamMembersCount">0</h3>
+                    <p>Team Members</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-folder"></i>
+                    <h3 id="activeProjects">0</h3>
+                    <p>Active Projects</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-chart-line"></i>
+                    <h3 id="overallProgress">0%</h3>
+                    <p>Overall Progress</p>
+                </div>
+            </div>
+
+            <!-- Tabs Navigation -->
+            <div class="tabs">
+                <div class="tab active" data-tab="overview">
+                    <i class="fas fa-chart-pie"></i> Overview
+                </div>
+                <div class="tab" data-tab="issues">
+                    <i class="fas fa-bug"></i> Issues
+                </div>
+                <div class="tab" data-tab="projects">
+                    <i class="fas fa-folder"></i> Projects
+                </div>
+                <div class="tab" data-tab="team">
+                    <i class="fas fa-users"></i> Team
+                </div>
+            </div>
+
+            <!-- Overview Tab -->
+            <div class="tab-content active" id="overviewTab">
+                <div class="content-container">
+                    <div class="section-header">
+                        <h3><i class="fas fa-chart-pie"></i> Project Overview</h3>
+                    </div>
+                    
+                    <!-- Recent Activity -->
+                    <div style="margin-bottom: 30px;">
+                        <h4 style="margin-bottom: 15px; color: var(--primary);">
+                            <i class="fas fa-clock"></i> Recent Activity
+                        </h4>
+                        <div id="recentActivity" class="content-grid">
+                            <!-- Recent activity will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Quick Stats -->
+                    <div>
+                        <h4 style="margin-bottom: 15px; color: var(--primary);">
+                            <i class="fas fa-tachometer-alt"></i> Quick Stats
+                        </h4>
+                        <div class="content-grid" id="quickStats">
+                            <!-- Quick stats will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Issues Tab -->
+            <div class="tab-content" id="issuesTab">
+                <div class="content-container">
+                    <div class="section-header">
+                        <h3><i class="fas fa-bug"></i> Issues Management</h3>
+                        <div class="filter-options">
+                            <select id="statusFilter">
+                                <option value="all">All Statuses</option>
+                                <option value="todo">To Do</option>
+                                <option value="doing">In Progress</option>
+                                <option value="done">Completed</option>
+                            </select>
+                            <select id="priorityFilter">
+                                <option value="all">All Priorities</option>
+                                <option value="high">High Priority</option>
+                                <option value="medium">Medium Priority</option>
+                                <option value="low">Low Priority</option>
+                            </select>
+                            <select id="assigneeFilter">
+                                <option value="all">All Assignees</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="content-grid" id="issuesList">
+                        <!-- Issues will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Projects Tab -->
+            <div class="tab-content" id="projectsTab">
+                <div class="content-container">
+                    <div class="section-header">
+                        <h3><i class="fas fa-folder"></i> Projects Management</h3>
+                        <div class="filter-options">
+                            <select id="projectStatusFilter">
+                                <option value="all">All Projects</option>
+                                <option value="active">Active</option>
+                                <option value="completed">Completed</option>
+                                <option value="on-hold">On Hold</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="content-grid" id="projectsList">
+                        <!-- Projects will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Team Tab -->
+            <div class="tab-content" id="teamTab">
+                <div class="content-container">
+                    <div class="section-header">
+                        <h3><i class="fas fa-users"></i> Team Management</h3>
+                        <div class="filter-options">
+                            <select id="positionFilter">
+                                <option value="all">All Positions</option>
+                                <option value="Developer">Developers</option>
+                                <option value="Designer">Designers</option>
+                                <option value="Project Manager">Project Managers</option>
+                                <option value="Quality Assurance">QA Engineers</option>
+                                <option value="DevOps Engineer">DevOps Engineers</option>
+                                <option value="Business Analyst">Business Analysts</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="content-grid" id="teamList">
+                        <!-- Team members will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Add Issue Modal -->
+    <div class="modal" id="addIssueModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-plus"></i> Create New Issue</h3>
+                <button class="close-modal" data-modal="addIssueModal">&times;</button>
+            </div>
+            <form id="issueForm">
+                <div class="form-group">
+                    <label for="issueTitle">
+                        <i class="fas fa-heading"></i> Issue Title *
+                    </label>
+                    <input type="text" id="issueTitle" placeholder="Enter issue title" required>
+                </div>
+                <div class="form-group">
+                    <label for="issueDescription">
+                        <i class="fas fa-align-left"></i> Description
+                    </label>
+                    <textarea id="issueDescription" placeholder="Describe the issue" rows="4"></textarea>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="form-group">
+                        <label for="issueProject">
+                            <i class="fas fa-folder"></i> Project *
+                        </label>
+                        <select id="issueProject" required>
+                            <option value="">Select project</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="issuePriority">
+                            <i class="fas fa-flag"></i> Priority *
+                        </label>
+                        <select id="issuePriority" required>
+                            <option value="">Select priority</option>
+                            <option value="high">High Priority</option>
+                            <option value="medium">Medium Priority</option>
+                            <option value="low">Low Priority</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="form-group">
+                        <label for="issueAssignee">
+                            <i class="fas fa-user"></i> Assign To *
+                        </label>
+                        <select id="issueAssignee" required>
+                            <option value="">Select assignee</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="issueEstimate">
+                            <i class="fas fa-clock"></i> Estimate (hours)
+                        </label>
+                        <input type="number" id="issueEstimate" placeholder="0" min="0" max="999">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="issueDeadline">
+                        <i class="fas fa-calendar"></i> Deadline
+                    </label>
+                    <input type="date" id="issueDeadline">
+                </div>
+                <button type="submit" class="auth-submit">
+                    <i class="fas fa-plus"></i> Create Issue
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Project Modal -->
+    <div class="modal" id="addProjectModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-folder-plus"></i> Create New Project</h3>
+                <button class="close-modal" data-modal="addProjectModal">&times;</button>
+            </div>
+            <form id="projectForm">
+                <div class="form-group">
+                    <label for="projectName">
+                        <i class="fas fa-tag"></i> Project Name *
+                    </label>
+                    <input type="text" id="projectName" placeholder="Enter project name" required>
+                </div>
+                <div class="form-group">
+                    <label for="projectDescription">
+                        <i class="fas fa-align-left"></i> Description
+                    </label>
+                    <textarea id="projectDescription" placeholder="Describe the project" rows="4"></textarea>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="form-group">
+                        <label for="projectDeadline">
+                            <i class="fas fa-calendar"></i> Deadline *
+                        </label>
+                        <input type="date" id="projectDeadline" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="projectStatus">
+                            <i class="fas fa-info-circle"></i> Status
+                        </label>
+                        <select id="projectStatus">
+                            <option value="active">Active</option>
+                            <option value="on-hold">On Hold</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="projectTeam">
+                        <i class="fas fa-users"></i> Team Members
+                    </label>
+                    <select id="projectTeam" multiple style="height: 120px;">
+                        <!-- Team members will be populated -->
+                    </select>
+                    <small style="color: var(--gray); margin-top: 5px; display: block;">
+                        Hold Ctrl/Cmd to select multiple members
+                    </small>
+                </div>
+                <button type="submit" class="auth-submit">
+                    <i class="fas fa-plus"></i> Create Project
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Team Member Modal -->
+    <div class="modal" id="addTeamModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-plus"></i> Add Team Member</h3>
+                <button class="close-modal" data-modal="addTeamModal">&times;</button>
+            </div>
+            <form id="teamForm">
+                <div class="form-group">
+                    <label for="teamName">
+                        <i class="fas fa-user"></i> Full Name *
+                    </label>
+                    <input type="text" id="teamName" placeholder="Enter full name" required>
+                </div>
+                <div class="form-group">
+                    <label for="teamEmail">
+                        <i class="fas fa-envelope"></i> Email Address *
+                    </label>
+                    <input type="email" id="teamEmail" placeholder="Enter email address" required>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="form-group">
+                        <label for="teamPosition">
+                            <i class="fas fa-briefcase"></i> Position *
+                        </label>
+                        <select id="teamPosition" required>
+                            <option value="">Select position</option>
+                            <option value="Developer">Developer</option>
+                            <option value="Designer">Designer</option>
+                            <option value="Project Manager">Project Manager</option>
+                            <option value="Quality Assurance">Quality Assurance</option>
+                            <option value="DevOps Engineer">DevOps Engineer</option>
+                            <option value="Business Analyst">Business Analyst</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="teamPassword">
+                            <i class="fas fa-lock"></i> Login Password *
+                        </label>
+                        <input type="password" id="teamPassword" placeholder="Set login password" required>
+                    </div>
+                </div>
+                <button type="submit" class="auth-submit">
+                    <i class="fas fa-user-plus"></i> Add Team Member
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Issue Details Modal -->
+    <div class="modal" id="issueDetailsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-bug"></i> Issue Details</h3>
+                <button class="close-modal" data-modal="issueDetailsModal">&times;</button>
+            </div>
+            <div id="issueDetailsContent">
+                <!-- Issue details will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal" id="confirmModal">
+        <div class="confirm-dialog">
+            <h3 id="confirmTitle">Confirm Action</h3>
+            <p id="confirmMessage">Are you sure you want to perform this action?</p>
+            <div class="confirm-actions">
+                <button class="btn btn-outline" id="confirmCancel">Cancel</button>
+                <button class="btn btn-primary" id="confirmOk">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Update Modal -->
+    <div class="modal" id="progressModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-chart-line"></i> Update Progress</h3>
+                <button class="close-modal" data-modal="progressModal">&times;</button>
+            </div>
+            <div id="progressContent">
+                <div class="form-group">
+                    <label for="progressValue">
+                        <i class="fas fa-percentage"></i> Progress Percentage
+                    </label>
+                    <input type="range" id="progressValue" min="0" max="100" value="0" 
+                           oninput="document.getElementById('progressDisplay').textContent = this.value + '%'">
+                    <div style="text-align: center; margin-top: 10px; font-size: 1.2rem; font-weight: 600; color: var(--primary);">
+                        <span id="progressDisplay">0%</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="actualHours">
+                        <i class="fas fa-clock"></i> Actual Hours Spent
+                    </label>
+                    <input type="number" id="actualHours" placeholder="0" min="0" max="999">
+                </div>
+                <div class="form-group">
+                    <label for="progressNotes">
+                        <i class="fas fa-sticky-note"></i> Progress Notes
+                    </label>
+                    <textarea id="progressNotes" placeholder="Add notes about your progress..." rows="3"></textarea>
+                </div>
+                <button class="auth-submit" id="updateProgressBtn">
+                    <i class="fas fa-save"></i> Update Progress
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Extend Deadline Modal -->
+    <div class="modal" id="extendDeadlineModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-calendar-plus"></i> Extend Deadline</h3>
+                <button class="close-modal" data-modal="extendDeadlineModal">&times;</button>
+            </div>
+            <div id="extendContent">
+                <div class="form-group">
+                    <label>Current Deadline</label>
+                    <div id="currentDeadline" style="padding: 12px; background: var(--light-gray); border-radius: 6px; font-weight: 600;">
+                        <!-- Current deadline will be shown here -->
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="newDeadline">
+                        <i class="fas fa-calendar"></i> New Deadline
+                    </label>
+                    <input type="date" id="newDeadline" required>
+                </div>
+                <div class="form-group">
+                    <label for="extensionReason">
+                        <i class="fas fa-comment"></i> Reason for Extension
+                    </label>
+                    <textarea id="extensionReason" placeholder="Explain why you need to extend the deadline..." rows="3" required></textarea>
+                </div>
+                <button class="auth-submit" id="extendDeadlineBtn">
+                    <i class="fas fa-calendar-plus"></i> Extend Deadline
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Container -->
+    <div class="notification-container" id="notificationContainer"></div>
+
+    <script>
+        // Application State
+        let currentUser = null;
+        let issues = [];
+        let projects = [];
+        let teamMembers = [];
+        let currentIssue = null;
+        let confirmCallback = null;
+
+        // Initialize demo data
+        function initializeDemoData() {
+            // Demo team members (including admin)
+            teamMembers = [
+                {
+                    id: '1',
+                    name: 'Admin User',
+                    email: 'admin@teamflow.com',
+                    password: 'admin123',
+                    position: 'Project Manager',
+                    joinDate: new Date('2024-01-01'),
+                    isActive: true,
+                    currentTasks: 2,
+                    completedTasks: 15
+                },
+                {
+                    id: '2',
+                    name: 'John Developer',
+                    email: 'john@teamflow.com',
+                    password: 'john123',
+                    position: 'Developer',
+                    joinDate: new Date('2024-01-15'),
+                    isActive: true,
+                    currentTasks: 3,
+                    completedTasks: 8
+                },
+                {
+                    id: '3',
+                    name: 'Sarah Designer',
+                    email: 'sarah@teamflow.com',
+                    password: 'sarah123',
+                    position: 'Designer',
+                    joinDate: new Date('2024-02-01'),
+                    isActive: true,
+                    currentTasks: 2,
+                    completedTasks: 12
+                },
+                {
+                    id: '4',
+                    name: 'Mike QA',
+                    email: 'mike@teamflow.com',
+                    password: 'mike123',
+                    position: 'Quality Assurance',
+                    joinDate: new Date('2024-02-15'),
+                    isActive: true,
+                    currentTasks: 1,
+                    completedTasks: 6
+                }
+            ];
+
+            // Demo projects
+            projects = [
+                {
+                    id: '1',
+                    name: 'E-Commerce Website Redesign',
+                    description: 'Complete redesign of the company e-commerce platform with modern UI/UX',
+                    deadline: new Date('2025-03-15'),
+                    status: 'active',
+                    progress: 65,
+                    teamMembers: ['1', '2', '3'],
+                    createdBy: '1',
+                    createdAt: new Date('2024-12-01'),
+                    updatedAt: new Date('2025-01-15')
+                },
+                {
+                    id: '2',
+                    name: 'Mobile App Development',
+                    description: 'Native mobile application for iOS and Android platforms',
+                    deadline: new Date('2025-04-30'),
+                    status: 'active',
+                    progress: 30,
+                    teamMembers: ['2', '4'],
+                    createdBy: '1',
+                    createdAt: new Date('2024-12-15'),
+                    updatedAt: new Date('2025-01-10')
+                },
+                {
+                    id: '3',
+                    name: 'API Integration System',
+                    description: 'Integration with third-party APIs for enhanced functionality',
+                    deadline: new Date('2025-02-28'),
+                    status: 'completed',
+                    progress: 100,
+                    teamMembers: ['2'],
+                    createdBy: '1',
+                    createdAt: new Date('2024-11-01'),
+                    updatedAt: new Date('2025-01-05')
+                }
+            ];
+
+            // Demo issues
+            issues = [
+                {
+                    id: '1',
+                    title: 'Update homepage hero section design',
+                    description: 'Implement new hero section design with improved CTA buttons and responsive layout',
+                    projectId: '1',
+                    projectName: 'E-Commerce Website Redesign',
+                    priority: 'high',
+                    status: 'doing',
+                    assigneeId: '3',
+                    assigneeName: 'Sarah Designer',
+                    estimatedHours: 12,
+                    actualHours: 8,
+                    progress: 70,
+                    deadline: new Date('2025-01-25'),
+                    createdBy: '1',
+                    createdAt: new Date('2025-01-10'),
+                    updatedAt: new Date('2025-01-18'),
+                    notes: 'Working on responsive breakpoints'
+                },
+                {
+                    id: '2',
+                    title: 'Implement payment gateway integration',
+                    description: 'Integrate Stripe payment system with proper error handling and security measures',
+                    projectId: '1',
+                    projectName: 'E-Commerce Website Redesign',
+                    priority: 'high',
+                    status: 'todo',
+                    assigneeId: '2',
+                    assigneeName: 'John Developer',
+                    estimatedHours: 16,
+                    actualHours: 0,
+                    progress: 0,
+                    deadline: new Date('2025-02-01'),
+                    createdBy: '1',
+                    createdAt: new Date('2025-01-12'),
+                    updatedAt: new Date('2025-01-12')
+                },
+                {
+                    id: '3',
+                    title: 'Database performance optimization',
+                    description: 'Optimize database queries and implement caching for better performance',
+                    projectId: '2',
+                    projectName: 'Mobile App Development',
+                    priority: 'medium',
+                    status: 'done',
+                    assigneeId: '2',
+                    assigneeName: 'John Developer',
+                    estimatedHours: 8,
+                    actualHours: 6,
+                    progress: 100,
+                    deadline: new Date('2025-01-20'),
+                    completionDate: new Date('2025-01-18'),
+                    createdBy: '1',
+                    createdAt: new Date('2025-01-05'),
+                    updatedAt: new Date('2025-01-18')
+                },
+                {
+                    id: '4',
+                    title: 'User authentication flow testing',
+                    description: 'Comprehensive testing of user registration, login, and password reset functionality',
+                    projectId: '2',
+                    projectName: 'Mobile App Development',
+                    priority: 'medium',
+                    status: 'doing',
+                    assigneeId: '4',
+                    assigneeName: 'Mike QA',
+                    estimatedHours: 10,
+                    actualHours: 4,
+                    progress: 40,
+                    deadline: new Date('2025-01-30'),
+                    createdBy: '1',
+                    createdAt: new Date('2025-01-08'),
+                    updatedAt: new Date('2025-01-16')
+                },
+                {
+                    id: '5',
+                    title: 'API documentation update',
+                    description: 'Update API documentation with new endpoints and authentication methods',
+                    projectId: '3',
+                    projectName: 'API Integration System',
+                    priority: 'low',
+                    status: 'done',
+                    assigneeId: '2',
+                    assigneeName: 'John Developer',
+                    estimatedHours: 4,
+                    actualHours: 3,
+                    progress: 100,
+                    deadline: new Date('2025-01-15'),
+                    completionDate: new Date('2025-01-13'),
+                    createdBy: '1',
+                    createdAt: new Date('2025-01-01'),
+                    updatedAt: new Date('2025-01-13')
+                }
+            ];
+        }
+
+        // Notification System
+        function showNotification(message, type = 'info', duration = 5000) {
+            const container = document.getElementById('notificationContainer');
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            
+            const icons = {
+                success: 'check-circle',
+                error: 'exclamation-circle',
+                warning: 'exclamation-triangle',
+                info: 'info-circle'
+            };
+            
+            notification.innerHTML = `
+                <i class="fas fa-${icons[type] || 'info-circle'}"></i>
+                <span>${message}</span>
+            `;
+            
+            container.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, duration);
+        }
+
+        // Confirmation Dialog
+        function showConfirmation(title, message, callback) {
+            confirmCallback = callback;
+            document.getElementById('confirmTitle').textContent = title;
+            document.getElementById('confirmMessage').textContent = message;
+            document.getElementById('confirmModal').style.display = 'flex';
+        }
+
+        // Date Formatting
+        function formatDate(date) {
+            if (!date) return 'Not set';
+            return new Date(date).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        function isOverdue(deadline) {
+            return new Date(deadline) < new Date();
+        }
+
+        // Statistics Update
+        function updateStatistics() {
+            document.getElementById('totalIssues').textContent = issues.length;
+            document.getElementById('inProgressIssues').textContent = issues.filter(i => i.status === 'doing').length;
+            document.getElementById('completedIssues').textContent = issues.filter(i => i.status === 'done').length;
+            document.getElementById('teamMembersCount').textContent = teamMembers.length;
+            document.getElementById('activeProjects').textContent = projects.filter(p => p.status === 'active').length;
+            
+            // Calculate overall progress
+            const totalProgress = issues.reduce((sum, issue) => sum + issue.progress, 0);
+            const averageProgress = issues.length > 0 ? Math.round(totalProgress / issues.length) : 0;
+            document.getElementById('overallProgress').textContent = averageProgress + '%';
+        }
+
+        // Render Functions
+        function renderOverview() {
+            const recentActivity = document.getElementById('recentActivity');
+            const quickStats = document.getElementById('quickStats');
+            
+            // Recent activity - last 5 updated issues
+            const recentIssues = [...issues]
+                .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+                .slice(0, 5);
+            
+            recentActivity.innerHTML = '';
+            if (recentIssues.length === 0) {
+                recentActivity.innerHTML = '<div class="empty-state"><i class="fas fa-clock"></i><h3>No Recent Activity</h3><p>Start working on issues to see activity here</p></div>';
+            } else {
+                recentIssues.forEach(issue => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <div class="card-title">${issue.title}</div>
+                            <div class="card-status status-${issue.status}">${issue.status}</div>
+                        </div>
+                        <div class="card-details">
+                            <div class="card-detail">
+                                <i class="fas fa-user"></i>
+                                <span>${issue.assigneeName}</span>
+                            </div>
+                            <div class="card-detail">
+                                <i class="fas fa-folder"></i>
+                                <span>${issue.projectName}</span>
+                            </div>
+                            <div class="card-detail">
+                                <i class="fas fa-clock"></i>
+                                <span>Updated ${formatDate(issue.updatedAt)}</span>
+                            </div>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-label">
+                                <span>Progress: ${issue.progress}%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${issue.progress}%"></div>
+                            </div>
+                        </div>
+                    `;
+                    recentActivity.appendChild(card);
+                });
+            }
+            
+            // Quick stats
+            const highPriorityIssues = issues.filter(i => i.priority === 'high' && i.status !== 'done').length;
+            const overdueIssues = issues.filter(i => i.status !== 'done' && isOverdue(i.deadline)).length;
+            const thisWeekCompleted = issues.filter(i => {
+                if (i.status !== 'done' || !i.completionDate) return false;
+                const weekAgo = new Date();
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                return new Date(i.completionDate) >= weekAgo;
+            }).length;
+            
+            quickStats.innerHTML = `
+                <div class="card">
+                    <h4 style="color: var(--danger); margin-bottom: 10px;">
+                        <i class="fas fa-exclamation-triangle"></i> High Priority Issues
+                    </h4>
+                    <h2 style="color: var(--danger);">${highPriorityIssues}</h2>
+                    <p>Require immediate attention</p>
+                </div>
+                <div class="card">
+                    <h4 style="color: var(--warning); margin-bottom: 10px;">
+                        <i class="fas fa-calendar-times"></i> Overdue Tasks
+                    </h4>
+                    <h2 style="color: var(--warning);">${overdueIssues}</h2>
+                    <p>Past their deadline</p>
+                </div>
+                <div class="card">
+                    <h4 style="color: var(--success); margin-bottom: 10px;">
+                        <i class="fas fa-trophy"></i> Completed This Week
+                    </h4>
+                    <h2 style="color: var(--success);">${thisWeekCompleted}</h2>
+                    <p>Great progress!</p>
+                </div>
+            `;
+        }
+
+        function renderIssues() {
+            const container = document.getElementById('issuesList');
+            container.innerHTML = '';
+            
+            if (issues.length === 0) {
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-bug"></i><h3>No Issues Found</h3><p>Create your first issue to get started</p></div>';
+                return;
+            }
+            
+            // Apply filters
+            let filteredIssues = [...issues];
+            
+            const statusFilter = document.getElementById('statusFilter').value;
+            const priorityFilter = document.getElementById('priorityFilter').value;
+            const assigneeFilter = document.getElementById('assigneeFilter').value;
+            
+            if (statusFilter !== 'all') {
+                filteredIssues = filteredIssues.filter(issue => issue.status === statusFilter);
+            }
+            if (priorityFilter !== 'all') {
+                filteredIssues = filteredIssues.filter(issue => issue.priority === priorityFilter);
+            }
+            if (assigneeFilter !== 'all') {
+                filteredIssues = filteredIssues.filter(issue => issue.assigneeId === assigneeFilter);
+            }
+            
+            // Sort by priority and status
+            filteredIssues.sort((a, b) => {
+                const priorityOrder = { high: 3, medium: 2, low: 1 };
+                const statusOrder = { doing: 3, todo: 2, done: 1 };
+                
+                if (a.priority !== b.priority) {
+                    return priorityOrder[b.priority] - priorityOrder[a.priority];
+                }
+                return statusOrder[b.status] - statusOrder[a.status];
+            });
+            
+            filteredIssues.forEach(issue => {
+                const isAssignedToCurrentUser = issue.assigneeId === currentUser.id;
+                const isOverdueTask = isOverdue(issue.deadline) && issue.status !== 'done';
+                
+                const card = document.createElement('div');
+                card.className = 'card';
+                if (isAssignedToCurrentUser && issue.status === 'doing') {
+                    card.innerHTML += '<div class="working-status">Currently Working</div>';
+                }
+                
+                card.innerHTML += `
+                    <div class="card-header">
+                        <div class="card-title" style="${isOverdueTask ? 'color: var(--danger);' : ''}">${issue.title}</div>
+                        <div class="card-status status-${issue.status}">${issue.status.replace('_', ' ')}</div>
+                    </div>
+                    <div class="card-description">
+                        <p>${issue.description || 'No description provided'}</p>
+                    </div>
+                    <div class="card-details">
+                        <div class="card-detail">
+                            <i class="fas fa-user"></i>
+                            <span>${issue.assigneeName}</span>
+                        </div>
+                        <div class="card-detail">
+                            <i class="fas fa-folder"></i>
+                            <span>${issue.projectName}</span>
+                        </div>
+                        <div class="card-detail">
+                            <i class="fas fa-flag"></i>
+                            <span style="color: ${issue.priority === 'high' ? 'var(--danger)' : issue.priority === 'medium' ? 'var(--warning)' : 'var(--success)'}">${issue.priority} priority</span>
+                        </div>
+                        <div class="card-detail">
+                            <i class="fas fa-clock"></i>
+                            <span>${issue.estimatedHours}h estimated / ${issue.actualHours}h spent</span>
+                        </div>
+                        <div class="card-detail">
+                            <i class="fas fa-calendar${isOverdueTask ? '-times' : ''}"></i>
+                            <span style="${isOverdueTask ? 'color: var(--danger); font-weight: 600;' : ''}">${formatDate(issue.deadline)}${isOverdueTask ? ' (OVERDUE)' : ''}</span>
+                        </div>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-label">
+                            <span>Progress: ${issue.progress}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${issue.progress}%"></div>
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="action-btn btn-primary" onclick="showIssueDetails('${issue.id}')">
+                            <i class="fas fa-eye"></i> View Details
+                        </button>
+                        ${isAssignedToCurrentUser ? getIssueActions(issue) : ''}
+                        ${currentUser.id === '1' || currentUser.id === issue.createdBy ? `
+                            <button class="action-btn btn-warning" onclick="extendIssueDeadline('${issue.id}')">
+                                <i class="fas fa-calendar-plus"></i> Extend Deadline
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+
+        function getIssueActions(issue) {
+            let actions = '';
+            
+            switch (issue.status) {
+                case 'todo':
+                    actions += `<button class="action-btn btn-success" onclick="changeIssueStatus('${issue.id}', 'doing')">
+                        <i class="fas fa-play"></i> Start Work
+                    </button>`;
+                    break;
+                case 'doing':
+                    actions += `
+                        <button class="action-btn btn-info" onclick="updateIssueProgress('${issue.id}')">
+                            <i class="fas fa-chart-line"></i> Update Progress
+                        </button>
+                        <button class="action-btn btn-success" onclick="changeIssueStatus('${issue.id}', 'done')">
+                            <i class="fas fa-check"></i> Mark Complete
+                        </button>
+                        <button class="action-btn btn-warning" onclick="changeIssueStatus('${issue.id}', 'todo')">
+                            <i class="fas fa-pause"></i> Pause Work
+                        </button>
+                    `;
+                    break;
+                case 'done':
+                    actions += `<button class="action-btn btn-warning" onclick="changeIssueStatus('${issue.id}', 'todo')">
+                        <i class="fas fa-redo"></i> Reopen
+                    </button>`;
+                    break;
+            }
+            
+            return actions;
+        }
+
+        function renderProjects() {
+            const container = document.getElementById('projectsList');
+            container.innerHTML = '';
+            
+            if (projects.length === 0) {
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-folder"></i><h3>No Projects Found</h3><p>Create your first project to get started</p></div>';
+                return;
+            }
+            
+            // Apply filters
+            let filteredProjects = [...projects];
+            const statusFilter = document.getElementById('projectStatusFilter').value;
+            
+            if (statusFilter !== 'all') {
+                filteredProjects = filteredProjects.filter(project => project.status === statusFilter);
+            }
+            
+            filteredProjects.forEach(project => {
+                const projectIssues = issues.filter(issue => issue.projectId === project.id);
+                const completedIssues = projectIssues.filter(issue => issue.status === 'done').length;
+                const totalIssues = projectIssues.length;
+                const projectProgress = totalIssues > 0 ? Math.round((completedIssues / totalIssues) * 100) : 0;
+                const isOverdueProject = isOverdue(project.deadline) && project.status !== 'completed';
+                
+                const teamMemberNames = project.teamMembers?.map(memberId => {
+                    const member = teamMembers.find(m => m.id === memberId);
+                    return member ? member.name : 'Unknown';
+                }).join(', ') || 'No team assigned';
+                
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div class="card-title" style="${isOverdueProject ? 'color: var(--danger);' : ''}">${project.name}</div>
+                        <div class="card-status status-${project.status}">${project.status}</div>
+                    </div>
+                    <div class="card-description">
+                        <p>${project.description || 'No description provided'}</p>
+                    </div>
+                    <div class="card-details">
+                        <div class="card-detail">
+                            <i class="fas fa-users"></i>
+                            <span>${teamMemberNames}</span>
+                        </div>
+                        <div class="card-detail">
+                            <i class="fas fa-tasks"></i>
+                            <span>${completedIssues}/${totalIssues} issues completed</span>
+                        </div>
+                        <div class="card-detail">
+                            <i class="fas fa-calendar${isOverdueProject ? '-times' : ''}"></i>
+                            <span style="${isOverdueProject ? 'color: var(--danger); font-weight: 600;' : ''}">${formatDate(project.deadline)}${isOverdueProject ? ' (OVERDUE)' : ''}</span>
+                        </div>
+                        <div class="card-detail">
+                            <i class="fas fa-user"></i>
+                            <span>Created by ${teamMembers.find(m => m.id === project.createdBy)?.name || 'Unknown'}</span>
+                        </div>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-label">
+                            <span>Completion: ${projectProgress}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${projectProgress}%"></div>
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="action-btn btn-info" onclick="filterIssuesByProject('${project.id}')">
+                            <i class="fas fa-filter"></i> View Issues
+                        </button>
+                        ${currentUser.id === '1' || currentUser.id === project.createdBy ? `
+                            <button class="action-btn btn-warning" onclick="updateProjectStatus('${project.id}')">
+                                <i class="fas fa-edit"></i> Update Status
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+
+        function renderTeamMembers() {
+            const container = document.getElementById('teamList');
+            container.innerHTML = '';
+            
+            if (teamMembers.length === 0) {
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><h3>No Team Members</h3><p>Add your first team member to get started</p></div>';
+                return;
+            }
+            
+            // Apply filters
+            let filteredTeam = [...teamMembers];
+            const positionFilter = document.getElementById('positionFilter').value;
+            
+            if (positionFilter !== 'all') {
+                filteredTeam = filteredTeam.filter(member => member.position === positionFilter);
+            }
+            
+            filteredTeam.forEach(member => {
+                const memberIssues = issues.filter(issue => issue.assigneeId === member.id);
+                const activeTasks = memberIssues.filter(issue => issue.status !== 'done').length;
+                const completedTasks = memberIssues.filter(issue => issue.status === 'done').length;
+                const workingOn = memberIssues.find(issue => issue.status === 'doing');
+                
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div class="user-avatar" style="width: 50px; height: 50px; font-size: 18px;">
+                                ${member.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <div class="card-title">${member.name}</div>
+                                <div style="color: var(--gray); font-size: 14px;">${member.position}</div>
+                            </div>
+                        </div>
+                        <div class="card-status ${member.isActive ? 'status-done' : 'status-todo'}">
+                            ${member.isActive ? 'Active' : 'Inactive'}
+                        </div>
+                    </div>
+                    <div class="card-details">
+                        <div class="card-detail">
+                            <i class="fas fa-envelope"></i>
+                            <span>${member.email}</span>
+                        </div>
+                        <div class="card-detail">
+                            <i class="fas fa-calendar"></i>
+                            <span>Joined ${formatDate(member.joinDate)}</span>
+                        </div>
+                        <div class="card-detail">
+                            <i class="fas fa-tasks"></i>
+                            <span>${activeTasks} active, ${completedTasks} completed</span>
+                        </div>
+                        ${workingOn ? `
+                            <div class="card-detail">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <span style="color: var(--primary); font-weight: 600;">Working on: ${workingOn.title}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="card-actions">
+                        <button class="action-btn btn-info" onclick="filterIssuesByAssignee('${member.id}')">
+                            <i class="fas fa-filter"></i> View Tasks
+                        </button>
+                        ${currentUser.id === '1' ? `
+                            <button class="action-btn btn-${member.isActive ? 'warning' : 'success'}" onclick="toggleMemberStatus('${member.id}')">
+                                <i class="fas fa-${member.isActive ? 'pause' : 'play'}"></i> ${member.isActive ? 'Deactivate' : 'Activate'}
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+
+        // Issue Management Functions
+        function showIssueDetails(issueId) {
+            const issue = issues.find(i => i.id === issueId);
+            if (!issue) return;
+            
+            const content = document.getElementById('issueDetailsContent');
+            content.innerHTML = `
+                <div class="form-group">
+                    <h4>${issue.title}</h4>
+                    <p style="color: var(--gray);">${issue.description || 'No description provided'}</p>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+                    <div>
+                        <strong>Project:</strong><br>
+                        <span style="color: var(--gray);">${issue.projectName}</span>
+                    </div>
+                    <div>
+                        <strong>Priority:</strong><br>
+                        <span style="color: ${issue.priority === 'high' ? 'var(--danger)' : issue.priority === 'medium' ? 'var(--warning)' : 'var(--success)'};">
+                            ${issue.priority.toUpperCase()}
+                        </span>
+                    </div>
+                    <div>
+                        <strong>Status:</strong><br>
+                        <span class="card-status status-${issue.status}">${issue.status}</span>
+                    </div>
+                    <div>
+                        <strong>Assigned To:</strong><br>
+                        <span style="color: var(--gray);">${issue.assigneeName}</span>
+                    </div>
+                    <div>
+                        <strong>Estimated Hours:</strong><br>
+                        <span style="color: var(--gray);">${issue.estimatedHours}h</span>
+                    </div>
+                    <div>
+                        <strong>Actual Hours:</strong><br>
+                        <span style="color: var(--gray);">${issue.actualHours}h</span>
+                    </div>
+                    <div>
+                        <strong>Deadline:</strong><br>
+                        <span style="color: ${isOverdue(issue.deadline) && issue.status !== 'done' ? 'var(--danger)' : 'var(--gray)'};">
+                            ${formatDate(issue.deadline)}
+                        </span>
+                    </div>
+                    <div>
+                        <strong>Created:</strong><br>
+                        <span style="color: var(--gray);">${formatDate(issue.createdAt)}</span>
+                    </div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-label">
+                        <span><strong>Progress: ${issue.progress}%</strong></span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${issue.progress}%"></div>
+                    </div>
+                </div>
+                ${issue.notes ? `
+                    <div class="form-group">
+                        <strong>Notes:</strong>
+                        <p style="color: var(--gray); margin-top: 5px;">${issue.notes}</p>
+                    </div>
+                ` : ''}
+            `;
+            
+            document.getElementById('issueDetailsModal').style.display = 'flex';
+        }
+
+        function changeIssueStatus(issueId, newStatus) {
+            const issue = issues.find(i => i.id === issueId);
+            if (!issue) return;
+            
+            const statusMessages = {
+                'doing': 'start working on',
+                'done': 'mark as complete',
+                'todo': 'reopen'
+            };
+            
+            showConfirmation(
+                'Change Issue Status',
+                `Are you sure you want to ${statusMessages[newStatus]} "${issue.title}"?`,
+                () => {
+                    issue.status = newStatus;
+                    issue.updatedAt = new Date();
+                    
+                    if (newStatus === 'done') {
+                        issue.completionDate = new Date();
+                        issue.progress = 100;
+                    } else if (newStatus === 'doing') {
+                        if (issue.progress === 0) issue.progress = 10;
+                    }
+                    
+                    updateStatistics();
+                    renderIssues();
+                    renderOverview();
+                    showNotification(`Issue "${issue.title}" ${newStatus === 'done' ? 'completed' : newStatus === 'doing' ? 'started' : 'reopened'} successfully!`, 'success');
+                }
+            );
+        }
+
+        function updateIssueProgress(issueId) {
+            const issue = issues.find(i => i.id === issueId);
+            if (!issue) return;
+            
+            currentIssue = issue;
+            document.getElementById('progressValue').value = issue.progress;
+            document.getElementById('progressDisplay').textContent = issue.progress + '%';
+            document.getElementById('actualHours').value = issue.actualHours;
+            document.getElementById('progressNotes').value = issue.notes || '';
+            document.getElementById('progressModal').style.display = 'flex';
+        }
+
+        function extendIssueDeadline(issueId) {
+            const issue = issues.find(i => i.id === issueId);
+            if (!issue) return;
+            
+            currentIssue = issue;
+            document.getElementById('currentDeadline').textContent = formatDate(issue.deadline);
+            document.getElementById('newDeadline').value = '';
+            document.getElementById('extensionReason').value = '';
+            document.getElementById('extendDeadlineModal').style.display = 'flex';
+        }
+
+        // Filter Functions
+        function filterIssuesByProject(projectId) {
+            // Switch to issues tab
+            document.querySelector('.tab[data-tab="issues"]').click();
+            // Reset filters
+            document.getElementById('statusFilter').value = 'all';
+            document.getElementById('priorityFilter').value = 'all';
+            document.getElementById('assigneeFilter').value = 'all';
+            // Apply project filter (you could add this as a new filter)
+            renderIssues();
+        }
+
+        function filterIssuesByAssignee(assigneeId) {
+            // Switch to issues tab
+            document.querySelector('.tab[data-tab="issues"]').click();
+            // Set assignee filter
+            document.getElementById('assigneeFilter').value = assigneeId;
+            renderIssues();
+        }
+
+        // Populate Dropdown Functions
+        function populateDropdowns() {
+            // Populate project dropdown
+            const projectSelect = document.getElementById('issueProject');
+            projectSelect.innerHTML = '<option value="">Select project</option>';
+            projects.forEach(project => {
+                const option = document.createElement('option');
+                option.value = project.id;
+                option.textContent = project.name;
+                projectSelect.appendChild(option);
+            });
+            
+            // Populate assignee dropdowns
+            const assigneeSelects = ['issueAssignee', 'assigneeFilter'];
+            assigneeSelects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                if (selectId === 'assigneeFilter') {
+                    select.innerHTML = '<option value="all">All Assignees</option>';
+                } else {
+                    select.innerHTML = '<option value="">Select assignee</option>';
+                }
+                
+                teamMembers.filter(member => member.isActive).forEach(member => {
+                    const option = document.createElement('option');
+                    option.value = member.id;
+                    option.textContent = `${member.name} (${member.position})`;
+                    select.appendChild(option);
+                });
+            });
+            
+            // Populate project team dropdown
+            const projectTeamSelect = document.getElementById('projectTeam');
+            projectTeamSelect.innerHTML = '';
+            teamMembers.filter(member => member.isActive).forEach(member => {
+                const option = document.createElement('option');
+                option.value = member.id;
+                option.textContent = `${member.name} (${member.position})`;
+                projectTeamSelect.appendChild(option);
+            });
+        }
+
+        // Form Handlers
+        function handleIssueForm(e) {
+            e.preventDefault();
+            
+            const title = document.getElementById('issueTitle').value.trim();
+            const description = document.getElementById('issueDescription').value.trim();
+            const projectId = document.getElementById('issueProject').value;
+            const priority = document.getElementById('issuePriority').value;
+            const assigneeId = document.getElementById('issueAssignee').value;
+            const estimatedHours = parseInt(document.getElementById('issueEstimate').value) || 0;
+            const deadline = document.getElementById('issueDeadline').value;
+            
+            if (!title || !projectId || !priority || !assigneeId) {
+                showNotification('Please fill in all required fields', 'error');
+                return;
+            }
+            
+            const project = projects.find(p => p.id === projectId);
+            const assignee = teamMembers.find(m => m.id === assigneeId);
+            
+            const newIssue = {
+                id: Date.now().toString(),
+                title,
+                description,
+                projectId,
+                projectName: project.name,
+                priority,
+                status: 'todo',
+                assigneeId,
+                assigneeName: assignee.name,
+                estimatedHours,
+                actualHours: 0,
+                progress: 0,
+                deadline: deadline ? new Date(deadline) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default: 7 days from now
+                createdBy: currentUser.id,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            };
+            
+            issues.push(newIssue);
+            updateStatistics();
+            renderIssues();
+            renderOverview();
+            populateDropdowns();
+            
+            document.getElementById('addIssueModal').style.display = 'none';
+            document.getElementById('issueForm').reset();
+            showNotification('Issue created successfully!', 'success');
+        }
+
+        function handleProjectForm(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('projectName').value.trim();
+            const description = document.getElementById('projectDescription').value.trim();
+            const deadline = document.getElementById('projectDeadline').value;
+            const status = document.getElementById('projectStatus').value;
+            const teamOptions = document.getElementById('projectTeam').selectedOptions;
+            const teamMembersIds = Array.from(teamOptions).map(option => option.value);
+            
+            if (!name || !deadline) {
+                showNotification('Please fill in all required fields', 'error');
+                return;
+            }
+            
+            const newProject = {
+                id: Date.now().toString(),
+                name,
+                description,
+                deadline: new Date(deadline),
+                status,
+                progress: 0,
+                teamMembers: teamMembersIds,
+                createdBy: currentUser.id,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            };
+            
+            projects.push(newProject);
+            updateStatistics();
+            renderProjects();
+            populateDropdowns();
+            
+            document.getElementById('addProjectModal').style.display = 'none';
+            document.getElementById('projectForm').reset();
+            showNotification('Project created successfully!', 'success');
+        }
+
+        function handleTeamForm(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('teamName').value.trim();
+            const email = document.getElementById('teamEmail').value.trim();
+            const position = document.getElementById('teamPosition').value;
+            const password = document.getElementById('teamPassword').value.trim();
+            
+            if (!name || !email || !position || !password) {
+                showNotification('Please fill in all required fields', 'error');
+                return;
+            }
+            
+            // Check if email already exists
+            if (teamMembers.some(member => member.email === email)) {
+                showNotification('A team member with this email already exists', 'error');
+                return;
+            }
+            
+            const newMember = {
+                id: Date.now().toString(),
+                name,
+                email,
+                password,
+                position,
+                joinDate: new Date(),
+                isActive: true,
+                currentTasks: 0,
+                completedTasks: 0
+            };
+            
+            teamMembers.push(newMember);
+            updateStatistics();
+            renderTeamMembers();
+            populateDropdowns();
+            
+            document.getElementById('addTeamModal').style.display = 'none';
+            document.getElementById('teamForm').reset();
+            showNotification('Team member added successfully!', 'success');
+        }
+
+        // Authentication Functions
+        function handleLogin(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!email || !password) {
+                showNotification('Please fill in all fields', 'error');
+                return;
+            }
+            
+            // Show loading
+            const submitBtn = document.getElementById('loginSubmit');
+            const btnText = submitBtn.querySelector('.btn-text');
+            const loading = submitBtn.querySelector('.loading');
+            btnText.style.display = 'none';
+            loading.style.display = 'block';
+            submitBtn.disabled = true;
+            
+            // Simulate API call delay
+            setTimeout(() => {
+                const user = teamMembers.find(member => member.email === email && member.password === password);
+                
+                btnText.style.display = 'block';
+                loading.style.display = 'none';
+                submitBtn.disabled = false;
+                
+                if (user) {
+                    currentUser = user;
+                    updateUI();
+                    showNotification('Welcome back, ' + user.name + '!', 'success');
+                    
+                    // Initialize app data
+                    updateStatistics();
+                    renderOverview();
+                    renderIssues();
+                    renderProjects();
+                    renderTeamMembers();
+                    populateDropdowns();
+                } else {
+                    showNotification('Invalid email or password', 'error');
+                }
+            }, 1000);
+        }
+
+        function handleRegister(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('registerName').value.trim();
+            const email = document.getElementById('registerEmail').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            const position = document.getElementById('registerPosition').value;
+            
+            if (!name || !email || !password || !position) {
+                showNotification('Please fill in all fields', 'error');
+                return;
+            }
+            
+            if (teamMembers.some(member => member.email === email)) {
+                showNotification('An account with this email already exists', 'error');
+                return;
+            }
+            
+            // Show loading
+            const submitBtn = document.getElementById('registerSubmit');
+            const btnText = submitBtn.querySelector('.btn-text');
+            const loading = submitBtn.querySelector('.loading');
+            btnText.style.display = 'none';
+            loading.style.display = 'block';
+            submitBtn.disabled = true;
+            
+            // Simulate API call delay
+            setTimeout(() => {
+                const newUser = {
+                    id: Date.now().toString(),
+                    name,
+                    email,
+                    password,
+                    position,
+                    joinDate: new Date(),
+                    isActive: true,
+                    currentTasks: 0,
+                    completedTasks: 0
+                };
+                
+                teamMembers.push(newUser);
+                currentUser = newUser;
+                
+                btnText.style.display = 'block';
+                loading.style.display = 'none';
+                submitBtn.disabled = false;
+                
+                updateUI();
+                showNotification('Account created successfully! Welcome to TeamFlow, ' + name + '!', 'success');
+                
+                // Initialize app data
+                updateStatistics();
+                renderOverview();
+                renderIssues();
+                renderProjects();
+                renderTeamMembers();
+                populateDropdowns();
+            }, 1000);
+        }
+
+        function logout() {
+            showConfirmation(
+                'Logout',
+                'Are you sure you want to logout?',
+                () => {
+                    currentUser = null;
+                    updateUI();
+                    showNotification('You have been logged out successfully', 'success');
+                    
+                    // Clear form data
+                    document.getElementById('loginEmail').value = '';
+                    document.getElementById('loginPassword').value = '';
+                }
+            );
+        }
+
+        // UI Update Function
+        function updateUI() {
+            const authSection = document.getElementById('authSection');
+            const dashboardSection = document.getElementById('dashboardSection');
+            const userActions = document.getElementById('userActions');
+            const userInfo = document.getElementById('userInfo');
+            const navMenu = document.getElementById('navMenu');
+            
+            if (currentUser) {
+                // User is logged in
+                authSection.style.display = 'none';
+                dashboardSection.style.display = 'block';
+                userActions.style.display = 'none';
+                userInfo.style.display = 'flex';
+                navMenu.style.display = 'block';
+                
+                // Update user info
+                document.getElementById('userName').textContent = currentUser.name;
+                document.getElementById('userPosition').textContent = currentUser.position;
+                document.getElementById('userAvatar').textContent = currentUser.name.charAt(0).toUpperCase();
+            } else {
+                // User is not logged in
+                authSection.style.display = 'flex';
+                dashboardSection.style.display = 'none';
+                userActions.style.display = 'flex';
+                userInfo.style.display = 'none';
+                navMenu.style.display = 'none';
+            }
+        }
+
+        // Event Listeners Setup
+        function setupEventListeners() {
+            // Auth form switches
+            document.getElementById('switchToRegister').addEventListener('click', (e) => {
+                e.preventDefault();
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('registerForm').style.display = 'block';
+            });
+            
+            document.getElementById('switchToLogin').addEventListener('click', (e) => {
+                e.preventDefault();
+                document.getElementById('registerForm').style.display = 'none';
+                document.getElementById('loginForm').style.display = 'block';
+            });
+            
+            // Demo credentials button
+            document.getElementById('useDemoCredentials').addEventListener('click', () => {
+                document.getElementById('loginEmail').value = 'admin@teamflow.com';
+                document.getElementById('loginPassword').value = 'admin123';
+            });
+            
+            // Form submissions
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            document.getElementById('registerForm').addEventListener('submit', handleRegister);
+            document.getElementById('issueForm').addEventListener('submit', handleIssueForm);
+            document.getElementById('projectForm').addEventListener('submit', handleProjectForm);
+            document.getElementById('teamForm').addEventListener('submit', handleTeamForm);
+            
+            // Logout
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            
+            // Modal triggers
+            document.getElementById('addIssueBtn').addEventListener('click', () => {
+                document.getElementById('addIssueModal').style.display = 'flex';
+            });
+            
+            document.getElementById('addProjectBtn').addEventListener('click', () => {
+                document.getElementById('addProjectModal').style.display = 'flex';
+            });
+            
+            document.getElementById('addTeamBtn').addEventListener('click', () => {
+                document.getElementById('addTeamModal').style.display = 'flex';
+            });
+            
+            // Modal close buttons
+            document.querySelectorAll('.close-modal').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const modalId = btn.getAttribute('data-modal');
+                    if (modalId) {
+                        document.getElementById(modalId).style.display = 'none';
+                    } else {
+                        // Close parent modal
+                        btn.closest('.modal').style.display = 'none';
+                    }
+                });
+            });
+            
+            // Close modals when clicking outside
+            window.addEventListener('click', (e) => {
+                if (e.target.classList.contains('modal')) {
+                    e.target.style.display = 'none';
+                }
+            });
+            
+            // Tab switching
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabName = tab.getAttribute('data-tab');
+                    
+                    // Update active tab
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    // Show corresponding content
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    document.getElementById(tabName + 'Tab').classList.add('active');
+                    
+                    // Render content based on active tab
+                    switch (tabName) {
+                        case 'overview':
+                            renderOverview();
+                            break;
+                        case 'issues':
+                            renderIssues();
+                            break;
+                        case 'projects':
+                            renderProjects();
+                            break;
+                        case 'team':
+                            renderTeamMembers();
+                            break;
+                    }
+                });
+            });
+            
+            // Filters
+            document.getElementById('statusFilter').addEventListener('change', renderIssues);
+            document.getElementById('priorityFilter').addEventListener('change', renderIssues);
+            document.getElementById('assigneeFilter').addEventListener('change', renderIssues);
+            document.getElementById('projectStatusFilter').addEventListener('change', renderProjects);
+            document.getElementById('positionFilter').addEventListener('change', renderTeamMembers);
+            
+            // Confirmation modal
+            document.getElementById('confirmOk').addEventListener('click', () => {
+                if (confirmCallback) {
+                    confirmCallback();
+                    confirmCallback = null;
+                }
+                document.getElementById('confirmModal').style.display = 'none';
+            });
+            
+            document.getElementById('confirmCancel').addEventListener('click', () => {
+                confirmCallback = null;
+                document.getElementById('confirmModal').style.display = 'none';
+            });
+            
+            // Progress update
+            document.getElementById('updateProgressBtn').addEventListener('click', () => {
+                if (!currentIssue) return;
+                
+                const progress = parseInt(document.getElementById('progressValue').value);
+                const actualHours = parseInt(document.getElementById('actualHours').value) || 0;
+                const notes = document.getElementById('progressNotes').value.trim();
+                
+                currentIssue.progress = progress;
+                currentIssue.actualHours = actualHours;
+                currentIssue.notes = notes;
+                currentIssue.updatedAt = new Date();
+                
+                if (progress === 100) {
+                    currentIssue.status = 'done';
+                    currentIssue.completionDate = new Date();
+                }
+                
+                updateStatistics();
+                renderIssues();
+                renderOverview();
+                document.getElementById('progressModal').style.display = 'none';
+                showNotification('Progress updated successfully!', 'success');
+            });
+            
+            // Deadline extension
+            document.getElementById('extendDeadlineBtn').addEventListener('click', () => {
+                if (!currentIssue) return;
+                
+                const newDeadline = document.getElementById('newDeadline').value;
+                const reason = document.getElementById('extensionReason').value.trim();
+                
+                if (!newDeadline || !reason) {
+                    showNotification('Please fill in all fields', 'error');
+                    return;
+                }
+                
+                if (new Date(newDeadline) <= new Date(currentIssue.deadline)) {
+                    showNotification('New deadline must be after current deadline', 'error');
+                    return;
+                }
+                
+                currentIssue.deadline = new Date(newDeadline);
+                currentIssue.updatedAt = new Date();
+                
+                renderIssues();
+                renderOverview();
+                document.getElementById('extendDeadlineModal').style.display = 'none';
+                showNotification(`Deadline extended successfully! Reason: ${reason}`, 'success');
+            });
+        }
+
+        // Initialize Application
+        function initializeApp() {
+            initializeDemoData();
+            setupEventListeners();
+            updateUI();
+        }
+
+        // Start the application when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+</body>
+</html>
