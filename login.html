@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phone OTP Login - India</title>
+    <title>Phone OTP Login - Firebase</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -14,7 +14,7 @@
         }
         
         body {
-            background: linear-gradient(135deg, #ff9933 0%, #ffffff 50%, #138808 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -27,16 +27,15 @@
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             width: 100%;
-            max-width: 450px;
+            max-width: 500px;
             overflow: hidden;
         }
         
         .header {
-            background: linear-gradient(to right, #ff9933, #138808);
+            background: linear-gradient(to right, #4a00e0, #8e2de2);
             color: white;
             padding: 25px;
             text-align: center;
-            position: relative;
         }
         
         .header h1 {
@@ -47,13 +46,6 @@
         .header p {
             font-size: 14px;
             opacity: 0.9;
-        }
-        
-        .india-flag {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            font-size: 24px;
         }
         
         .form-container {
@@ -115,8 +107,8 @@
         }
         
         .otp-input input:focus {
-            border-color: #138808;
-            box-shadow: 0 0 5px rgba(19, 136, 8, 0.5);
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.5);
         }
         
         .btn {
@@ -124,7 +116,7 @@
             padding: 15px;
             border: none;
             border-radius: 8px;
-            background: linear-gradient(to right, #ff9933, #138808);
+            background: linear-gradient(to right, #4a00e0, #8e2de2);
             color: white;
             font-size: 16px;
             font-weight: 600;
@@ -133,7 +125,7 @@
         }
         
         .btn:hover {
-            background: linear-gradient(to right, #e5892e, #0f7206);
+            background: linear-gradient(to right, #3a00c0, #7a1dc2);
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
@@ -165,7 +157,7 @@
         }
         
         .resend-link {
-            color: #138808;
+            color: #4a00e0;
             text-decoration: none;
             font-weight: 500;
             cursor: pointer;
@@ -180,6 +172,9 @@
             font-size: 14px;
             margin-top: 10px;
             text-align: center;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #fdeded;
             display: none;
         }
         
@@ -188,7 +183,34 @@
             font-size: 14px;
             margin-top: 10px;
             text-align: center;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f0fdf0;
             display: none;
+        }
+        
+        .debug-info {
+            background-color: #f9f9f9;
+            border-left: 4px solid #4a00e0;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            font-size: 13px;
+            display: none;
+        }
+        
+        .debug-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #4a00e0;
+        }
+        
+        .toggle-debug {
+            color: #4a00e0;
+            text-align: center;
+            margin-top: 15px;
+            cursor: pointer;
+            font-size: 13px;
         }
         
         .footer {
@@ -222,9 +244,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="india-flag">🇮🇳</div>
             <h1>Phone Number Login</h1>
-            <p>Enter your Indian phone number and verify with OTP</p>
+            <p>Enter your phone number and verify with OTP</p>
         </div>
         
         <div class="form-container">
@@ -260,6 +281,13 @@
             
             <div class="error-message" id="error-message"></div>
             <div class="success-message" id="success-message"></div>
+            
+            <div class="toggle-debug" id="toggle-debug">Show Debug Information</div>
+            
+            <div class="debug-info" id="debug-info">
+                <div class="debug-title">Debug Information:</div>
+                <div id="debug-content">Waiting for actions...</div>
+            </div>
         </div>
         
         <div class="footer">
@@ -300,11 +328,26 @@
         const countdown = document.getElementById('countdown');
         const timerElement = document.getElementById('timer');
         const resendOtp = document.getElementById('resend-otp');
+        const debugInfo = document.getElementById('debug-info');
+        const debugContent = document.getElementById('debug-content');
+        const toggleDebug = document.getElementById('toggle-debug');
 
         let confirmationResult = null;
         let countdownTimer = null;
         let timeLeft = 60;
-        let recaptchaVerifier;
+        let recaptchaVerifier = null;
+        let recaptchaWidgetId = null;
+
+        // Toggle debug info
+        toggleDebug.addEventListener('click', function() {
+            if (debugInfo.style.display === 'block') {
+                debugInfo.style.display = 'none';
+                toggleDebug.textContent = 'Show Debug Information';
+            } else {
+                debugInfo.style.display = 'block';
+                toggleDebug.textContent = 'Hide Debug Information';
+            }
+        });
 
         // Format phone number as user types
         phoneInput.addEventListener('input', function(e) {
@@ -355,7 +398,7 @@
             const phone = phoneInput.value;
             
             if (!phone || phone.length !== 10) {
-                showError("Please enter a valid 10-digit Indian phone number");
+                showError("Please enter a valid 10-digit phone number");
                 return;
             }
             
@@ -365,24 +408,43 @@
             sendOtpBtn.textContent = 'Sending...';
             hideError();
             
-            // Initialize reCAPTCHA verifier if not already done
-            if (!recaptchaVerifier) {
-                recaptchaVerifier = new firebase.auth.RecaptchaVerifier('send-otp', {
-                    'size': 'invisible',
-                    'callback': function(response) {
-                        // reCAPTCHA solved, allow sendOtp to be called
-                        actuallySendOtp(phoneNumber);
-                    }
-                });
+            addDebugInfo(`Attempting to send OTP to: ${phoneNumber}`);
+            
+            // Clear previous recaptcha verifier if exists
+            if (recaptchaVerifier) {
+                recaptchaVerifier.clear();
+                addDebugInfo("Cleared previous reCAPTCHA verifier");
             }
             
-            // Render and execute reCAPTCHA
+            // Create a new recaptcha verifier
+            recaptchaVerifier = new firebase.auth.RecaptchaVerifier('send-otp', {
+                'size': 'invisible',
+                'callback': function(response) {
+                    addDebugInfo("reCAPTCHA solved successfully");
+                    // This will be called when reCAPTCHA is solved
+                    actuallySendOtp(phoneNumber);
+                },
+                'expired-callback': function() {
+                    addDebugInfo("reCAPTCHA expired, please try again");
+                    showError("Verification expired. Please try again.");
+                    sendOtpBtn.disabled = false;
+                    sendOtpBtn.textContent = 'Send OTP';
+                }
+            });
+            
+            addDebugInfo("Rendering reCAPTCHA...");
+            
+            // Render the recaptcha verifier
             recaptchaVerifier.render().then(function(widgetId) {
-                window.recaptchaWidgetId = widgetId;
-                recaptchaVerifier.verify();
+                recaptchaWidgetId = widgetId;
+                addDebugInfo("reCAPTCHA rendered with widget ID: " + widgetId);
+                
+                // Now execute the recaptcha
+                addDebugInfo("Executing reCAPTCHA...");
+                grecaptcha.execute(recaptchaWidgetId);
             }).catch(function(error) {
-                console.error("reCAPTCHA error:", error);
-                showError("Security check failed. Please refresh and try again.");
+                addDebugInfo("Error rendering reCAPTCHA: " + error.message);
+                showError("Failed to initialize security check. Please refresh the page and try again.");
                 sendOtpBtn.disabled = false;
                 sendOtpBtn.textContent = 'Send OTP';
             });
@@ -390,7 +452,8 @@
 
         // Function that actually sends the OTP after reCAPTCHA is solved
         function actuallySendOtp(phoneNumber) {
-            // Firebase phone authentication
+            addDebugInfo("Sending OTP to Firebase...");
+            
             auth.signInWithPhoneNumber(phoneNumber, recaptchaVerifier)
                 .then((result) => {
                     confirmationResult = result;
@@ -399,17 +462,41 @@
                     startCountdown();
                     sendOtpBtn.disabled = false;
                     sendOtpBtn.textContent = 'Send OTP';
-                    otpInputs[0].focus();
+                    addDebugInfo("OTP sent successfully!");
+                    showSuccess("OTP has been sent to your phone!");
                 })
                 .catch((error) => {
                     console.error("Error sending OTP:", error);
-                    showError("Failed to send OTP. Please try again.");
+                    addDebugInfo("Error sending OTP: " + error.message + " (Code: " + error.code + ")");
+                    
+                    let errorMsg = "Failed to send OTP. ";
+                    
+                    // Handle specific error cases
+                    switch (error.code) {
+                        case 'auth/invalid-phone-number':
+                            errorMsg += "The phone number format is invalid.";
+                            break;
+                        case 'auth/too-many-requests':
+                            errorMsg += "Too many attempts. Please try again later.";
+                            break;
+                        case 'auth/quota-exceeded':
+                            errorMsg += "Quota exceeded. Please contact support.";
+                            break;
+                        case 'auth/argument-error':
+                            errorMsg += "Invalid app configuration. Please contact support.";
+                            break;
+                        default:
+                            errorMsg += "Please try again.";
+                    }
+                    
+                    showError(errorMsg);
                     sendOtpBtn.disabled = false;
                     sendOtpBtn.textContent = 'Send OTP';
                     
                     // Reset recaptcha if there was an error
                     if (recaptchaVerifier) {
                         recaptchaVerifier.clear();
+                        addDebugInfo("Cleared reCAPTCHA due to error");
                     }
                 });
         }
@@ -430,9 +517,12 @@
             verifyOtpBtn.textContent = 'Verifying...';
             hideError();
             
+            addDebugInfo("Verifying OTP: " + otp);
+            
             confirmationResult.confirm(otp)
                 .then((result) => {
                     // User signed in successfully
+                    addDebugInfo("OTP verified successfully! User ID: " + result.user.uid);
                     showSuccess("Login successful! Redirecting...");
                     
                     // Redirect to index.html after 2 seconds
@@ -442,7 +532,17 @@
                 })
                 .catch((error) => {
                     console.error("Error verifying OTP:", error);
-                    showError("Invalid OTP. Please try again.");
+                    addDebugInfo("Error verifying OTP: " + error.message + " (Code: " + error.code + ")");
+                    
+                    let errorMsg = "Invalid OTP. Please try again.";
+                    
+                    if (error.code === 'auth/invalid-verification-code') {
+                        errorMsg = "The verification code is invalid. Please check and try again.";
+                    } else if (error.code === 'auth/code-expired') {
+                        errorMsg = "The verification code has expired. Please request a new one.";
+                    }
+                    
+                    showError(errorMsg);
                     verifyOtpBtn.disabled = false;
                     verifyOtpBtn.textContent = 'Verify & Login';
                 });
@@ -486,8 +586,18 @@
             successMessage.style.display = 'none';
         }
 
-        // Set up reCAPTCHA
-        auth.useDeviceLanguage();
+        // Add debug information
+        function addDebugInfo(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            debugContent.innerHTML += `[${timestamp}] ${message}<br>`;
+            debugContent.scrollTop = debugContent.scrollHeight;
+        }
+
+        // Initialize with debug info
+        addDebugInfo("Page loaded");
+        addDebugInfo("Firebase initialized with config: " + JSON.stringify(firebaseConfig));
+        addDebugInfo("Note: The 'T' error typically indicates a reCAPTCHA issue");
+        addDebugInfo("We're using invisible reCAPTCHA to handle this");
     </script>
 </body>
 </html>
