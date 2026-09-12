@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farm Pizza | Hounslow</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        farmRed: '#D32F2F',
+                        farmYellow: '#FBC02D',
+                        farmDark: '#1F2937',
+                        farmCream: '#FEF3C7'
+                    },
+                    fontFamily: {
+                        pacifico: ['Pacifico', 'cursive'],
+                        poppins: ['Poppins', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Poppins', sans-serif; }
+        .hero-bg {
+            background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://image.pollinations.ai/prompt/watercolor%20painting%20of%20a%20traditional%20brick%20pizza%20shop%20storefront%20with%20red%20and%20yellow%20signage?width=1920&height=1080&nologo=true');
+            background-size: cover;
+            background-position: center;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .cart-drawer { transition: transform 0.3s ease-in-out; }
+        .cart-open { transform: translateX(0); }
+        .cart-closed { transform: translateX(100%); }
+        /* Add z-index for the welcome modal to be above everything */
+        #welcome-modal { z-index: 9999; }
+    </style>
+</head>
+<body class="bg-gray-50 text-farmDark">
+
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex-shrink-0 flex items-center">
+                    <span class="font-pacifico text-3xl text-farmRed">Farm Pizza</span>
+                    <span class="ml-2 text-xs text-gray-500 italic hidden sm:block">Since 1999</span>
+                    <!-- LIVE BADGE -->
+                    <span id="live-badge" class="hidden ml-4 px-3 py-1 rounded-full text-xs font-bold shadow-md transition-all duration-300">
+                        <i class="fas fa-circle text-[8px] mr-1"></i> LIVE
+                    </span>
+                </div>
+                <div class="hidden md:flex space-x-8 items-center">
+                    <a href="#home" class="hover:text-farmRed font-semibold transition">Home</a>
+                    <a href="#deals" class="hover:text-farmRed font-semibold transition">Deals</a>
+                    <a href="#menu" class="hover:text-farmRed font-semibold transition">Menu</a>
+                    <a href="#contact" class="hover:text-farmRed font-semibold transition">Contact</a>
+                    <button onclick="toggleCart()" class="relative bg-farmRed text-white px-5 py-2 rounded-full hover:bg-red-700 transition">
+                        <i class="fas fa-shopping-cart"></i> Cart
+                        <span id="cart-count" class="absolute -top-2 -right-2 bg-farmYellow text-farmDark text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">0</span>
+                    </button>
+                </div>
+                <div class="md:hidden">
+                    <button onclick="toggleCart()" class="relative bg-farmRed text-white px-4 py-2 rounded-full">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span id="cart-count-mobile" class="absolute -top-2 -right-2 bg-farmYellow text-farmDark text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">0</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header id="home" class="hero-bg h-96 flex items-center justify-center text-center text-white">
+        <div class="px-4">
+            <h1 class="font-pacifico text-5xl md:text-7xl mb-4 text-farmYellow">Farm Pizza</h1>
+            <p class="text-xl md:text-2xl mb-6">Freshly made pizzas in Hounslow since 1999</p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <a href="#menu" class="bg-farmRed hover:bg-red-700 text-white font-bold py-3 px-8 rounded-full transition">Order Now</a>
+                <a href="tel:02087375731" class="bg-white text-farmDark hover:bg-gray-200 font-bold py-3 px-8 rounded-full transition"><i class="fas fa-phone-alt mr-2"></i> 0208 737 5731</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Opening Hours Bar -->
+    <div class="bg-farmYellow text-farmDark py-3 text-center font-semibold text-sm flex justify-center items-center gap-2 flex-wrap">
+        <p>Mon - Thur: 11:00 am - 11:00 pm | Fri - Sat: 11:00 am - Midnight | Open 7 Days a Week</p>
+        <!-- LIVE STATUS TEXT -->
+        <span id="live-status-text" class="ml-4"></span>
+    </div>
+
+    <!-- Deals Section -->
+    <section id="deals" class="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="font-pacifico text-4xl text-center text-farmRed mb-12">Special Offers</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Deal 1 -->
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden border-t-4 border-farmRed hover:shadow-2xl transition">
+                <div class="p-6 text-center">
+                    <h3 class="font-bold text-2xl mb-2">Special Deal</h3>
+                    <p class="text-gray-600 mb-4">Any Medium Pizza <br><span class="text-3xl font-bold text-farmRed">£5.99</span></p>
+                    <p class="text-gray-600 mb-4">Any XL Pizza <br><span class="text-3xl font-bold text-farmRed">£7.99</span></p>
+                    <p class="text-sm text-gray-500 italic">Collection only</p>
+                </div>
+            </div>
+            <!-- Deal 2 -->
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden border-t-4 border-farmYellow hover:shadow-2xl transition">
+                <div class="p-6 text-center">
+                    <h3 class="font-bold text-2xl mb-2">Farm Deal</h3>
+                    <p class="text-gray-600 mb-4">2 Medium Pizzas & 1 Garlic Bread with Cheese</p>
+                    <p class="text-3xl font-bold text-farmRed mb-4">£23.99</p>
+                </div>
+            </div>
+            <!-- Deal 3 -->
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden border-t-4 border-farmRed hover:shadow-2xl transition">
+                <div class="p-6 text-center">
+                    <h3 class="font-bold text-2xl mb-2">Mega Deals</h3>
+                    <p class="text-gray-600 mb-2 text-sm">3 Pizzas & 2 Garlic Breads OR 1 Chicken Wings</p>
+                    <div class="flex justify-center gap-4 text-sm font-semibold text-gray-700">
+                        <div>Medium<br><span class="text-xl text-farmRed">£29.99</span></div>
+                        <div>Large<br><span class="text-xl text-farmRed">£30.99</span></div>
+                        <div>XL<br><span class="text-xl text-farmRed">£31.99</span></div>
+                    </div>
+                </div>
+            </div>
+            <!-- Deal 4 -->
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden border-t-4 border-farmYellow hover:shadow-2xl transition">
+                <div class="p-6 text-center">
+                    <h3 class="font-bold text-2xl mb-2">Crazy Deals</h3>
+                    <p class="text-gray-600 mb-2 text-sm">2 Pizzas & 2 Garlic Breads</p>
+                    <div class="flex justify-center gap-4 text-sm font-semibold text-gray-700">
+                        <div>Medium<br><span class="text-xl text-farmRed">£24.99</span></div>
+                        <div>Large<br><span class="text-xl text-farmRed">£25.99</span></div>
+                        <div>XL<br><span class="text-xl text-farmRed">£26.99</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Menu Section -->
+    <section id="menu" class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="font-pacifico text-4xl text-center text-farmRed mb-8">Our Menu</h2>
+            
+            <!-- Main Menu Tabs -->
+            <div class="flex justify-center space-x-4 mb-10 overflow-x-auto hide-scrollbar pb-2">
+                <button onclick="switchTab('pizzas')" id="tab-pizzas" class="px-6 py-2 rounded-full font-semibold bg-farmRed text-white transition">Pizzas</button>
+                <button onclick="switchTab('sides')" id="tab-sides" class="px-6 py-2 rounded-full font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition">Side Orders</button>
+                <button onclick="switchTab('drinks')" id="tab-drinks" class="px-6 py-2 rounded-full font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition">Drinks</button>
+            </div>
+
+            <!-- Pizza Subcategories Filter -->
+            <div id="pizza-subcategories" class="flex flex-wrap justify-center gap-2 mb-8">
+                <button onclick="filterPizzas('all')" id="subcat-all" class="px-4 py-1.5 rounded-full border border-farmRed text-farmRed text-sm font-semibold hover:bg-farmRed hover:text-white transition bg-farmRed text-white">All Pizzas</button>
+                <button onclick="filterPizzas('veg')" id="subcat-veg" class="px-4 py-1.5 rounded-full border border-farmRed text-farmRed text-sm font-semibold hover:bg-farmRed hover:text-white transition">Vegetarian</button>
+                <button onclick="filterPizzas('chicken')" id="subcat-chicken" class="px-4 py-1.5 rounded-full border border-farmRed text-farmRed text-sm font-semibold hover:bg-farmRed hover:text-white transition">Chicken</button>
+                <button onclick="filterPizzas('ham_pepperoni')" id="subcat-ham_pepperoni" class="px-4 py-1.5 rounded-full border border-farmRed text-farmRed text-sm font-semibold hover:bg-farmRed hover:text-white transition">Ham & Pepperoni</button>
+            </div>
+
+            <!-- Pizzas Grid -->
+            <div id="pizzas-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Dynamic Pizzas will be injected here -->
+            </div>
+
+            <!-- Sides Grid -->
+            <div id="sides-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6 hidden">
+                <!-- Dynamic Sides will be injected here -->
+            </div>
+
+            <!-- Drinks Grid -->
+            <div id="drinks-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6 hidden">
+                <!-- Dynamic Drinks will be injected here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Create Your Own Section -->
+    <section class="py-16 bg-farmCream">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="font-pacifico text-4xl text-farmRed mb-4">Create Your Own Pizza</h2>
+            <p class="text-gray-700 mb-8">Choose any size, crust, and up to 3 toppings of your choice!</p>
+            <div class="bg-white rounded-2xl shadow-xl p-8">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div>
+                        <label class="block font-semibold mb-2">Size</label>
+                        <select id="custom-size" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed">
+                            <option value="Medium">Medium (10")</option>
+                            <option value="Large">Large (12")</option>
+                            <option value="XL" selected>XL (14")</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-2">Crust</label>
+                        <select id="custom-crust" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed">
+                            <option value="Thin Crust">Thin Crust</option>
+                            <option value="Deep Pan" selected>Deep Pan</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-2">Base</label>
+                        <select id="custom-base" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed">
+                            <option value="Tomato" selected>Tomato Base</option>
+                            <option value="BBQ">BBQ Base (+£1.00)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <label class="block font-semibold mb-3">Select up to 3 Toppings (Included)</label>
+                    <div id="toppings-container" class="flex flex-wrap justify-center gap-2">
+                        <!-- Toppings injected here -->
+                    </div>
+                </div>
+                <button onclick="addCustomPizza()" class="bg-farmRed text-white font-bold py-3 px-8 rounded-full hover:bg-red-700 transition w-full md:w-auto">Add Custom Pizza to Cart</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact / Footer -->
+    <footer id="contact" class="bg-farmDark text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div>
+                <h3 class="font-pacifico text-2xl text-farmYellow mb-4">Farm Pizza</h3>
+                <p class="text-gray-300 mb-2">325 Vicarage Farm Road,</p>
+                <p class="text-gray-300 mb-4">Hounslow, TW5 0DR</p>
+                <p class="text-gray-300"><i class="fas fa-phone mr-2"></i> 0208 737 5731</p>
+                <p class="text-gray-300"><i class="fas fa-phone mr-2"></i> 0208 230 0023</p>
+                <p class="text-gray-300 mt-2"><i class="fas fa-globe mr-2"></i> farmpizza.co.uk</p>
+            </div>
+            <div>
+                <h3 class="font-semibold text-xl mb-4 text-farmYellow">Opening Hours</h3>
+                <p class="text-gray-300 mb-2">Monday - Thursday: 11:00 am - 11:00 pm</p>
+                <p class="text-gray-300 mb-2">Friday - Saturday: 11:00 am - Midnight</p>
+                <p class="text-gray-300">Sunday: 11:00 am - 11:00 pm</p>
+                <!-- FOOTER LIVE STATUS -->
+                <p id="footer-live-status" class="mt-3 font-bold text-sm"></p>
+            </div>
+            <div>
+                <h3 class="font-semibold text-xl mb-4 text-farmYellow">Terms & Conditions</h3>
+                <ul class="text-sm text-gray-400 space-y-1 list-disc pl-4">
+                    <li>Please mention offer when you place your order.</li>
+                    <li>Minimum order for delivery is £17.99.</li>
+                    <li>Offers are not to be used in conjunction with any other offer.</li>
+                    <li>Prices may vary depending on the specific dish.</li>
+                    <li>Allow 15 minutes before closing time.</li>
+                    <li>Please check your pizzas when you receive them. Complaints over the phone will not be addressed.</li>
+                    <li>If you have a food allergy or intolerance, please ask a member of staff.</li>
+                    <li>There is an extra charge for half-and-half pizza.</li>
+                    <li>We make pizzas to our own standards. Extra toppings are chargeable.</li>
+                </ul>
+            </div>
+        </div>
+        <div class="text-center text-gray-500 text-sm mt-8 border-t border-gray-700 pt-4">
+            &copy; 2026 Farm Pizza. All rights reserved.
+        </div>
+    </footer>
+
+    <!-- Cart Drawer -->
+    <div id="cart-drawer" class="fixed inset-y-0 right-0 w-full md:w-96 bg-white shadow-2xl z-50 cart-closed flex flex-col">
+        <div class="p-6 bg-farmRed text-white flex justify-between items-center">
+            <h3 class="text-xl font-bold"><i class="fas fa-shopping-cart mr-2"></i> Your Order</h3>
+            <button onclick="toggleCart()" class="text-2xl hover:text-farmYellow">&times;</button>
+        </div>
+        <div id="cart-items" class="flex-1 overflow-y-auto p-6">
+            <!-- Cart items injected here -->
+            <p class="text-gray-500 text-center mt-10">Your cart is empty.</p>
+        </div>
+        <div class="p-6 border-t bg-gray-50">
+            <div class="flex justify-between mb-4 font-bold text-lg">
+                <span>Subtotal:</span>
+                <span id="cart-total">£0.00</span>
+            </div>
+            <p class="text-xs text-gray-500 mb-4">Minimum order for delivery is £17.99. Collection available.</p>
+            <button onclick="checkout()" class="w-full bg-farmRed text-white font-bold py-3 rounded-full hover:bg-red-700 transition">Proceed to Checkout</button>
+        </div>
+    </div>
+    <div id="cart-overlay" onclick="toggleCart()" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden"></div>
+
+    <!-- Customization Modal -->
+    <div id="customize-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="modal-title" class="text-xl font-bold text-farmRed">Customize Pizza</h3>
+                <button onclick="closeModal()" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            </div>
+            <div id="modal-content">
+                <!-- Dynamic content for size/crust/extras -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Checkout Modal -->
+    <div id="checkout-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-farmRed">Checkout</h3>
+                <button onclick="closeCheckoutModal()" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block font-semibold text-sm mb-2">How would you like to receive your order?</label>
+                    <div class="flex space-x-4">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="radio" name="fulfillment" value="collection" checked onchange="toggleDeliveryAddress()" class="form-radio text-farmRed">
+                            <span class="text-sm font-semibold">Collection</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="radio" name="fulfillment" value="delivery" onchange="toggleDeliveryAddress()" class="form-radio text-farmRed">
+                            <span class="text-sm font-semibold">Delivery</span>
+                        </label>
+                    </div>
+                </div>
+                <div id="collection-info" class="bg-gray-50 p-3 rounded-lg text-sm text-gray-600">
+                    <p><i class="fas fa-map-marker-alt mr-1 text-farmRed"></i> 325 Vicarage Farm Road, Hounslow, TW5 0DR</p>
+                    <p class="mt-1"><i class="fas fa-clock mr-1 text-farmRed"></i> Ready in approx. 20-30 mins</p>
+                </div>
+                
+                <!-- DELIVERY ADDRESS FIELDS -->
+                <div id="delivery-info" class="hidden space-y-2">
+                    <label class="block font-semibold text-sm mb-1">Delivery Address</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" id="delivery-house" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="House / Flat No. (e.g. 12A)">
+                        <input type="text" id="delivery-street" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="Street Name">
+                    </div>
+                    <input type="text" id="delivery-postcode" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="Postcode (e.g. TW5 0DR)">
+                    
+                    <!-- NEW: PHONE NUMBER -->
+                    <input type="tel" id="delivery-phone" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="Phone Number (e.g. 07123 456789)">
+                    
+                    <!-- OPTIONAL DELIVERY NOTE -->
+                    <div class="mt-2">
+                        <label class="block font-semibold text-sm mb-1">Delivery Note (Optional)</label>
+                        <textarea id="delivery-note" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" rows="2" placeholder="e.g. Ring the bell, leave at door..."></textarea>
+                    </div>
+                    
+                    <p class="text-xs text-gray-500 mt-1">Delivery minimum is £17.99. A delivery fee may apply.</p>
+                </div>
+                
+                <div class="flex justify-between items-center font-bold text-lg pt-2 border-t border-gray-200">
+                    <span>Total to Pay:</span>
+                    <span id="checkout-total" class="text-farmRed">£0.00</span>
+                </div>
+                <button onclick="placeOrder()" class="w-full bg-farmRed text-white font-bold py-3 rounded-lg hover:bg-red-700 transition">Confirm Order</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW CUSTOMER WELCOME MODAL -->
+    <div id="welcome-modal" class="fixed inset-0 bg-black bg-opacity-70 z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl text-center relative">
+            <button onclick="closeWelcomeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            
+            <!-- Step 1: Initial Question -->
+            <div id="welcome-step-1">
+                <h2 class="font-pacifico text-3xl text-farmRed mb-4">Welcome!</h2>
+                <p class="text-gray-700 mb-6">Are you a new or regular customer?</p>
+                <div class="flex flex-col gap-3">
+                    <button onclick="showAllergyInfo()" class="bg-farmRed text-white font-bold py-3 rounded-full hover:bg-red-700 transition">I'm a New Customer</button>
+                    <button onclick="closeWelcomeModal()" class="bg-gray-200 text-gray-800 font-bold py-3 rounded-full hover:bg-gray-300 transition">I'm a Regular Customer</button>
+                </div>
+            </div>
+
+            <!-- Step 2: Allergy Information (Hidden initially) -->
+            <div id="welcome-step-2" class="hidden">
+                <div class="text-farmYellow text-5xl mb-4"><i class="fas fa-exclamation-triangle"></i></div>
+                <h3 class="font-bold text-xl text-farmRed mb-2">Food Allergies & Intolerances</h3>
+                <p class="text-sm text-gray-600 mb-4">If you have a food allergy or intolerance, please don't hesitate to contact our receptionist. They will explain the ingredients and help you choose safely.</p>
+                
+                <div class="bg-gray-50 p-4 rounded-lg mb-6 border border-gray-200">
+                    <p class="font-semibold text-gray-800 mb-1">Call us directly:</p>
+                    <a href="tel:02087375731" class="text-farmRed text-xl font-bold hover:underline flex items-center justify-center">
+                        <i class="fas fa-phone-alt mr-2 text-lg"></i> 0208 737 5731
+                    </a>
+                </div>
+
+                <button onclick="closeWelcomeModal()" class="w-full bg-farmRed text-white font-bold py-3 rounded-full hover:bg-red-700 transition">I Understand, Continue</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA STRUCTURE ---
+        const menuData = {
+            pizzas: [
+                { id: 1, name: "Margherita", desc: "Cheese & tomato sauce", veg: true, image: "https://image.pollinations.ai/prompt/margherita%20pizza%20with%20fresh%20basil%20and%20tomato?width=400&height=300&nologo=true" },
+                { id: 2, name: "Funghi", desc: "Cheese, tomato sauce & mushroom", veg: true, image: "https://image.pollinations.ai/prompt/mushroom%20pizza%20top%20view?width=400&height=300&nologo=true" },
+                { id: 3, name: "Peppermoni", desc: "Cheese, tomato sauce & peppermoni slices", veg: false, image: "https://image.pollinations.ai/prompt/pepperoni%20pizza%20top%20view?width=400&height=300&nologo=true" },
+                { id: 4, name: "Farm House", desc: "Ham & mushroom", veg: false, image: "https://image.pollinations.ai/prompt/ham%20and%20mushroom%20pizza?width=400&height=300&nologo=true" },
+                { id: 5, name: "Hawaiian", desc: "Ham & pineapple", veg: false, image: "https://image.pollinations.ai/prompt/hawaiian%20pizza%20with%20ham%20and%20pineapple?width=400&height=300&nologo=true" },
+                { id: 6, name: "Vegetarian", desc: "Mixed peppers, onion, mushroom & sweetcorn", veg: true, image: "https://image.pollinations.ai/prompt/vegetarian%20pizza%20with%20peppers%20and%20mushrooms?width=400&height=300&nologo=true" },
+                { id: 7, name: "Vegetarian Hot", desc: "Mixed peppers, onion, mushroom, sweetcorn & hot chillies", veg: true, image: "https://image.pollinations.ai/prompt/spicy%20vegetarian%20pizza%20with%20chillies?width=400&height=300&nologo=true" },
+                { id: 8, name: "Vegetarian Supreme", desc: "Mushroom, onion, jalapeno pepper & fresh tomato", veg: true, image: "https://image.pollinations.ai/prompt/supreme%20vegetarian%20pizza?width=400&height=300&nologo=true" },
+                { id: 9, name: "Heatwave", desc: "Fresh garlic, black olives & hot chillies", veg: true, image: "https://image.pollinations.ai/prompt/spicy%20pizza%20with%20chillies%20and%20olives?width=400&height=300&nologo=true" },
+                { id: 10, name: "Mediterranean", desc: "Fresh tomato, black olives & sweetcorn", veg: true, image: "https://image.pollinations.ai/prompt/mediterranean%20pizza%20with%20tomatoes%20and%20olives?width=400&height=300&nologo=true" },
+                { id: 11, name: "Chicken Delight", desc: "Tandoori Chicken, chicken tikka & onion", veg: false, image: "https://image.pollinations.ai/prompt/tandoori%20chicken%20pizza?width=400&height=300&nologo=true" },
+                { id: 12, name: "Volcano", desc: "Tandoori chicken, onion, mushroom, fresh garlic & hot chillies", veg: false, image: "https://image.pollinations.ai/prompt/spicy%20chicken%20pizza%20with%20chillies?width=400&height=300&nologo=true" },
+                { id: 13, name: "Chicken Supreme", desc: "Spicy Tandoori chicken, chicken tikka, onion, jalapeno pepper & hot chillies", veg: false, image: "https://image.pollinations.ai/prompt/chicken%20supreme%20pizza?width=400&height=300&nologo=true" },
+                { id: 14, name: "Meat Feast", desc: "Peppermoni, ham & plain chicken", veg: false, image: "https://image.pollinations.ai/prompt/meat%20feast%20pizza?width=400&height=300&nologo=true" },
+                { id: 15, name: "Seafood", desc: "Tuna, black olives & prawns", veg: false, image: "https://image.pollinations.ai/prompt/seafood%20pizza%20with%20prawns%20and%20tuna?width=400&height=300&nologo=true" },
+                { id: 16, name: "Mexican", desc: "Jalapeno peppers, green peppers & plain chicken", veg: false, image: "https://image.pollinations.ai/prompt/mexican%20pizza%20with%20jalapenos?width=400&height=300&nologo=true" },
+                { id: 17, name: "Farm Feast", desc: "Double layers of cheese & two of your favorite toppings", veg: false, image: "https://image.pollinations.ai/prompt/double%20cheese%20pizza?width=400&height=300&nologo=true" },
+                { id: 18, name: "Free Choice", desc: "Cheese and tomato & 3 of your favorite toppings", veg: true, image: "https://image.pollinations.ai/prompt/custom%20pizza%20with%20various%20toppings?width=400&height=300&nologo=true" }
+            ],
+            sides: [
+                { id: 101, name: "Garlic Bread (4 pcs)", price: 1.99, image: "https://image.pollinations.ai/prompt/garlic%20bread%20slices?width=200&height=200&nologo=true" },
+                { id: 102, name: "Garlic Bread with Cheese (4 pcs)", price: 2.49, image: "https://image.pollinations.ai/prompt/cheesy%20garlic%20bread?width=200&height=200&nologo=true" },
+                { id: 103, name: "Potato Wedges", price: 2.49, image: "https://image.pollinations.ai/prompt/potato%20wedges?width=200&height=200&nologo=true" },
+                { id: 104, name: "BBQ Chicken Wings", price: 3.99, image: "https://image.pollinations.ai/prompt/bbq%20chicken%20wings?width=200&height=200&nologo=true" },
+                { id: 105, name: "Dips (Garlic & Herb, Chilli, Ketchup, Mayo, BBQ)", price: 0.30, image: "https://image.pollinations.ai/prompt/dip%20sauce%20bowl?width=200&height=200&nologo=true" }
+            ],
+            drinks: [
+                { id: 201, name: "Coke (Bottle)", price: 2.99, image: "https://image.pollinations.ai/prompt/bottle%20of%20coca%20cola?width=200&height=200&nologo=true" },
+                { id: 202, name: "Diet Coke (Bottle)", price: 2.99, image: "https://image.pollinations.ai/prompt/bottle%20of%20diet%20coke?width=200&height=200&nologo=true" },
+                { id: 203, name: "Fanta (Bottle)", price: 2.99, image: "https://image.pollinations.ai/prompt/bottle%20of%20fanta%20orange?width=200&height=200&nologo=true" },
+                { id: 204, name: "Sprite (Bottle)", price: 2.99, image: "https://image.pollinations.ai/prompt/bottle%20of%20sprite?width=200&height=200&nologo=true" }
+            ],
+            toppings: {
+                vegetables: ["Onion", "Mushroom", "Green peppers", "Cheese", "Jalapeno peppers", "Sweetcorn", "Fresh tomato", "Fresh garlic", "Black olives", "Pineapple", "Hot chillies"],
+                meat: ["Pepperoni", "Ham", "Plain chicken", "Tandoori chicken", "Chicken tikka", "Bacon", "Tuna", "Prawns"]
+            },
+            basePrices: {
+                "Medium": 5.99,
+                "Large": 8.99,
+                "XL": 10.99
+            },
+            extraToppingPrice: 1.00
+        };
+
+        let cart = [];
+        let currentCustomPizza = null;
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            switchTab('pizzas'); // Start with pizzas tab
+            renderToppings();
+            updateCartUI();
+            checkOpenStatus(); // Check live status on load
+            setInterval(checkOpenStatus, 60000); // Check every minute
+
+            // NEW: Welcome Modal Logic
+            const customerType = localStorage.getItem('customerType');
+            if (!customerType) {
+                setTimeout(() => {
+                    document.getElementById('welcome-modal').classList.remove('hidden');
+                }, 1000); // Show after 1 second
+            }
+        });
+
+        // NEW: Welcome Modal Functions
+        function showAllergyInfo() {
+            document.getElementById('welcome-step-1').classList.add('hidden');
+            document.getElementById('welcome-step-2').classList.remove('hidden');
+        }
+
+        function closeWelcomeModal() {
+            // Save that they are a regular customer or have acknowledged the allergy info
+            localStorage.setItem('customerType', 'acknowledged');
+            document.getElementById('welcome-modal').classList.add('hidden');
+        }
+
+        // --- LIVE STATUS CHECKER WITH CLOSING WARNINGS ---
+        function checkOpenStatus() {
+            const now = new Date();
+            const day = now.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const currentMins = hours * 60 + minutes;
+
+            // Standard hours: 11:00 AM (660 mins) to 11:00 PM (1380 mins)
+            const openMins = 11 * 60; 
+            let closeMins = 23 * 60; 
+
+            // Friday (5) and Saturday (6) close at Midnight (24 * 60 = 1440 mins)
+            if (day === 5 || day === 6) {
+                closeMins = 24 * 60; 
+            }
+
+            const isOpen = currentMins >= openMins && currentMins < closeMins;
+            const minutesLeft = closeMins - currentMins;
+
+            const badge = document.getElementById('live-badge');
+            const statusText = document.getElementById('live-status-text');
+            const footerStatus = document.getElementById('footer-live-status');
+
+            // Reset badge classes to base to prevent stacking
+            badge.className = 'ml-4 px-3 py-1 rounded-full text-xs font-bold shadow-md transition-all duration-300 ';
+
+            if (isOpen) {
+                let textHtml = '';
+                let footerHtml = '';
+                let badgeColor = 'bg-green-500 text-white'; // Default Green
+
+                if (minutesLeft <= 10) {
+                    // 10 Minutes Warning (Red + Bounce)
+                    badgeColor = 'bg-red-600 text-white animate-bounce';
+                    textHtml = `<span class="text-red-600 font-bold animate-pulse"><i class="fas fa-exclamation-triangle mr-1"></i> Closing in 10 mins!</span>`;
+                    footerHtml = `<span class="text-red-500 font-bold animate-pulse"><i class="fas fa-exclamation-triangle mr-1"></i> Closing in 10 mins!</span>`;
+                    badge.innerHTML = `<i class="fas fa-exclamation-triangle mr-1"></i> 10 MINS LEFT`;
+                } else if (minutesLeft <= 20) {
+                    // 20 Minutes Warning (Orange)
+                    badgeColor = 'bg-orange-500 text-white';
+                    textHtml = `<span class="text-orange-500 font-bold"><i class="fas fa-clock mr-1"></i> Closes in 20 mins</span>`;
+                    footerHtml = `<span class="text-orange-400 font-bold"><i class="fas fa-clock mr-1"></i> Closes in 20 mins</span>`;
+                    badge.innerHTML = `<i class="fas fa-clock mr-1"></i> 20 MINS LEFT`;
+                } else if (minutesLeft <= 90) {
+                    // 1 Hour 30 Minutes Warning (Yellow)
+                    badgeColor = 'bg-yellow-500 text-white';
+                    textHtml = `<span class="text-yellow-600 font-bold"><i class="fas fa-clock mr-1"></i> Closes in 1h 30m</span>`;
+                    footerHtml = `<span class="text-yellow-500 font-bold"><i class="fas fa-clock mr-1"></i> Closes in 1h 30m</span>`;
+                    badge.innerHTML = `<i class="fas fa-clock mr-1"></i> 1.5 HRS LEFT`;
+                } else {
+                    // Standard Open (Green)
+                    textHtml = `<span class="text-green-600 font-bold"><i class="fas fa-circle text-[10px] mr-1 animate-pulse"></i> Open Now</span>`;
+                    footerHtml = `<span class="text-green-500 font-bold"><i class="fas fa-circle text-[10px] mr-1 animate-pulse"></i> We are Open!</span>`;
+                    badge.innerHTML = `<i class="fas fa-circle text-[8px] mr-1"></i> LIVE`;
+                }
+
+                badge.classList.add(...badgeColor.split(' '));
+                badge.classList.remove('hidden');
+                
+                if(statusText) statusText.innerHTML = textHtml;
+                if(footerStatus) footerStatus.innerHTML = footerHtml;
+            } else {
+                badge.classList.add('hidden');
+                
+                // Calculate Next Opening Time
+                let nextOpenText = "";
+                if (currentMins < openMins) {
+                    nextOpenText = "Opens today at 11:00 AM";
+                } else {
+                    nextOpenText = "Opens tomorrow at 11:00 AM";
+                }
+
+                if(statusText) {
+                    statusText.innerHTML = `<span class="text-red-600 font-bold"><i class="fas fa-clock text-[10px] mr-1"></i> Closed - ${nextOpenText}</span>`;
+                }
+                if(footerStatus) {
+                    footerStatus.innerHTML = `<span class="text-red-500 font-bold"><i class="fas fa-clock text-[10px] mr-1"></i> Closed - ${nextOpenText}</span>`;
+                }
+            }
+        }
+
+        // --- HELPER: HIGHLIGHT SELECTED TOPPINGS ---
+        function updateToppingHighlight(checkbox) {
+            const label = checkbox.closest('label');
+            const textSpan = label.querySelector('span');
+            if (checkbox.checked) {
+                label.classList.add('bg-farmRed', 'border-farmRed');
+                label.classList.remove('bg-white', 'border-gray-300');
+                if (textSpan) {
+                    textSpan.classList.add('text-white');
+                    textSpan.classList.remove('text-gray-700');
+                }
+            } else {
+                label.classList.remove('bg-farmRed', 'border-farmRed');
+                label.classList.add('bg-white', 'border-gray-300');
+                if (textSpan) {
+                    textSpan.classList.remove('text-white');
+                    textSpan.classList.add('text-gray-700');
+                }
+            }
+        }
+
+        // --- MENU RENDERING & FILTERING ---
+        function switchTab(category) {
+            // Update Main Tabs
+            ['pizzas', 'sides', 'drinks'].forEach(cat => {
+                document.getElementById(`${cat}-grid`).classList.add('hidden');
+                const tab = document.getElementById(`tab-${cat}`);
+                tab.classList.remove('bg-farmRed', 'text-white');
+                tab.classList.add('bg-gray-200', 'text-gray-700');
+            });
+            
+            document.getElementById(`${category}-grid`).classList.remove('hidden');
+            const activeTab = document.getElementById(`tab-${category}`);
+            activeTab.classList.remove('bg-gray-200', 'text-gray-700');
+            activeTab.classList.add('bg-farmRed', 'text-white');
+
+            // Handle Subcategories and Rendering
+            if (category === 'pizzas') {
+                document.getElementById('pizza-subcategories').classList.remove('hidden');
+                filterPizzas('all'); // Render all pizzas by default
+            } else {
+                document.getElementById('pizza-subcategories').classList.add('hidden');
+                renderMenu(category); // Render sides or drinks
+            }
+        }
+
+        function filterPizzas(type) {
+            // Update Subcategory Button Styles
+            document.querySelectorAll('#pizza-subcategories button').forEach(btn => {
+                btn.classList.remove('bg-farmRed', 'text-white');
+                btn.classList.add('text-farmRed', 'border-farmRed', 'bg-transparent');
+            });
+            const activeBtn = document.getElementById(`subcat-${type}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('text-farmRed', 'border-farmRed', 'bg-transparent');
+                activeBtn.classList.add('bg-farmRed', 'text-white');
+            }
+
+            // Filter Data
+            let filteredPizzas = menuData.pizzas;
+            
+            if (type === 'veg') {
+                filteredPizzas = menuData.pizzas.filter(p => p.veg);
+            } else if (type === 'chicken') {
+                filteredPizzas = menuData.pizzas.filter(p => 
+                    p.name.toLowerCase().includes('chicken') || 
+                    p.desc.toLowerCase().includes('chicken')
+                );
+            } else if (type === 'ham_pepperoni') {
+                filteredPizzas = menuData.pizzas.filter(p => 
+                    p.name.toLowerCase().includes('peppermoni') || 
+                    p.desc.toLowerCase().includes('peppermoni') ||
+                    p.name.toLowerCase().includes('ham') || 
+                    p.desc.toLowerCase().includes('ham') ||
+                    p.name.toLowerCase().includes('meat')
+                );
+            }
+
+            renderPizzaGrid(filteredPizzas);
+        }
+
+        function renderPizzaGrid(pizzas) {
+            const grid = document.getElementById('pizzas-grid');
+            let html = '';
+            pizzas.forEach(pizza => {
+                html += `
+                    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition flex flex-col">
+                        <img src="${pizza.image}" alt="${pizza.name}" class="h-48 w-full object-cover">
+                        <div class="p-5 flex-1 flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-start mb-2">
+                                    <h3 class="font-bold text-lg text-farmDark">${pizza.name}</h3>
+                                    ${pizza.veg ? '<span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-semibold">Veg</span>' : ''}
+                                </div>
+                                <p class="text-gray-600 text-sm mb-4">${pizza.desc}</p>
+                            </div>
+                            <button onclick="openCustomizeModal(${pizza.id})" class="w-full bg-farmRed text-white font-semibold py-2 rounded-lg hover:bg-red-700 transition text-sm mt-auto">
+                                <i class="fas fa-plus-circle mr-1"></i> Add to Order
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            grid.innerHTML = html;
+        }
+
+        function renderMenu(category) {
+            const grid = document.getElementById(`${category}-grid`);
+            if (!grid) return;
+            
+            let html = '';
+            if (category === 'sides') {
+                menuData.sides.forEach(side => {
+                    html += `
+                        <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 flex items-center p-4">
+                            <img src="${side.image}" alt="${side.name}" class="h-20 w-20 object-cover rounded-lg mr-4">
+                            <div class="flex-1">
+                                <h3 class="font-bold text-md text-farmDark">${side.name}</h3>
+                                <p class="text-farmRed font-bold">£${side.price.toFixed(2)}</p>
+                            </div>
+                            <button onclick="addToCartFromId(${side.id}, 'side')" class="bg-farmRed text-white h-10 w-10 rounded-full hover:bg-red-700 transition flex items-center justify-center ml-2">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    `;
+                });
+            } else if (category === 'drinks') {
+                menuData.drinks.forEach(drink => {
+                    html += `
+                        <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 flex items-center p-4">
+                            <img src="${drink.image}" alt="${drink.name}" class="h-20 w-20 object-cover rounded-lg mr-4">
+                            <div class="flex-1">
+                                <h3 class="font-bold text-md text-farmDark">${drink.name}</h3>
+                                <p class="text-farmRed font-bold">£${drink.price.toFixed(2)}</p>
+                            </div>
+                            <button onclick="addToCartFromId(${drink.id}, 'drink')" class="bg-farmRed text-white h-10 w-10 rounded-full hover:bg-red-700 transition flex items-center justify-center ml-2">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    `;
+                });
+            }
+            grid.innerHTML = html;
+        }
+
+        function addToCartFromId(id, type) {
+            let item;
+            if (type === 'side') item = menuData.sides.find(i => i.id === id);
+            else if (type === 'drink') item = menuData.drinks.find(i => i.id === id);
+            
+            if (item) {
+                addToCart({
+                    id: item.id,
+                    name: item.name,
+                    price: parseFloat(item.price),
+                    quantity: 1
+                });
+            }
+        }
+
+        // --- CUSTOMIZATION MODAL ---
+        function openCustomizeModal(pizzaId) {
+            const pizza = menuData.pizzas.find(p => p.id === pizzaId);
+            if (!pizza) return;
+            
+            // Defaults: XL, Deep Pan, Tomato
+            currentCustomPizza = { ...pizza, size: 'XL', crust: 'Deep Pan', base: 'Tomato', extras: [] };
+            
+            const modal = document.getElementById('customize-modal');
+            const title = document.getElementById('modal-title');
+            const content = document.getElementById('modal-content');
+            
+            title.innerText = `Customize: ${pizza.name}`;
+            
+            let toppingsHtml = '';
+            // Vegetable Toppings
+            menuData.toppings.vegetables.forEach(topping => {
+                toppingsHtml += `
+                    <label class="topping-label inline-flex items-center bg-white border border-gray-300 rounded-full px-3 py-1 cursor-pointer hover:bg-gray-100 transition mr-2 mb-2">
+                        <input type="checkbox" value="${topping}" onchange="toggleExtra(this); updateToppingHighlight(this);" class="form-checkbox h-4 w-4 text-farmRed rounded">
+                        <span class="ml-2 text-sm text-gray-700 flex items-center">
+                            <i class="fas fa-leaf text-green-500 mr-1 text-xs"></i> ${topping}
+                        </span>
+                    </label>
+                `;
+            });
+            // Meat Toppings
+            menuData.toppings.meat.forEach(topping => {
+                toppingsHtml += `
+                    <label class="topping-label inline-flex items-center bg-white border border-gray-300 rounded-full px-3 py-1 cursor-pointer hover:bg-gray-100 transition mr-2 mb-2">
+                        <input type="checkbox" value="${topping}" onchange="toggleExtra(this); updateToppingHighlight(this);" class="form-checkbox h-4 w-4 text-farmRed rounded">
+                        <span class="ml-2 text-sm text-gray-700 flex items-center">
+                            <i class="fas fa-drumstick-bite text-red-500 mr-1 text-xs"></i> ${topping}
+                        </span>
+                    </label>
+                `;
+            });
+
+            content.innerHTML = `
+                <div class="space-y-4">
+                    <div>
+                        <label class="block font-semibold text-sm mb-1">Size</label>
+                        <select id="modal-size" onchange="updateModalPrice()" class="w-full p-2 border rounded-lg">
+                            <option value="Medium">Medium (10") - £${menuData.basePrices['Medium'].toFixed(2)}</option>
+                            <option value="Large">Large (12") - £${menuData.basePrices['Large'].toFixed(2)}</option>
+                            <option value="XL" selected>XL (14") - £${menuData.basePrices['XL'].toFixed(2)}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-sm mb-1">Crust</label>
+                        <select id="modal-crust" class="w-full p-2 border rounded-lg">
+                            <option value="Thin Crust">Thin Crust</option>
+                            <option value="Deep Pan" selected>Deep Pan</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-sm mb-1">Base</label>
+                        <select id="modal-base" onchange="updateModalPrice()" class="w-full p-2 border rounded-lg">
+                            <option value="Tomato" selected>Tomato Base</option>
+                            <option value="BBQ">BBQ Base (+£1.00)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-sm mb-2">Extra Toppings (+£1.00 each)</label>
+                        <div class="max-h-40 overflow-y-auto border p-3 rounded-lg bg-gray-50 flex flex-wrap">
+                            ${toppingsHtml}
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center font-bold text-lg pt-2 border-t">
+                        <span>Total:</span>
+                        <span id="modal-price" class="text-farmRed">£${menuData.basePrices['XL'].toFixed(2)}</span>
+                    </div>
+                    <button onclick="confirmCustomPizza()" class="w-full bg-farmRed text-white font-bold py-3 rounded-lg hover:bg-red-700 transition">Add to Cart</button>
+                </div>
+            `;
+            
+            modal.classList.remove('hidden');
+            updateModalPrice();
+        }
+
+        function closeModal() {
+            document.getElementById('customize-modal').classList.add('hidden');
+            currentCustomPizza = null;
+        }
+
+        function toggleExtra(checkbox) {
+            if (!currentCustomPizza) return;
+            const val = checkbox.value;
+            if (checkbox.checked) {
+                if (currentCustomPizza.extras.length >= 3 && !currentCustomPizza.name.includes('Free Choice')) {
+                    alert("Maximum 3 extra toppings allowed (unless Free Choice).");
+                    checkbox.checked = false;
+                    updateToppingHighlight(checkbox); 
+                    return;
+                }
+                currentCustomPizza.extras.push(val);
+            } else {
+                currentCustomPizza.extras = currentCustomPizza.extras.filter(t => t !== val);
+            }
+            updateModalPrice();
+        }
+
+        function updateModalPrice() {
+            if (!currentCustomPizza) return;
+            const size = document.getElementById('modal-size').value;
+            const base = document.getElementById('modal-base').value;
+            
+            let price = parseFloat(menuData.basePrices[size]);
+            
+            if (base === 'BBQ') price += 1.00;
+            
+            if (!currentCustomPizza.name.includes('Free Choice')) {
+                price += currentCustomPizza.extras.length * parseFloat(menuData.extraToppingPrice);
+            }
+            
+            price = Math.round(price * 100) / 100;
+            
+            document.getElementById('modal-price').innerText = `£${price.toFixed(2)}`;
+            currentCustomPizza.calculatedPrice = price;
+        }
+
+        function confirmCustomPizza() {
+            if (!currentCustomPizza) return;
+            
+            const size = document.getElementById('modal-size').value;
+            const crust = document.getElementById('modal-crust').value;
+            const base = document.getElementById('modal-base').value;
+            
+            const item = {
+                id: Date.now(),
+                name: currentCustomPizza.name,
+                size: size,
+                crust: crust,
+                base: base,
+                extras: currentCustomPizza.extras,
+                price: currentCustomPizza.calculatedPrice,
+                quantity: 1
+            };
+            
+            addToCart(item);
+            closeModal();
+        }
+
+        // --- CUSTOM PIZZA BUILDER ---
+        function renderToppings() {
+            const container = document.getElementById('toppings-container');
+            if (!container) return;
+            let html = '';
+            const allToppings = [...menuData.toppings.vegetables, ...menuData.toppings.meat];
+            allToppings.forEach(topping => {
+                const isVeg = menuData.toppings.vegetables.includes(topping);
+                const icon = isVeg ? '<i class="fas fa-leaf text-green-500 mr-1"></i>' : '<i class="fas fa-drumstick-bite text-red-500 mr-1"></i>';
+                html += `
+                    <label class="topping-label inline-flex items-center bg-white border border-gray-300 rounded-full px-3 py-1 cursor-pointer hover:bg-gray-100 transition">
+                        <input type="checkbox" value="${topping}" class="custom-topping-checkbox form-checkbox h-4 w-4 text-farmRed rounded" onchange="updateToppingHighlight(this)">
+                        <span class="ml-2 text-sm text-gray-700 flex items-center">${icon} ${topping}</span>
+                    </label>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function addCustomPizza() {
+            const size = document.getElementById('custom-size').value;
+            const crust = document.getElementById('custom-crust').value;
+            const base = document.getElementById('custom-base').value;
+            const checkboxes = document.querySelectorAll('.custom-topping-checkbox:checked');
+            const extras = Array.from(checkboxes).map(cb => cb.value);
+            
+            if (extras.length > 3) {
+                alert("You can only select up to 3 toppings for the Create Your Own pizza.");
+                return;
+            }
+            
+            let price = parseFloat(menuData.basePrices[size]);
+            if (base === 'BBQ') price += 1.00;
+            price = Math.round(price * 100) / 100;
+            
+            const item = {
+                id: Date.now(),
+                name: "Create Your Own",
+                size: size,
+                crust: crust,
+                base: base,
+                extras: extras,
+                price: price,
+                quantity: 1
+            };
+            
+            addToCart(item);
+            
+            // Reset form
+            document.querySelectorAll('.custom-topping-checkbox').forEach(cb => {
+                cb.checked = false;
+                updateToppingHighlight(cb);
+            });
+            alert("Custom pizza added to cart!");
+        }
+
+        // --- CART LOGIC ---
+        function addToCart(item) {
+            item.price = parseFloat(item.price);
+            
+            const existingItem = cart.find(cartItem => 
+                cartItem.name === item.name && 
+                cartItem.size === item.size && 
+                cartItem.crust === item.crust && 
+                cartItem.base === item.base &&
+                JSON.stringify(cartItem.extras) === JSON.stringify(item.extras)
+            );
+
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push(item);
+            }
+            updateCartUI();
+            toggleCart(); 
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            updateCartUI();
+        }
+
+        function updateQuantity(index, change) {
+            cart[index].quantity += change;
+            if (cart[index].quantity <= 0) {
+                removeFromCart(index);
+            } else {
+                updateCartUI();
+            }
+        }
+
+        function updateCartUI() {
+            const cartItemsContainer = document.getElementById('cart-items');
+            const cartTotalEl = document.getElementById('cart-total');
+            const cartCountEl = document.getElementById('cart-count');
+            const cartCountMobileEl = document.getElementById('cart-count-mobile');
+            
+            let total = 0;
+            let count = 0;
+            
+            if (cart.length === 0) {
+                cartItemsContainer.innerHTML = '<p class="text-gray-500 text-center mt-10">Your cart is empty.</p>';
+            } else {
+                let html = '';
+                cart.forEach((item, index) => {
+                    const itemTotal = parseFloat((item.price * item.quantity).toFixed(2));
+                    total += itemTotal;
+                    count += item.quantity;
+                    
+                    let details = `${item.size || ''} ${item.crust || ''} ${item.base || ''}`.trim();
+                    if (item.extras && item.extras.length > 0) {
+                        details += ` | Extras: ${item.extras.join(', ')}`;
+                    }
+                    
+                    html += `
+                        <div class="flex justify-between items-start mb-4 pb-4 border-b border-gray-100">
+                            <div class="flex-1">
+                                <h4 class="font-bold text-farmDark">${item.name}</h4>
+                                <p class="text-xs text-gray-500">${details}</p>
+                                <p class="text-farmRed font-semibold mt-1">£${item.price.toFixed(2)}</p>
+                            </div>
+                            <div class="flex items-center space-x-2 ml-4">
+                                <button onclick="updateQuantity(${index}, -1)" class="bg-gray-200 text-gray-700 h-6 w-6 rounded-full flex items-center justify-center hover:bg-gray-300">-</button>
+                                <span class="font-semibold w-4 text-center">${item.quantity}</span>
+                                <button onclick="updateQuantity(${index}, 1)" class="bg-gray-200 text-gray-700 h-6 w-6 rounded-full flex items-center justify-center hover:bg-gray-300">+</button>
+                                <button onclick="removeFromCart(${index})" class="text-red-500 hover:text-red-700 ml-2"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                        </div>
+                    `;
+                });
+                cartItemsContainer.innerHTML = html;
+            }
+            
+            cartTotalEl.innerText = `£${total.toFixed(2)}`;
+            cartCountEl.innerText = count;
+            if(cartCountMobileEl) cartCountMobileEl.innerText = count;
+        }
+
+        function toggleCart() {
+            const drawer = document.getElementById('cart-drawer');
+            const overlay = document.getElementById('cart-overlay');
+            
+            if (drawer.classList.contains('cart-closed')) {
+                drawer.classList.remove('cart-closed');
+                drawer.classList.add('cart-open');
+                overlay.classList.remove('hidden');
+            } else {
+                drawer.classList.remove('cart-open');
+                drawer.classList.add('cart-closed');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // --- CHECKOUT LOGIC ---
+        function checkout() {
+            if (cart.length === 0) {
+                alert("Your cart is empty.");
+                return;
+            }
+            
+            const total = cart.reduce((sum, item) => sum + parseFloat((item.price * item.quantity).toFixed(2)), 0);
+            document.getElementById('checkout-total').innerText = `£${total.toFixed(2)}`;
+            document.getElementById('checkout-modal').classList.remove('hidden');
+            
+            document.querySelector('input[name="fulfillment"][value="collection"]').checked = true;
+            toggleDeliveryAddress();
+        }
+
+        function closeCheckoutModal() {
+            document.getElementById('checkout-modal').classList.add('hidden');
+        }
+
+        function toggleDeliveryAddress() {
+            const fulfillment = document.querySelector('input[name="fulfillment"]:checked').value;
+            const collectionInfo = document.getElementById('collection-info');
+            const deliveryInfo = document.getElementById('delivery-info');
+            
+            if (fulfillment === 'collection') {
+                collectionInfo.classList.remove('hidden');
+                deliveryInfo.classList.add('hidden');
+            } else {
+                collectionInfo.classList.add('hidden');
+                deliveryInfo.classList.remove('hidden');
+            }
+        }
+
+        function placeOrder() {
+            const fulfillment = document.querySelector('input[name="fulfillment"]:checked').value;
+            const total = cart.reduce((sum, item) => sum + parseFloat((item.price * item.quantity).toFixed(2)), 0);
+            
+            if (fulfillment === 'delivery' && total < 17.99) {
+                alert("Minimum order for delivery is £17.99. Please add more items or choose collection.");
+                return;
+            }
+            
+            let message = "";
+            
+            if (fulfillment === 'delivery') {
+                const house = document.getElementById('delivery-house').value.trim();
+                const street = document.getElementById('delivery-street').value.trim();
+                const postcode = document.getElementById('delivery-postcode').value.trim();
+                const phone = document.getElementById('delivery-phone').value.trim(); 
+                const note = document.getElementById('delivery-note').value.trim(); 
+                
+                if (!house || !postcode || !phone) {
+                    alert("Please enter your House/Flat number, Postcode, and Phone Number.");
+                    return;
+                }
+                
+                const address = `${house}, ${street ? street + ', ' : ''}${postcode}`;
+                const noteString = note ? `\nNote: ${note}` : ''; 
+                const phoneString = `\nPhone: ${phone}`;
+                
+                message = `Thank you for your order!\n\nDelivery to: ${address}${phoneString}${noteString}\nTotal: £${total.toFixed(2)}\n\nThis is a demo.`;
+            } else {
+                message = `Thank you for your order!\n\nCollection from: 325 Vicarage Farm Road, Hounslow, TW5 0DR\nTotal: £${total.toFixed(2)}\n\nThis is a demo.`;
+            }
+            
+            alert(message);
+            
+            cart = [];
+            updateCartUI();
+            closeCheckoutModal();
+            toggleCart();
+        }
+    </script>
+</body>
+</html>
