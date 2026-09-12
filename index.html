@@ -4,13 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Farm Pizza | Hounslow</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <script>
         tailwind.config = {
             theme: {
@@ -41,8 +38,14 @@
         .cart-drawer { transition: transform 0.3s ease-in-out; }
         .cart-open { transform: translateX(0); }
         .cart-closed { transform: translateX(100%); }
-        /* Add z-index for the welcome modal to be above everything */
         #welcome-modal { z-index: 9999; }
+        .toast-enter { transform: translateX(120%); }
+        .toast-show { transform: translateX(0); }
+        @keyframes softPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(251, 192, 45, 0.5); }
+            50% { box-shadow: 0 0 0 8px rgba(251, 192, 45, 0); }
+        }
+        .recommendation-pulse { animation: softPulse 2s infinite; }
     </style>
 </head>
 <body class="bg-gray-50 text-farmDark">
@@ -54,7 +57,6 @@
                 <div class="flex-shrink-0 flex items-center">
                     <span class="font-pacifico text-3xl text-farmRed">Farm Pizza</span>
                     <span class="ml-2 text-xs text-gray-500 italic hidden sm:block">Since 1999</span>
-                    <!-- LIVE BADGE -->
                     <span id="live-badge" class="hidden ml-4 px-3 py-1 rounded-full text-xs font-bold shadow-md transition-all duration-300">
                         <i class="fas fa-circle text-[8px] mr-1"></i> LIVE
                     </span>
@@ -79,7 +81,7 @@
         </div>
     </nav>
 
-    <!-- Hero Section -->
+    <!-- Hero -->
     <header id="home" class="hero-bg h-96 flex items-center justify-center text-center text-white">
         <div class="px-4">
             <h1 class="font-pacifico text-5xl md:text-7xl mb-4 text-farmYellow">Farm Pizza</h1>
@@ -91,18 +93,16 @@
         </div>
     </header>
 
-    <!-- Opening Hours Bar -->
+    <!-- Opening Bar -->
     <div class="bg-farmYellow text-farmDark py-3 text-center font-semibold text-sm flex justify-center items-center gap-2 flex-wrap">
         <p>Mon - Thur: 11:00 am - 11:00 pm | Fri - Sat: 11:00 am - Midnight | Open 7 Days a Week</p>
-        <!-- LIVE STATUS TEXT -->
         <span id="live-status-text" class="ml-4"></span>
     </div>
 
-    <!-- Deals Section -->
+    <!-- Deals -->
     <section id="deals" class="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 class="font-pacifico text-4xl text-center text-farmRed mb-12">Special Offers</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <!-- Deal 1 -->
             <div class="bg-white rounded-2xl shadow-lg overflow-hidden border-t-4 border-farmRed hover:shadow-2xl transition">
                 <div class="p-6 text-center">
                     <h3 class="font-bold text-2xl mb-2">Special Deal</h3>
@@ -111,7 +111,6 @@
                     <p class="text-sm text-gray-500 italic">Collection only</p>
                 </div>
             </div>
-            <!-- Deal 2 -->
             <div class="bg-white rounded-2xl shadow-lg overflow-hidden border-t-4 border-farmYellow hover:shadow-2xl transition">
                 <div class="p-6 text-center">
                     <h3 class="font-bold text-2xl mb-2">Farm Deal</h3>
@@ -119,7 +118,6 @@
                     <p class="text-3xl font-bold text-farmRed mb-4">£23.99</p>
                 </div>
             </div>
-            <!-- Deal 3 -->
             <div class="bg-white rounded-2xl shadow-lg overflow-hidden border-t-4 border-farmRed hover:shadow-2xl transition">
                 <div class="p-6 text-center">
                     <h3 class="font-bold text-2xl mb-2">Mega Deals</h3>
@@ -131,7 +129,6 @@
                     </div>
                 </div>
             </div>
-            <!-- Deal 4 -->
             <div class="bg-white rounded-2xl shadow-lg overflow-hidden border-t-4 border-farmYellow hover:shadow-2xl transition">
                 <div class="p-6 text-center">
                     <h3 class="font-bold text-2xl mb-2">Crazy Deals</h3>
@@ -146,19 +143,17 @@
         </div>
     </section>
 
-    <!-- Menu Section -->
+    <!-- Menu -->
     <section id="menu" class="py-16 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 class="font-pacifico text-4xl text-center text-farmRed mb-8">Our Menu</h2>
-            
-            <!-- Main Menu Tabs -->
+
             <div class="flex justify-center space-x-4 mb-10 overflow-x-auto hide-scrollbar pb-2">
                 <button onclick="switchTab('pizzas')" id="tab-pizzas" class="px-6 py-2 rounded-full font-semibold bg-farmRed text-white transition">Pizzas</button>
                 <button onclick="switchTab('sides')" id="tab-sides" class="px-6 py-2 rounded-full font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition">Side Orders</button>
                 <button onclick="switchTab('drinks')" id="tab-drinks" class="px-6 py-2 rounded-full font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition">Drinks</button>
             </div>
 
-            <!-- Pizza Subcategories Filter -->
             <div id="pizza-subcategories" class="flex flex-wrap justify-center gap-2 mb-8">
                 <button onclick="filterPizzas('all')" id="subcat-all" class="px-4 py-1.5 rounded-full border border-farmRed text-farmRed text-sm font-semibold hover:bg-farmRed hover:text-white transition bg-farmRed text-white">All Pizzas</button>
                 <button onclick="filterPizzas('veg')" id="subcat-veg" class="px-4 py-1.5 rounded-full border border-farmRed text-farmRed text-sm font-semibold hover:bg-farmRed hover:text-white transition">Vegetarian</button>
@@ -166,33 +161,30 @@
                 <button onclick="filterPizzas('ham_pepperoni')" id="subcat-ham_pepperoni" class="px-4 py-1.5 rounded-full border border-farmRed text-farmRed text-sm font-semibold hover:bg-farmRed hover:text-white transition">Ham & Pepperoni</button>
             </div>
 
-            <!-- Pizzas Grid -->
-            <div id="pizzas-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Dynamic Pizzas will be injected here -->
-            </div>
-
-            <!-- Sides Grid -->
-            <div id="sides-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6 hidden">
-                <!-- Dynamic Sides will be injected here -->
-            </div>
-
-            <!-- Drinks Grid -->
-            <div id="drinks-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6 hidden">
-                <!-- Dynamic Drinks will be injected here -->
-            </div>
+            <div id="pizzas-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            <div id="sides-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6 hidden"></div>
+            <div id="drinks-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6 hidden"></div>
         </div>
     </section>
 
-    <!-- Create Your Own Section -->
+    <!-- Create Your Own -->
     <section class="py-16 bg-farmCream">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 class="font-pacifico text-4xl text-farmRed mb-4">Create Your Own Pizza</h2>
-            <p class="text-gray-700 mb-8">Choose any size, crust, and up to 3 toppings of your choice!</p>
+            <p class="text-gray-700 mb-2">Choose any size, crust, and your favourite toppings.</p>
+            <p class="text-sm text-gray-600 mb-8">
+                <span class="inline-flex items-center bg-green-100 text-green-800 px-3 py-1 rounded-full font-semibold mr-1">
+                    <i class="fas fa-gift mr-1"></i> First 3 toppings FREE
+                </span>
+                <span class="inline-flex items-center bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full font-semibold">
+                    Each extra topping £1.00
+                </span>
+            </p>
             <div class="bg-white rounded-2xl shadow-xl p-8">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <div>
                         <label class="block font-semibold mb-2">Size</label>
-                        <select id="custom-size" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed">
+                        <select id="custom-size" onchange="updateCustomPizzaPrice()" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed">
                             <option value="Medium">Medium (10")</option>
                             <option value="Large">Large (12")</option>
                             <option value="XL" selected>XL (14")</option>
@@ -207,24 +199,45 @@
                     </div>
                     <div>
                         <label class="block font-semibold mb-2">Base</label>
-                        <select id="custom-base" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed">
+                        <select id="custom-base" onchange="updateCustomPizzaPrice()" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed">
                             <option value="Tomato" selected>Tomato Base</option>
                             <option value="BBQ">BBQ Base (+£1.00)</option>
                         </select>
                     </div>
                 </div>
-                <div class="mb-6">
-                    <label class="block font-semibold mb-3">Select up to 3 Toppings (Included)</label>
-                    <div id="toppings-container" class="flex flex-wrap justify-center gap-2">
-                        <!-- Toppings injected here -->
+                <div class="mb-6 text-left">
+                    <label class="block font-semibold mb-3 text-center">Select Your Toppings</label>
+                    <div id="toppings-container" class="flex flex-wrap justify-center gap-2"></div>
+                </div>
+
+                <!-- Live price summary -->
+                <div class="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-200">
+                    <div class="flex justify-between text-sm text-gray-600 mb-1">
+                        <span>Base (<span id="custom-size-label">XL</span>):</span>
+                        <span id="custom-base-price">£10.99</span>
+                    </div>
+                    <div class="flex justify-between text-sm text-gray-600 mb-1">
+                        <span>Extra toppings (<span id="custom-extra-count">0</span> beyond 3 free):</span>
+                        <span id="custom-extra-cost">£0.00</span>
+                    </div>
+                    <div class="flex justify-between text-sm text-gray-500 italic mb-2">
+                        <span id="custom-topping-summary">No toppings selected</span>
+                        <span id="custom-topping-total-qty"></span>
+                    </div>
+                    <div class="flex justify-between font-bold text-lg pt-2 border-t border-gray-200">
+                        <span>Total:</span>
+                        <span id="custom-total" class="text-farmRed">£10.99</span>
                     </div>
                 </div>
-                <button onclick="addCustomPizza()" class="bg-farmRed text-white font-bold py-3 px-8 rounded-full hover:bg-red-700 transition w-full md:w-auto">Add Custom Pizza to Cart</button>
+
+                <button onclick="addCustomPizza()" class="bg-farmRed text-white font-bold py-3 px-8 rounded-full hover:bg-red-700 transition w-full md:w-auto">
+                    <i class="fas fa-cart-plus mr-1"></i> Add Custom Pizza to Cart
+                </button>
             </div>
         </div>
     </section>
 
-    <!-- Contact / Footer -->
+    <!-- Footer -->
     <footer id="contact" class="bg-farmDark text-white py-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
@@ -238,9 +251,8 @@
             <div>
                 <h3 class="font-semibold text-xl mb-4 text-farmYellow">Opening Hours</h3>
                 <p class="text-gray-300 mb-2">Monday - Thursday: 11:00 am - 11:00 pm</p>
-                <p class="text-gray-300 mb-2">Friday - Saturday: 11:00 am - Midnight</p>
+                <p class="text-gray-300 mb-2">Friday - Saturday: 11:00 am - 12:00 am</p>
                 <p class="text-gray-300">Sunday: 11:00 am - 11:00 pm</p>
-                <!-- FOOTER LIVE STATUS -->
                 <p id="footer-live-status" class="mt-3 font-bold text-sm"></p>
             </div>
             <div>
@@ -270,15 +282,14 @@
             <button onclick="toggleCart()" class="text-2xl hover:text-farmYellow">&times;</button>
         </div>
         <div id="cart-items" class="flex-1 overflow-y-auto p-6">
-            <!-- Cart items injected here -->
             <p class="text-gray-500 text-center mt-10">Your cart is empty.</p>
         </div>
         <div class="p-6 border-t bg-gray-50">
-            <div class="flex justify-between mb-4 font-bold text-lg">
+            <div class="flex justify-between mb-2 font-bold text-lg">
                 <span>Subtotal:</span>
                 <span id="cart-total">£0.00</span>
             </div>
-            <p class="text-xs text-gray-500 mb-4">Minimum order for delivery is £17.99. Collection available.</p>
+            <div id="delivery-min-info" class="text-xs mb-4"></div>
             <button onclick="checkout()" class="w-full bg-farmRed text-white font-bold py-3 rounded-full hover:bg-red-700 transition">Proceed to Checkout</button>
         </div>
     </div>
@@ -291,59 +302,75 @@
                 <h3 id="modal-title" class="text-xl font-bold text-farmRed">Customize Pizza</h3>
                 <button onclick="closeModal()" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
             </div>
-            <div id="modal-content">
-                <!-- Dynamic content for size/crust/extras -->
-            </div>
+            <div id="modal-content"></div>
         </div>
     </div>
 
     <!-- Checkout Modal -->
     <div id="checkout-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl max-h-[95vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold text-farmRed">Checkout</h3>
                 <button onclick="closeCheckoutModal()" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
             </div>
             <div class="space-y-4">
+
+                <!-- FIXED Collection / Delivery segmented selector -->
                 <div>
                     <label class="block font-semibold text-sm mb-2">How would you like to receive your order?</label>
-                    <div class="flex space-x-4">
-                        <label class="flex items-center space-x-2 cursor-pointer">
-                            <input type="radio" name="fulfillment" value="collection" checked onchange="toggleDeliveryAddress()" class="form-radio text-farmRed">
-                            <span class="text-sm font-semibold">Collection</span>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="fulfillment" value="collection" checked onchange="toggleDeliveryAddress()" class="peer sr-only">
+                            <div class="py-3 rounded-xl border-2 border-gray-200 text-center font-bold text-gray-600 transition
+                                        peer-checked:border-farmRed peer-checked:bg-farmRed peer-checked:text-white peer-checked:shadow-lg
+                                        hover:border-gray-300">
+                                <i class="fas fa-store mr-1"></i> Collection
+                            </div>
                         </label>
-                        <label class="flex items-center space-x-2 cursor-pointer">
-                            <input type="radio" name="fulfillment" value="delivery" onchange="toggleDeliveryAddress()" class="form-radio text-farmRed">
-                            <span class="text-sm font-semibold">Delivery</span>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="fulfillment" value="delivery" onchange="toggleDeliveryAddress()" class="peer sr-only">
+                            <div class="py-3 rounded-xl border-2 border-gray-200 text-center font-bold text-gray-600 transition
+                                        peer-checked:border-farmRed peer-checked:bg-farmRed peer-checked:text-white peer-checked:shadow-lg
+                                        hover:border-gray-300">
+                                <i class="fas fa-motorcycle mr-1"></i> Delivery
+                            </div>
                         </label>
                     </div>
                 </div>
-                <div id="collection-info" class="bg-gray-50 p-3 rounded-lg text-sm text-gray-600">
+
+                <!-- Collection info -->
+                <div id="collection-info" class="bg-green-50 border border-green-200 p-3 rounded-lg text-sm text-gray-700">
                     <p><i class="fas fa-map-marker-alt mr-1 text-farmRed"></i> 325 Vicarage Farm Road, Hounslow, TW5 0DR</p>
-                    <p class="mt-1"><i class="fas fa-clock mr-1 text-farmRed"></i> Ready in approx. 20-30 mins</p>
+                    <p class="mt-1"><i class="fas fa-clock mr-1 text-farmRed"></i> Collection ready in <strong>less than 15 minutes</strong></p>
+                    <p class="mt-1 text-green-700 font-semibold"><i class="fas fa-check-circle mr-1"></i> No minimum order for collection</p>
                 </div>
-                
-                <!-- DELIVERY ADDRESS FIELDS -->
+
+                <!-- Delivery info -->
                 <div id="delivery-info" class="hidden space-y-2">
+                    <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg text-sm text-gray-700">
+                        <p><i class="fas fa-clock mr-1 text-farmRed"></i> Delivery estimated in <strong>10–30 minutes</strong></p>
+                        <p class="mt-1 text-blue-700 font-semibold"><i class="fas fa-info-circle mr-1"></i> Minimum order £17.99 for delivery</p>
+                    </div>
+
                     <label class="block font-semibold text-sm mb-1">Delivery Address</label>
                     <div class="grid grid-cols-2 gap-2">
-                        <input type="text" id="delivery-house" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="House / Flat No. (e.g. 12A)">
+                        <input type="text" id="delivery-house" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="House / Flat No.">
                         <input type="text" id="delivery-street" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="Street Name">
                     </div>
                     <input type="text" id="delivery-postcode" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="Postcode (e.g. TW5 0DR)">
-                    
-                    <!-- NEW: PHONE NUMBER -->
-                    <input type="tel" id="delivery-phone" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="Phone Number (e.g. 07123 456789)">
-                    
-                    <!-- OPTIONAL DELIVERY NOTE -->
+                    <input type="tel" id="delivery-phone" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="Phone Number">
                     <div class="mt-2">
                         <label class="block font-semibold text-sm mb-1">Delivery Note (Optional)</label>
                         <textarea id="delivery-note" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" rows="2" placeholder="e.g. Ring the bell, leave at door..."></textarea>
                     </div>
-                    
-                    <p class="text-xs text-gray-500 mt-1">Delivery minimum is £17.99. A delivery fee may apply.</p>
                 </div>
-                
+
+                <!-- Minimum warning -->
+                <div id="checkout-min-warning" class="hidden bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">
+                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                    <span id="checkout-min-warning-text"></span>
+                </div>
+
                 <div class="flex justify-between items-center font-bold text-lg pt-2 border-t border-gray-200">
                     <span>Total to Pay:</span>
                     <span id="checkout-total" class="text-farmRed">£0.00</span>
@@ -353,12 +380,10 @@
         </div>
     </div>
 
-    <!-- NEW CUSTOMER WELCOME MODAL -->
+    <!-- Welcome Modal -->
     <div id="welcome-modal" class="fixed inset-0 bg-black bg-opacity-70 z-[100] hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl text-center relative">
             <button onclick="closeWelcomeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
-            
-            <!-- Step 1: Initial Question -->
             <div id="welcome-step-1">
                 <h2 class="font-pacifico text-3xl text-farmRed mb-4">Welcome!</h2>
                 <p class="text-gray-700 mb-6">Are you a new or regular customer?</p>
@@ -367,27 +392,31 @@
                     <button onclick="closeWelcomeModal()" class="bg-gray-200 text-gray-800 font-bold py-3 rounded-full hover:bg-gray-300 transition">I'm a Regular Customer</button>
                 </div>
             </div>
-
-            <!-- Step 2: Allergy Information (Hidden initially) -->
             <div id="welcome-step-2" class="hidden">
                 <div class="text-farmYellow text-5xl mb-4"><i class="fas fa-exclamation-triangle"></i></div>
                 <h3 class="font-bold text-xl text-farmRed mb-2">Food Allergies & Intolerances</h3>
                 <p class="text-sm text-gray-600 mb-4">If you have a food allergy or intolerance, please don't hesitate to contact our receptionist. They will explain the ingredients and help you choose safely.</p>
-                
                 <div class="bg-gray-50 p-4 rounded-lg mb-6 border border-gray-200">
                     <p class="font-semibold text-gray-800 mb-1">Call us directly:</p>
                     <a href="tel:02087375731" class="text-farmRed text-xl font-bold hover:underline flex items-center justify-center">
                         <i class="fas fa-phone-alt mr-2 text-lg"></i> 0208 737 5731
                     </a>
                 </div>
-
                 <button onclick="closeWelcomeModal()" class="w-full bg-farmRed text-white font-bold py-3 rounded-full hover:bg-red-700 transition">I Understand, Continue</button>
             </div>
         </div>
     </div>
 
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-[200] space-y-2 pointer-events-none"></div>
+
     <script>
-        // --- DATA STRUCTURE ---
+        // --- CONSTANTS ---
+        const DELIVERY_MINIMUM = 17.99;
+        const FREE_TOPPINGS = 3;
+        const EXTRA_TOPPING_PRICE = 1.00;
+
+        // --- DATA ---
         const menuData = {
             pizzas: [
                 { id: 1, name: "Margherita", desc: "Cheese & tomato sauce", veg: true, image: "https://image.pollinations.ai/prompt/margherita%20pizza%20with%20fresh%20basil%20and%20tomato?width=400&height=300&nologo=true" },
@@ -430,58 +459,99 @@
                 "Medium": 5.99,
                 "Large": 8.99,
                 "XL": 10.99
-            },
-            extraToppingPrice: 1.00
+            }
         };
 
         let cart = [];
         let currentCustomPizza = null;
 
-        // --- INITIALIZATION ---
+        // ============================================================
+        // --- INIT ---
+        // ============================================================
         document.addEventListener('DOMContentLoaded', () => {
-            switchTab('pizzas'); // Start with pizzas tab
+            switchTab('pizzas');
             renderToppings();
+            updateCustomPizzaPrice();
             updateCartUI();
-            checkOpenStatus(); // Check live status on load
-            setInterval(checkOpenStatus, 60000); // Check every minute
+            checkOpenStatus();
+            setInterval(checkOpenStatus, 60000);
 
-            // NEW: Welcome Modal Logic
             const customerType = localStorage.getItem('customerType');
             if (!customerType) {
                 setTimeout(() => {
                     document.getElementById('welcome-modal').classList.remove('hidden');
-                }, 1000); // Show after 1 second
+                }, 1000);
             }
         });
 
-        // NEW: Welcome Modal Functions
+        // ============================================================
+        // --- TOAST ---
+        // ============================================================
+        function showToast(item) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = 'bg-white border-l-4 border-green-500 shadow-2xl rounded-lg p-4 flex items-start gap-3 max-w-sm pointer-events-auto transition-transform duration-300 toast-enter';
+
+            let details = [];
+            if (item.size) details.push(item.size);
+            if (item.crust) details.push(item.crust);
+            if (item.base && item.base !== 'Tomato') details.push(item.base + ' Base');
+            if (item.extras && item.extras.length > 0) {
+                details.push('+ ' + item.extras.join(', '));
+            }
+
+            const detailsStr = details.length ? details.join(' • ') : '';
+
+            toast.innerHTML = `
+                <div class="text-green-500 text-xl mt-0.5"><i class="fas fa-check-circle"></i></div>
+                <div class="flex-1 min-w-0">
+                    <p class="font-bold text-farmDark text-sm">Added to Cart</p>
+                    <p class="text-sm text-gray-800 font-semibold truncate">${item.name}</p>
+                    ${detailsStr ? `<p class="text-xs text-gray-500 mt-0.5 leading-snug">${detailsStr}</p>` : ''}
+                    <p class="text-xs text-farmRed font-bold mt-1">£${item.price.toFixed(2)} × ${item.quantity}</p>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+            `;
+
+            container.appendChild(toast);
+            requestAnimationFrame(() => {
+                toast.classList.remove('toast-enter');
+                toast.classList.add('toast-show');
+            });
+            setTimeout(() => {
+                toast.classList.remove('toast-show');
+                toast.classList.add('toast-enter');
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        }
+
+        // ============================================================
+        // --- WELCOME ---
+        // ============================================================
         function showAllergyInfo() {
             document.getElementById('welcome-step-1').classList.add('hidden');
             document.getElementById('welcome-step-2').classList.remove('hidden');
         }
-
         function closeWelcomeModal() {
-            // Save that they are a regular customer or have acknowledged the allergy info
             localStorage.setItem('customerType', 'acknowledged');
             document.getElementById('welcome-modal').classList.add('hidden');
         }
 
-        // --- LIVE STATUS CHECKER WITH CLOSING WARNINGS ---
+        // ============================================================
+        // --- LIVE STATUS ---
+        // ============================================================
         function checkOpenStatus() {
             const now = new Date();
-            const day = now.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+            const day = now.getDay();
             const hours = now.getHours();
             const minutes = now.getMinutes();
             const currentMins = hours * 60 + minutes;
 
-            // Standard hours: 11:00 AM (660 mins) to 11:00 PM (1380 mins)
-            const openMins = 11 * 60; 
-            let closeMins = 23 * 60; 
-
-            // Friday (5) and Saturday (6) close at Midnight (24 * 60 = 1440 mins)
-            if (day === 5 || day === 6) {
-                closeMins = 24 * 60; 
-            }
+            const openMins = 11 * 60;
+            let closeMins = 23 * 60;
+            if (day === 5 || day === 6) closeMins = 24 * 60;
 
             const isOpen = currentMins >= openMins && currentMins < closeMins;
             const minutesLeft = closeMins - currentMins;
@@ -490,34 +560,29 @@
             const statusText = document.getElementById('live-status-text');
             const footerStatus = document.getElementById('footer-live-status');
 
-            // Reset badge classes to base to prevent stacking
             badge.className = 'ml-4 px-3 py-1 rounded-full text-xs font-bold shadow-md transition-all duration-300 ';
 
             if (isOpen) {
                 let textHtml = '';
                 let footerHtml = '';
-                let badgeColor = 'bg-green-500 text-white'; // Default Green
+                let badgeColor = 'bg-green-500 text-white';
 
                 if (minutesLeft <= 10) {
-                    // 10 Minutes Warning (Red + Bounce)
                     badgeColor = 'bg-red-600 text-white animate-bounce';
                     textHtml = `<span class="text-red-600 font-bold animate-pulse"><i class="fas fa-exclamation-triangle mr-1"></i> Closing in 10 mins!</span>`;
                     footerHtml = `<span class="text-red-500 font-bold animate-pulse"><i class="fas fa-exclamation-triangle mr-1"></i> Closing in 10 mins!</span>`;
                     badge.innerHTML = `<i class="fas fa-exclamation-triangle mr-1"></i> 10 MINS LEFT`;
                 } else if (minutesLeft <= 20) {
-                    // 20 Minutes Warning (Orange)
                     badgeColor = 'bg-orange-500 text-white';
                     textHtml = `<span class="text-orange-500 font-bold"><i class="fas fa-clock mr-1"></i> Closes in 20 mins</span>`;
                     footerHtml = `<span class="text-orange-400 font-bold"><i class="fas fa-clock mr-1"></i> Closes in 20 mins</span>`;
                     badge.innerHTML = `<i class="fas fa-clock mr-1"></i> 20 MINS LEFT`;
                 } else if (minutesLeft <= 90) {
-                    // 1 Hour 30 Minutes Warning (Yellow)
                     badgeColor = 'bg-yellow-500 text-white';
                     textHtml = `<span class="text-yellow-600 font-bold"><i class="fas fa-clock mr-1"></i> Closes in 1h 30m</span>`;
                     footerHtml = `<span class="text-yellow-500 font-bold"><i class="fas fa-clock mr-1"></i> Closes in 1h 30m</span>`;
                     badge.innerHTML = `<i class="fas fa-clock mr-1"></i> 1.5 HRS LEFT`;
                 } else {
-                    // Standard Open (Green)
                     textHtml = `<span class="text-green-600 font-bold"><i class="fas fa-circle text-[10px] mr-1 animate-pulse"></i> Open Now</span>`;
                     footerHtml = `<span class="text-green-500 font-bold"><i class="fas fa-circle text-[10px] mr-1 animate-pulse"></i> We are Open!</span>`;
                     badge.innerHTML = `<i class="fas fa-circle text-[8px] mr-1"></i> LIVE`;
@@ -525,30 +590,19 @@
 
                 badge.classList.add(...badgeColor.split(' '));
                 badge.classList.remove('hidden');
-                
-                if(statusText) statusText.innerHTML = textHtml;
-                if(footerStatus) footerStatus.innerHTML = footerHtml;
+                if (statusText) statusText.innerHTML = textHtml;
+                if (footerStatus) footerStatus.innerHTML = footerHtml;
             } else {
                 badge.classList.add('hidden');
-                
-                // Calculate Next Opening Time
-                let nextOpenText = "";
-                if (currentMins < openMins) {
-                    nextOpenText = "Opens today at 11:00 AM";
-                } else {
-                    nextOpenText = "Opens tomorrow at 11:00 AM";
-                }
-
-                if(statusText) {
-                    statusText.innerHTML = `<span class="text-red-600 font-bold"><i class="fas fa-clock text-[10px] mr-1"></i> Closed - ${nextOpenText}</span>`;
-                }
-                if(footerStatus) {
-                    footerStatus.innerHTML = `<span class="text-red-500 font-bold"><i class="fas fa-clock text-[10px] mr-1"></i> Closed - ${nextOpenText}</span>`;
-                }
+                let nextOpenText = currentMins < openMins ? "Opens today at 11:00 AM" : "Opens tomorrow at 11:00 AM";
+                if (statusText) statusText.innerHTML = `<span class="text-red-600 font-bold"><i class="fas fa-clock text-[10px] mr-1"></i> Closed - ${nextOpenText}</span>`;
+                if (footerStatus) footerStatus.innerHTML = `<span class="text-red-500 font-bold"><i class="fas fa-clock text-[10px] mr-1"></i> Closed - ${nextOpenText}</span>`;
             }
         }
 
-        // --- HELPER: HIGHLIGHT SELECTED TOPPINGS ---
+        // ============================================================
+        // --- TOPPING HIGHLIGHT ---
+        // ============================================================
         function updateToppingHighlight(checkbox) {
             const label = checkbox.closest('label');
             const textSpan = label.querySelector('span');
@@ -569,33 +623,32 @@
             }
         }
 
-        // --- MENU RENDERING & FILTERING ---
+        // ============================================================
+        // --- MENU TABS / GRIDS ---
+        // ============================================================
         function switchTab(category) {
-            // Update Main Tabs
             ['pizzas', 'sides', 'drinks'].forEach(cat => {
                 document.getElementById(`${cat}-grid`).classList.add('hidden');
                 const tab = document.getElementById(`tab-${cat}`);
                 tab.classList.remove('bg-farmRed', 'text-white');
                 tab.classList.add('bg-gray-200', 'text-gray-700');
             });
-            
+
             document.getElementById(`${category}-grid`).classList.remove('hidden');
             const activeTab = document.getElementById(`tab-${category}`);
             activeTab.classList.remove('bg-gray-200', 'text-gray-700');
             activeTab.classList.add('bg-farmRed', 'text-white');
 
-            // Handle Subcategories and Rendering
             if (category === 'pizzas') {
                 document.getElementById('pizza-subcategories').classList.remove('hidden');
-                filterPizzas('all'); // Render all pizzas by default
+                filterPizzas('all');
             } else {
                 document.getElementById('pizza-subcategories').classList.add('hidden');
-                renderMenu(category); // Render sides or drinks
+                renderMenu(category);
             }
         }
 
         function filterPizzas(type) {
-            // Update Subcategory Button Styles
             document.querySelectorAll('#pizza-subcategories button').forEach(btn => {
                 btn.classList.remove('bg-farmRed', 'text-white');
                 btn.classList.add('text-farmRed', 'border-farmRed', 'bg-transparent');
@@ -606,26 +659,20 @@
                 activeBtn.classList.add('bg-farmRed', 'text-white');
             }
 
-            // Filter Data
             let filteredPizzas = menuData.pizzas;
-            
             if (type === 'veg') {
                 filteredPizzas = menuData.pizzas.filter(p => p.veg);
             } else if (type === 'chicken') {
-                filteredPizzas = menuData.pizzas.filter(p => 
-                    p.name.toLowerCase().includes('chicken') || 
-                    p.desc.toLowerCase().includes('chicken')
-                );
+                filteredPizzas = menuData.pizzas.filter(p =>
+                    p.name.toLowerCase().includes('chicken') || p.desc.toLowerCase().includes('chicken'));
             } else if (type === 'ham_pepperoni') {
-                filteredPizzas = menuData.pizzas.filter(p => 
-                    p.name.toLowerCase().includes('peppermoni') || 
+                filteredPizzas = menuData.pizzas.filter(p =>
+                    p.name.toLowerCase().includes('peppermoni') ||
                     p.desc.toLowerCase().includes('peppermoni') ||
-                    p.name.toLowerCase().includes('ham') || 
+                    p.name.toLowerCase().includes('ham') ||
                     p.desc.toLowerCase().includes('ham') ||
-                    p.name.toLowerCase().includes('meat')
-                );
+                    p.name.toLowerCase().includes('meat'));
             }
-
             renderPizzaGrid(filteredPizzas);
         }
 
@@ -657,7 +704,6 @@
         function renderMenu(category) {
             const grid = document.getElementById(`${category}-grid`);
             if (!grid) return;
-            
             let html = '';
             if (category === 'sides') {
                 menuData.sides.forEach(side => {
@@ -697,7 +743,6 @@
             let item;
             if (type === 'side') item = menuData.sides.find(i => i.id === id);
             else if (type === 'drink') item = menuData.drinks.find(i => i.id === id);
-            
             if (item) {
                 addToCart({
                     id: item.id,
@@ -708,22 +753,28 @@
             }
         }
 
-        // --- CUSTOMIZATION MODAL ---
+        // ============================================================
+        // --- CUSTOMIZATION MODAL (for named menu pizzas) ---
+        // ============================================================
         function openCustomizeModal(pizzaId) {
             const pizza = menuData.pizzas.find(p => p.id === pizzaId);
             if (!pizza) return;
-            
-            // Defaults: XL, Deep Pan, Tomato
+
             currentCustomPizza = { ...pizza, size: 'XL', crust: 'Deep Pan', base: 'Tomato', extras: [] };
-            
+
             const modal = document.getElementById('customize-modal');
             const title = document.getElementById('modal-title');
             const content = document.getElementById('modal-content');
-            
+
             title.innerText = `Customize: ${pizza.name}`;
-            
+
+            // Free Choice gets 3 free toppings, others pay £1 each
+            const freeCount = pizza.name.includes('Free Choice') ? 3 : 0;
+            const toppingNote = freeCount === 3
+                ? `<span class="text-green-600 font-semibold">First 3 FREE</span> · then £1.00 each`
+                : `£1.00 each (max 3)`;
+
             let toppingsHtml = '';
-            // Vegetable Toppings
             menuData.toppings.vegetables.forEach(topping => {
                 toppingsHtml += `
                     <label class="topping-label inline-flex items-center bg-white border border-gray-300 rounded-full px-3 py-1 cursor-pointer hover:bg-gray-100 transition mr-2 mb-2">
@@ -734,7 +785,6 @@
                     </label>
                 `;
             });
-            // Meat Toppings
             menuData.toppings.meat.forEach(topping => {
                 toppingsHtml += `
                     <label class="topping-label inline-flex items-center bg-white border border-gray-300 rounded-full px-3 py-1 cursor-pointer hover:bg-gray-100 transition mr-2 mb-2">
@@ -771,7 +821,7 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block font-semibold text-sm mb-2">Extra Toppings (+£1.00 each)</label>
+                        <label class="block font-semibold text-sm mb-2">Extra Toppings <span class="text-xs font-normal text-gray-500">(${toppingNote})</span></label>
                         <div class="max-h-40 overflow-y-auto border p-3 rounded-lg bg-gray-50 flex flex-wrap">
                             ${toppingsHtml}
                         </div>
@@ -783,7 +833,7 @@
                     <button onclick="confirmCustomPizza()" class="w-full bg-farmRed text-white font-bold py-3 rounded-lg hover:bg-red-700 transition">Add to Cart</button>
                 </div>
             `;
-            
+
             modal.classList.remove('hidden');
             updateModalPrice();
         }
@@ -798,9 +848,9 @@
             const val = checkbox.value;
             if (checkbox.checked) {
                 if (currentCustomPizza.extras.length >= 3 && !currentCustomPizza.name.includes('Free Choice')) {
-                    alert("Maximum 3 extra toppings allowed (unless Free Choice).");
+                    alert("Maximum 3 extra toppings allowed.");
                     checkbox.checked = false;
-                    updateToppingHighlight(checkbox); 
+                    updateToppingHighlight(checkbox);
                     return;
                 }
                 currentCustomPizza.extras.push(val);
@@ -814,44 +864,42 @@
             if (!currentCustomPizza) return;
             const size = document.getElementById('modal-size').value;
             const base = document.getElementById('modal-base').value;
-            
             let price = parseFloat(menuData.basePrices[size]);
-            
             if (base === 'BBQ') price += 1.00;
-            
-            if (!currentCustomPizza.name.includes('Free Choice')) {
-                price += currentCustomPizza.extras.length * parseFloat(menuData.extraToppingPrice);
-            }
-            
+            // Free Choice: first 3 free, then £1 each. Other pizzas: £1 each.
+            const isFreeChoice = currentCustomPizza.name.includes('Free Choice');
+            const paidExtras = isFreeChoice
+                ? Math.max(0, currentCustomPizza.extras.length - 3)
+                : currentCustomPizza.extras.length;
+            price += paidExtras * EXTRA_TOPPING_PRICE;
             price = Math.round(price * 100) / 100;
-            
             document.getElementById('modal-price').innerText = `£${price.toFixed(2)}`;
             currentCustomPizza.calculatedPrice = price;
         }
 
         function confirmCustomPizza() {
             if (!currentCustomPizza) return;
-            
             const size = document.getElementById('modal-size').value;
             const crust = document.getElementById('modal-crust').value;
             const base = document.getElementById('modal-base').value;
-            
+
             const item = {
                 id: Date.now(),
                 name: currentCustomPizza.name,
                 size: size,
                 crust: crust,
                 base: base,
-                extras: currentCustomPizza.extras,
+                extras: [...currentCustomPizza.extras],
                 price: currentCustomPizza.calculatedPrice,
                 quantity: 1
             };
-            
             addToCart(item);
             closeModal();
         }
 
-        // --- CUSTOM PIZZA BUILDER ---
+        // ============================================================
+        // --- CREATE YOUR OWN: TOPPINGS RENDER ---
+        // ============================================================
         function renderToppings() {
             const container = document.getElementById('toppings-container');
             if (!container) return;
@@ -859,10 +907,13 @@
             const allToppings = [...menuData.toppings.vegetables, ...menuData.toppings.meat];
             allToppings.forEach(topping => {
                 const isVeg = menuData.toppings.vegetables.includes(topping);
-                const icon = isVeg ? '<i class="fas fa-leaf text-green-500 mr-1"></i>' : '<i class="fas fa-drumstick-bite text-red-500 mr-1"></i>';
+                const icon = isVeg
+                    ? '<i class="fas fa-leaf text-green-500 mr-1"></i>'
+                    : '<i class="fas fa-drumstick-bite text-red-500 mr-1"></i>';
                 html += `
                     <label class="topping-label inline-flex items-center bg-white border border-gray-300 rounded-full px-3 py-1 cursor-pointer hover:bg-gray-100 transition">
-                        <input type="checkbox" value="${topping}" class="custom-topping-checkbox form-checkbox h-4 w-4 text-farmRed rounded" onchange="updateToppingHighlight(this)">
+                        <input type="checkbox" value="${topping}" class="custom-topping-checkbox form-checkbox h-4 w-4 text-farmRed rounded"
+                               onchange="updateToppingHighlight(this); updateCustomPizzaPrice();">
                         <span class="ml-2 text-sm text-gray-700 flex items-center">${icon} ${topping}</span>
                     </label>
                 `;
@@ -870,22 +921,59 @@
             container.innerHTML = html;
         }
 
+        // ============================================================
+        // --- CREATE YOUR OWN: LIVE PRICE CALCULATION ---
+        // Base + BBQ (+£1) + extras beyond 3 × £1
+        // ============================================================
+        function updateCustomPizzaPrice() {
+            const size = document.getElementById('custom-size').value;
+            const base = document.getElementById('custom-base').value;
+            const checkedBoxes = document.querySelectorAll('.custom-topping-checkbox:checked');
+            const extrasCount = checkedBoxes.length;
+            const extrasNames = Array.from(checkedBoxes).map(cb => cb.value);
+
+            let basePrice = parseFloat(menuData.basePrices[size]);
+            if (base === 'BBQ') basePrice += 1.00;
+
+            const paidExtras = Math.max(0, extrasCount - FREE_TOPPINGS);
+            const extraCost = paidExtras * EXTRA_TOPPING_PRICE;
+            const total = Math.round((basePrice + extraCost) * 100) / 100;
+
+            document.getElementById('custom-size-label').innerText = size;
+            document.getElementById('custom-base-price').innerText = `£${basePrice.toFixed(2)}`;
+            document.getElementById('custom-extra-count').innerText = paidExtras;
+            document.getElementById('custom-extra-cost').innerText = `£${extraCost.toFixed(2)}`;
+            document.getElementById('custom-total').innerText = `£${total.toFixed(2)}`;
+
+            // Summary line
+            const summaryEl = document.getElementById('custom-topping-summary');
+            const totalQtyEl = document.getElementById('custom-topping-total-qty');
+            if (extrasCount === 0) {
+                summaryEl.innerText = 'No toppings selected';
+                totalQtyEl.innerText = '';
+            } else {
+                summaryEl.innerText = `${extrasCount} topping${extrasCount > 1 ? 's' : ''}: ${extrasNames.join(', ')}`;
+                const freeLeft = Math.max(0, FREE_TOPPINGS - extrasCount);
+                totalQtyEl.innerText = freeLeft > 0 ? `${freeLeft} free left` : 'All extra';
+            }
+        }
+
+        // ============================================================
+        // --- CREATE YOUR OWN: ADD TO CART ---
+        // ============================================================
         function addCustomPizza() {
             const size = document.getElementById('custom-size').value;
             const crust = document.getElementById('custom-crust').value;
             const base = document.getElementById('custom-base').value;
             const checkboxes = document.querySelectorAll('.custom-topping-checkbox:checked');
             const extras = Array.from(checkboxes).map(cb => cb.value);
-            
-            if (extras.length > 3) {
-                alert("You can only select up to 3 toppings for the Create Your Own pizza.");
-                return;
-            }
-            
-            let price = parseFloat(menuData.basePrices[size]);
-            if (base === 'BBQ') price += 1.00;
-            price = Math.round(price * 100) / 100;
-            
+
+            let basePrice = parseFloat(menuData.basePrices[size]);
+            if (base === 'BBQ') basePrice += 1.00;
+
+            const paidExtras = Math.max(0, extras.length - FREE_TOPPINGS);
+            const price = Math.round((basePrice + paidExtras * EXTRA_TOPPING_PRICE) * 100) / 100;
+
             const item = {
                 id: Date.now(),
                 name: "Create Your Own",
@@ -896,36 +984,92 @@
                 price: price,
                 quantity: 1
             };
-            
             addToCart(item);
-            
+
             // Reset form
             document.querySelectorAll('.custom-topping-checkbox').forEach(cb => {
                 cb.checked = false;
                 updateToppingHighlight(cb);
             });
-            alert("Custom pizza added to cart!");
+            updateCustomPizzaPrice();
         }
 
+        // ============================================================
+        // --- RECOMMENDATION ENGINE ---
+        // Works for ALL pizzas (including Create Your Own)
+        // ============================================================
+        function getRecommendations() {
+            const recs = [];
+            if (cart.length === 0) return recs;
+
+            const countBySize = (size) => cart.filter(i => i.size === size).reduce((s, i) => s + i.quantity, 0);
+            const countByName = (name) => cart.filter(i => i.name === name).reduce((s, i) => s + i.quantity, 0);
+
+            const totalGarlic = countByName('Garlic Bread (4 pcs)');
+            const totalCheesyGarlic = countByName('Garlic Bread with Cheese (4 pcs)');
+            const totalWings = countByName('BBQ Chicken Wings');
+
+            if (countBySize('Medium') >= 2 && totalCheesyGarlic === 0) {
+                recs.push({
+                    title: 'Farm Deal',
+                    desc: '2 Medium Pizzas & 1 Garlic Bread with Cheese',
+                    dealPrice: 23.99,
+                    needs: '1× Garlic Bread with Cheese',
+                    missingItem: { name: 'Garlic Bread with Cheese (4 pcs)', id: 102, type: 'side' }
+                });
+            }
+
+            ['Medium', 'Large', 'XL'].forEach(size => {
+                const pizzas = countBySize(size);
+                if (pizzas >= 3 && totalGarlic < 2 && totalWings < 1) {
+                    recs.push({
+                        title: `Mega Deal (${size})`,
+                        desc: `3 ${size} Pizzas & 2 Garlic Breads OR 1 Chicken Wings`,
+                        dealPrice: size === 'Medium' ? 29.99 : size === 'Large' ? 30.99 : 31.99,
+                        needs: '2× Garlic Bread OR 1× BBQ Chicken Wings',
+                        missingItem: { name: 'Garlic Bread (4 pcs)', id: 101, type: 'side' }
+                    });
+                }
+            });
+
+            ['Medium', 'Large', 'XL'].forEach(size => {
+                const pizzas = countBySize(size);
+                if (pizzas >= 2 && totalGarlic < 2) {
+                    recs.push({
+                        title: `Crazy Deal (${size})`,
+                        desc: `2 ${size} Pizzas & 2 Garlic Breads`,
+                        dealPrice: size === 'Medium' ? 24.99 : size === 'Large' ? 25.99 : 26.99,
+                        needs: `${2 - totalGarlic}× more Garlic Bread`,
+                        missingItem: { name: 'Garlic Bread (4 pcs)', id: 101, type: 'side' }
+                    });
+                }
+            });
+
+            return recs;
+        }
+
+        // ============================================================
         // --- CART LOGIC ---
+        // ============================================================
         function addToCart(item) {
             item.price = parseFloat(item.price);
-            
-            const existingItem = cart.find(cartItem => 
-                cartItem.name === item.name && 
-                cartItem.size === item.size && 
-                cartItem.crust === item.crust && 
+
+            const existingItem = cart.find(cartItem =>
+                cartItem.name === item.name &&
+                cartItem.size === item.size &&
+                cartItem.crust === item.crust &&
                 cartItem.base === item.base &&
                 JSON.stringify(cartItem.extras) === JSON.stringify(item.extras)
             );
 
             if (existingItem) {
                 existingItem.quantity += 1;
+                item = existingItem;
             } else {
                 cart.push(item);
             }
             updateCartUI();
-            toggleCart(); 
+            showToast(item);
         }
 
         function removeFromCart(index) {
@@ -942,29 +1086,40 @@
             }
         }
 
+        function addRecommendedItem(missingItem) {
+            if (!missingItem) return;
+            addToCartFromId(missingItem.id, missingItem.type);
+        }
+
+        // ============================================================
+        // --- UPDATE CART UI ---
+        // ============================================================
         function updateCartUI() {
             const cartItemsContainer = document.getElementById('cart-items');
             const cartTotalEl = document.getElementById('cart-total');
             const cartCountEl = document.getElementById('cart-count');
             const cartCountMobileEl = document.getElementById('cart-count-mobile');
-            
+            const deliveryMinInfo = document.getElementById('delivery-min-info');
+
             let total = 0;
             let count = 0;
-            
+
             if (cart.length === 0) {
                 cartItemsContainer.innerHTML = '<p class="text-gray-500 text-center mt-10">Your cart is empty.</p>';
+                if (deliveryMinInfo) deliveryMinInfo.innerHTML = '';
             } else {
                 let html = '';
+
                 cart.forEach((item, index) => {
                     const itemTotal = parseFloat((item.price * item.quantity).toFixed(2));
                     total += itemTotal;
                     count += item.quantity;
-                    
+
                     let details = `${item.size || ''} ${item.crust || ''} ${item.base || ''}`.trim();
                     if (item.extras && item.extras.length > 0) {
                         details += ` | Extras: ${item.extras.join(', ')}`;
                     }
-                    
+
                     html += `
                         <div class="flex justify-between items-start mb-4 pb-4 border-b border-gray-100">
                             <div class="flex-1">
@@ -981,18 +1136,84 @@
                         </div>
                     `;
                 });
+
+                const recs = getRecommendations();
+                if (recs.length > 0) {
+                    html += `
+                        <div class="mt-2 mb-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <i class="fas fa-lightbulb text-farmYellow text-lg"></i>
+                                <h4 class="font-bold text-farmDark text-sm uppercase tracking-wide">Complete a deal &amp; save</h4>
+                            </div>
+                    `;
+
+                    recs.forEach((rec) => {
+                        html += `
+                            <div class="bg-yellow-50 border border-farmYellow rounded-lg p-3 mb-2 recommendation-pulse">
+                                <div class="flex items-start gap-2 mb-2">
+                                    <i class="fas fa-tags text-farmRed mt-1"></i>
+                                    <div class="flex-1">
+                                        <p class="font-bold text-farmDark text-sm">${rec.title}</p>
+                                        <p class="text-xs text-gray-600">${rec.desc}</p>
+                                        <p class="text-xs text-farmRed font-semibold mt-1">Deal price: £${rec.dealPrice.toFixed(2)}</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between bg-white rounded-md p-2 border border-yellow-200">
+                                    <p class="text-xs text-gray-700 flex-1">
+                                        <i class="fas fa-plus-circle text-farmRed mr-1"></i>
+                                        Add <span class="font-semibold">${rec.needs}</span>
+                                    </p>
+                                    <button onclick="addRecommendedItem(${JSON.stringify(rec.missingItem).replace(/"/g, '&quot;')})"
+                                            class="bg-farmRed text-white text-xs font-bold px-3 py-1.5 rounded-full hover:bg-red-700 transition ml-2 whitespace-nowrap">
+                                        Add
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    html += `</div>`;
+                }
+
                 cartItemsContainer.innerHTML = html;
             }
-            
+
             cartTotalEl.innerText = `£${total.toFixed(2)}`;
             cartCountEl.innerText = count;
-            if(cartCountMobileEl) cartCountMobileEl.innerText = count;
+            if (cartCountMobileEl) cartCountMobileEl.innerText = count;
+
+            if (deliveryMinInfo) {
+                if (cart.length === 0) {
+                    deliveryMinInfo.innerHTML = `<span class="text-gray-500">Collection ready in &lt;15 mins. Delivery 10–30 mins. Minimum for delivery £${DELIVERY_MINIMUM.toFixed(2)}.</span>`;
+                } else if (total < DELIVERY_MINIMUM) {
+                    const remaining = DELIVERY_MINIMUM - total;
+                    deliveryMinInfo.innerHTML = `
+                        <div class="bg-orange-50 border border-orange-200 rounded-lg p-2">
+                            <p class="text-orange-700 font-semibold">
+                                <i class="fas fa-motorcycle mr-1"></i>
+                                Add <span class="font-bold">£${remaining.toFixed(2)}</span> more for delivery
+                            </p>
+                            <p class="text-gray-500 mt-1">Or choose <span class="font-semibold text-farmRed">Collection</span> — no minimum, ready in &lt;15 mins.</p>
+                        </div>
+                    `;
+                } else {
+                    deliveryMinInfo.innerHTML = `
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-2">
+                            <p class="text-green-700 font-semibold">
+                                <i class="fas fa-check-circle mr-1"></i>
+                                Delivery minimum reached!
+                            </p>
+                            <p class="text-gray-500 mt-1">Collection in &lt;15 mins. Delivery 10–30 mins.</p>
+                        </div>
+                    `;
+                }
+            }
         }
 
         function toggleCart() {
             const drawer = document.getElementById('cart-drawer');
             const overlay = document.getElementById('cart-overlay');
-            
+
             if (drawer.classList.contains('cart-closed')) {
                 drawer.classList.remove('cart-closed');
                 drawer.classList.add('cart-open');
@@ -1004,19 +1225,17 @@
             }
         }
 
-        // --- CHECKOUT LOGIC ---
+        // ============================================================
+        // --- CHECKOUT ---
+        // ============================================================
         function checkout() {
             if (cart.length === 0) {
                 alert("Your cart is empty.");
                 return;
             }
-            
-            const total = cart.reduce((sum, item) => sum + parseFloat((item.price * item.quantity).toFixed(2)), 0);
-            document.getElementById('checkout-total').innerText = `£${total.toFixed(2)}`;
-            document.getElementById('checkout-modal').classList.remove('hidden');
-            
             document.querySelector('input[name="fulfillment"][value="collection"]').checked = true;
             toggleDeliveryAddress();
+            document.getElementById('checkout-modal').classList.remove('hidden');
         }
 
         function closeCheckoutModal() {
@@ -1027,50 +1246,74 @@
             const fulfillment = document.querySelector('input[name="fulfillment"]:checked').value;
             const collectionInfo = document.getElementById('collection-info');
             const deliveryInfo = document.getElementById('delivery-info');
-            
+            const minWarning = document.getElementById('checkout-min-warning');
+            const minWarningText = document.getElementById('checkout-min-warning-text');
+            const checkoutTotalEl = document.getElementById('checkout-total');
+
+            const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
             if (fulfillment === 'collection') {
                 collectionInfo.classList.remove('hidden');
                 deliveryInfo.classList.add('hidden');
+                minWarning.classList.add('hidden');
+                checkoutTotalEl.innerText = `£${cartTotal.toFixed(2)}`;
             } else {
                 collectionInfo.classList.add('hidden');
                 deliveryInfo.classList.remove('hidden');
+
+                if (cartTotal < DELIVERY_MINIMUM) {
+                    checkoutTotalEl.innerText = `£${DELIVERY_MINIMUM.toFixed(2)}`;
+                    const remaining = DELIVERY_MINIMUM - cartTotal;
+                    minWarningText.innerText = `Delivery minimum is £${DELIVERY_MINIMUM.toFixed(2)}. £${remaining.toFixed(2)} has been added to meet the minimum. Or switch to Collection (no minimum).`;
+                    minWarning.classList.remove('hidden');
+                } else {
+                    checkoutTotalEl.innerText = `£${cartTotal.toFixed(2)}`;
+                    minWarning.classList.add('hidden');
+                }
             }
         }
 
+        // ============================================================
+        // --- PLACE ORDER ---
+        // ============================================================
         function placeOrder() {
             const fulfillment = document.querySelector('input[name="fulfillment"]:checked').value;
-            const total = cart.reduce((sum, item) => sum + parseFloat((item.price * item.quantity).toFixed(2)), 0);
-            
-            if (fulfillment === 'delivery' && total < 17.99) {
-                alert("Minimum order for delivery is £17.99. Please add more items or choose collection.");
-                return;
+            const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+            let payableTotal = cartTotal;
+            let minimumApplied = false;
+
+            if (fulfillment === 'delivery' && cartTotal < DELIVERY_MINIMUM) {
+                payableTotal = DELIVERY_MINIMUM;
+                minimumApplied = true;
             }
-            
+
             let message = "";
-            
+
             if (fulfillment === 'delivery') {
                 const house = document.getElementById('delivery-house').value.trim();
                 const street = document.getElementById('delivery-street').value.trim();
                 const postcode = document.getElementById('delivery-postcode').value.trim();
-                const phone = document.getElementById('delivery-phone').value.trim(); 
-                const note = document.getElementById('delivery-note').value.trim(); 
-                
+                const phone = document.getElementById('delivery-phone').value.trim();
+                const note = document.getElementById('delivery-note').value.trim();
+
                 if (!house || !postcode || !phone) {
                     alert("Please enter your House/Flat number, Postcode, and Phone Number.");
                     return;
                 }
-                
+
                 const address = `${house}, ${street ? street + ', ' : ''}${postcode}`;
-                const noteString = note ? `\nNote: ${note}` : ''; 
+                const noteString = note ? `\nNote: ${note}` : '';
                 const phoneString = `\nPhone: ${phone}`;
-                
-                message = `Thank you for your order!\n\nDelivery to: ${address}${phoneString}${noteString}\nTotal: £${total.toFixed(2)}\n\nThis is a demo.`;
+                const minNote = minimumApplied ? `\n(Minimum order £${DELIVERY_MINIMUM.toFixed(2)} applied)` : '';
+
+                message = `Thank you for your order!\n\nDelivery to: ${address}${phoneString}${noteString}\nEstimated delivery: 10–30 minutes\nTotal: £${payableTotal.toFixed(2)}${minNote}\n\nThis is a demo.`;
             } else {
-                message = `Thank you for your order!\n\nCollection from: 325 Vicarage Farm Road, Hounslow, TW5 0DR\nTotal: £${total.toFixed(2)}\n\nThis is a demo.`;
+                message = `Thank you for your order!\n\nCollection from: 325 Vicarage Farm Road, Hounslow, TW5 0DR\nEstimated ready in: less than 15 minutes\nTotal: £${payableTotal.toFixed(2)}\n\nNo minimum for collection.\n\nThis is a demo.`;
             }
-            
+
             alert(message);
-            
+
             cart = [];
             updateCartUI();
             closeCheckoutModal();
