@@ -48,13 +48,36 @@
         .cart-open { transform: translateX(0); }
         .cart-closed { transform: translateX(100%); }
         #welcome-modal { z-index: 9999; }
-        .toast-enter { transform: translateX(120%); }
-        .toast-show { transform: translateX(0); }
+        .toast-enter { transform: translateX(-120%); opacity: 0; }
+        .toast-show { transform: translateX(0); opacity: 1; }
         @keyframes softPulse {
             0%, 100% { box-shadow: 0 0 0 0 rgba(251, 192, 45, 0.5); }
             50% { box-shadow: 0 0 0 8px rgba(251, 192, 45, 0); }
         }
         .recommendation-pulse { animation: softPulse 2s infinite; }
+
+        /* Floating cart button animations */
+        @keyframes cartPop {
+            0%   { transform: scale(0) rotate(-180deg); opacity: 0; }
+            60%  { transform: scale(1.2) rotate(10deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        .cart-pop { animation: cartPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+        @keyframes cartBounce {
+            0%, 100% { transform: scale(1); }
+            35%      { transform: scale(1.18); }
+            70%      { transform: scale(0.95); }
+        }
+        .cart-bounce { animation: cartBounce 0.55s ease; }
+
+        /* Yellow count bubble pulse on new item */
+        @keyframes countPulse {
+            0%   { transform: scale(1); }
+            50%  { transform: scale(1.35); background-color: #FBC02D; }
+            100% { transform: scale(1); }
+        }
+        .count-pulse { animation: countPulse 0.5s ease; }
     </style>
 </head>
 <body class="bg-gray-50 text-farmDark">
@@ -412,8 +435,17 @@
         </div>
     </div>
 
-    <!-- Toast Container -->
-    <div id="toast-container" class="fixed bottom-4 right-4 z-[200] space-y-2 pointer-events-none"></div>
+    <!-- FLOATING CART BUTTON (bottom-left, pops in when items added) -->
+    <button id="floating-cart"
+            onclick="toggleCart()"
+            class="fixed bottom-6 left-6 z-[150] hidden bg-farmRed text-white h-16 w-16 rounded-full shadow-2xl hover:bg-red-700 transition flex items-center justify-center">
+        <i class="fas fa-shopping-cart text-2xl"></i>
+        <span id="floating-cart-count"
+              class="absolute -top-1 -right-1 bg-farmYellow text-farmDark text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-md">0</span>
+    </button>
+
+    <!-- Toast Container (bottom-left, above the floating cart) -->
+    <div id="toast-container" class="fixed bottom-28 left-6 z-[200] space-y-2 pointer-events-none"></div>
 
     <script>
         // --- CONSTANTS ---
@@ -475,6 +507,7 @@
 
         let cart = [];
         let currentCustomPizza = null;
+        let previousCartCount = 0; // Track previous count to trigger animations
 
         // ============================================================
         // --- INIT ---
@@ -496,14 +529,49 @@
         });
 
         // ============================================================
-        // --- TOAST ---
+        // --- FLOATING CART BUTTON ---
+        // ============================================================
+        function updateFloatingCart(count, animate) {
+            const fab = document.getElementById('floating-cart');
+            const fabCount = document.getElementById('floating-cart-count');
+            if (!fab || !fabCount) return;
+
+            if (count > 0) {
+                // Show (first time -> pop-in animation)
+                if (fab.classList.contains('hidden')) {
+                    fab.classList.remove('hidden');
+                    fab.classList.remove('cart-pop', 'cart-bounce');
+                    void fab.offsetWidth; // force reflow
+                    fab.classList.add('cart-pop');
+                } else if (animate) {
+                    // Already visible and new item added -> bounce
+                    fab.classList.remove('cart-pop', 'cart-bounce');
+                    void fab.offsetWidth;
+                    fab.classList.add('cart-bounce');
+                }
+                fabCount.innerText = count;
+
+                if (animate && count !== previousCartCount) {
+                    fabCount.classList.remove('count-pulse');
+                    void fabCount.offsetWidth;
+                    fabCount.classList.add('count-pulse');
+                }
+            } else {
+                // Empty cart -> hide
+                fab.classList.add('hidden');
+                fab.classList.remove('cart-pop', 'cart-bounce');
+            }
+        }
+
+        // ============================================================
+        // --- TOAST (bottom-left, above the floating cart) ---
         // ============================================================
         function showToast(item) {
             const container = document.getElementById('toast-container');
             if (!container) return;
 
             const toast = document.createElement('div');
-            toast.className = 'bg-white border-l-4 border-green-500 shadow-2xl rounded-lg p-4 flex items-start gap-3 max-w-sm pointer-events-auto transition-transform duration-300 toast-enter';
+            toast.className = 'bg-white border-l-4 border-green-500 shadow-2xl rounded-lg p-3 flex items-start gap-3 max-w-xs pointer-events-auto transition-all duration-300 toast-enter';
 
             let details = [];
             if (item.size) details.push(item.size);
@@ -516,11 +584,11 @@
             const detailsStr = details.length ? details.join(' • ') : '';
 
             toast.innerHTML = `
-                <div class="text-green-500 text-xl mt-0.5"><i class="fas fa-check-circle"></i></div>
+                <div class="text-green-500 text-lg mt-0.5"><i class="fas fa-check-circle"></i></div>
                 <div class="flex-1 min-w-0">
-                    <p class="font-bold text-farmDark text-sm">Added to Cart</p>
+                    <p class="font-bold text-farmDark text-xs">Added to Cart</p>
                     <p class="text-sm text-gray-800 font-semibold truncate">${item.name}</p>
-                    ${detailsStr ? `<p class="text-xs text-gray-500 mt-0.5 leading-snug">${detailsStr}</p>` : ''}
+                    ${detailsStr ? `<p class="text-[11px] text-gray-500 mt-0.5 leading-snug">${detailsStr}</p>` : ''}
                     <p class="text-xs text-farmRed font-bold mt-1">£${item.price.toFixed(2)} × ${item.quantity}</p>
                 </div>
                 <button onclick="this.parentElement.remove()" class="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
@@ -535,7 +603,7 @@
                 toast.classList.remove('toast-show');
                 toast.classList.add('toast-enter');
                 setTimeout(() => toast.remove(), 300);
-            }, 3200);
+            }, 2800);
         }
 
         // ============================================================
@@ -725,7 +793,6 @@
             updatePizzaButtonStates();
         }
 
-        // NEW: Update every pizza card to reflect what's currently in the cart
         function updatePizzaButtonStates() {
             menuData.pizzas.forEach(pizza => {
                 const btn = document.getElementById(`pizza-btn-${pizza.id}`);
@@ -1348,6 +1415,11 @@
 
             // Keep menu pizza cards in sync with the cart
             updatePizzaButtonStates();
+
+            // Update the floating cart button on the bottom-left
+            const countChanged = count !== previousCartCount;
+            updateFloatingCart(count, countChanged && count > 0);
+            previousCartCount = count;
         }
 
         function toggleCart() {
