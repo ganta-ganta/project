@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Farm Pizza | Hounslow</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- Firebase SDK (compat for simplicity) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
+<script>
+  tailwind.config = {
+    theme: { extend: {
+      colors: { farmRed:'#D32F2F', farmYellow:'#FBC02D', farmDark:'#1F2937', farmCream:'#FEF3C7' },
+      fontFamily: { pacifico:['Pacifico','cursive'], poppins:['Poppins','sans-serif'] }
+    }}
+  }
+</script>
+<style>
+  html,body{overflow-x:hidden}
+  body{font-family:'Poppins',sans-serif}
+  .hero-bg{
+    background-color:#1F2937;
+    background-image:linear-gradient(rgba(0,0,0,.6),rgba(0,0,0,.6)),url('hero.jpg'),linear-gradient(135deg,#D32F2F 0%,#FBC02D 100%);
+    background-size:cover,cover,cover;background-position:center,center,center;
+    background-repeat:no-repeat,no-repeat,no-repeat;background-attachment:scroll,scroll,scroll;
+    width:100%;max-width:100%;
+  }
+  .hide-scrollbar::-webkit-scrollbar{display:none}
+  .hide-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
+  .cart-drawer{transition:transform .3s ease-in-out}
+  .cart-open{transform:translateX(0)}
+  .cart-closed{transform:translateX(100%)}
+  #welcome-modal{z-index:9999}
+  .toast-enter{transform:translateX(-120%);opacity:0}
+  .toast-show{transform:translateX(0);opacity:1}
+  @keyframes softPulse{0%,100%{box-shadow:0 0 0 0 rgba(251,192,45,.5)}50%{box-shadow:0 0 0 8px rgba(251,192,45,0)}}
+  .recommendation-pulse{animation:softPulse 2s infinite}
+  @keyframes cartPop{0%{transform:scale(0) rotate(-180deg);opacity:0}60%{transform:scale(1.2) rotate(10deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
+  .cart-pop{animation:cartPop .45s cubic-bezier(.34,1.56,.64,1) forwards}
+  @keyframes cartBounce{0%,100%{transform:scale(1)}35%{transform:scale(1.18)}70%{transform:scale(.95)}}
+  .cart-bounce{animation:cartBounce .55s ease}
+  @keyframes countPulse{0%{transform:scale(1)}50%{transform:scale(1.35);background-color:#FBC02D}100%{transform:scale(1)}}
+  .count-pulse{animation:countPulse .5s ease}
+  .hh-divider{background:linear-gradient(90deg,transparent 0%,#FBC02D 49%,#FBC02D 51%,transparent 100%);height:3px}
+  .spinner{width:40px;height:40px;border:4px solid #FBC02D;border-top-color:#D32F2F;border-radius:50%;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body class="bg-gray-50 text-farmDark">
+
+<!-- Loading overlay -->
+<div id="loading-overlay" class="fixed inset-0 bg-white z-[9999] flex flex-col items-center justify-center">
+  <div class="spinner mb-4"></div>
+  <p class="text-farmRed font-semibold">Loading menu…</p>
+</div>
+
+<!-- Navigation -->
+<nav class="bg-white shadow-lg sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between items-center h-20">
+      <div class="flex-shrink-0 flex items-center">
+        <span class="font-pacifico text-3xl text-farmRed">Farm Pizza</span>
+        <span class="ml-2 text-xs text-gray-500 italic hidden sm:block">Since 1999</span>
+        <span id="live-badge" class="hidden ml-4 px-3 py-1 rounded-full text-xs font-bold shadow-md transition-all duration-300">
+          <i class="fas fa-circle text-[8px] mr-1"></i> LIVE
+        </span>
+      </div>
+      <div class="hidden md:flex space-x-8 items-center">
+        <a href="#home" class="hover:text-farmRed font-semibold transition">Home</a>
+        <a href="#deals" class="hover:text-farmRed font-semibold transition">Deals</a>
+        <a href="#menu" class="hover:text-farmRed font-semibold transition">Menu</a>
+        <a href="#contact" class="hover:text-farmRed font-semibold transition">Contact</a>
+        <button onclick="toggleCart()" class="relative bg-farmRed text-white px-5 py-2 rounded-full hover:bg-red-700 transition">
+          <i class="fas fa-shopping-cart"></i> Cart
+          <span id="cart-count" class="absolute -top-2 -right-2 bg-farmYellow text-farmDark text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">0</span>
+        </button>
+      </div>
+      <div class="md:hidden">
+        <button onclick="toggleCart()" class="relative bg-farmRed text-white px-4 py-2 rounded-full">
+          <i class="fas fa-shopping-cart"></i>
+          <span id="cart-count-mobile" class="absolute -top-2 -right-2 bg-farmYellow text-farmDark text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">0</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header id="home" class="hero-bg h-96 flex items-center justify-center text-center text-white relative">
+  <div class="px-4 max-w-3xl mx-auto">
+    <h1 class="font-pacifico text-5xl md:text-7xl mb-4 text-farmYellow">Farm Pizza</h1>
+    <p class="text-xl md:text-2xl mb-6">Freshly made pizzas in Hounslow since 1999</p>
+    <div class="flex flex-col sm:flex-row justify-center gap-4">
+      <a href="#menu" class="bg-farmRed hover:bg-red-700 text-white font-bold py-3 px-8 rounded-full transition">Order Now</a>
+      <a href="tel:02087375731" class="bg-white text-farmDark hover:bg-gray-200 font-bold py-3 px-8 rounded-full transition"><i class="fas fa-phone-alt mr-2"></i> 0208 737 5731</a>
+    </div>
+  </div>
+</header>
+
+<!-- Opening Bar -->
+<div class="bg-farmYellow text-farmDark py-3 text-center font-semibold text-sm flex justify-center items-center gap-2 flex-wrap">
+  <p>Mon - Thur: 11:00 am - 11:00 pm | Fri - Sat: 11:00 am - Midnight | Open 7 Days a Week</p>
+  <span id="live-status-text" class="ml-4"></span>
+</div>
+
+<!-- Deals -->
+<section id="deals" class="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <h2 class="font-pacifico text-4xl text-center text-farmRed mb-12">Special Offers</h2>
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="bg-white rounded-2xl shadow-lg overflow-hidden border-t-4 border-farmRed hover:shadow-2xl transition">
+      <div class="p-6 text-center">
+        <h3 class="font-bold text-2xl mb-2">Special Deal</h3>
+        <p class="text-gray-600 mb-4">Any Medium Pizza <br><span class="text-3xl font-bold text-farmRed">£5.99</span></p>
+        <p class="text-gray-600 mb-4">Any XL Pizza <br><span class="text-3xl font-bold text-farmRed">£7.99</span></p>
+        <p class="text-sm text-gray-500 italic">Collection only</p>
+      </div>
+    </div>
+    <div class="bg-white rounded-2xl shadow-lg overflow-hidden border-t-4 border-farmYellow hover:shadow-2xl transition">
+      <div class="p-6 text-center">
+        <h3 class="font-bold text-2xl mb-2">Farm Deal</h3>
+        <p class="text-gray-600 mb-4">2 Medium Pizzas & 1 Side of your choice</p>
+        <p class="text-3xl font-bold text-farmRed mb-4">£23.99</p>
+      </div>
+    </div>
+    <div class="bg-white rounded-2xl shadow-lg overflow-hidden border-t-4 border-farmRed hover:shadow-2xl transition">
+      <div class="p-6 text-center">
+        <h3 class="font-bold text-2xl mb-2">Mega Deals</h3>
+        <p class="text-gray-600 mb-2 text-sm">3 Pizzas & 2 Sides of your choice</p>
+        <div class="flex justify-center gap-4 text-sm font-semibold text-gray-700">
+          <div>Medium<br><span class="text-xl text-farmRed">£29.99</span></div>
+          <div>Large<br><span class="text-xl text-farmRed">£30.99</span></div>
+          <div>XL<br><span class="text-xl text-farmRed">£31.99</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="bg-white rounded-2xl shadow-lg overflow-hidden border-t-4 border-farmYellow hover:shadow-2xl transition">
+      <div class="p-6 text-center">
+        <h3 class="font-bold text-2xl mb-2">Crazy Deals</h3>
+        <p class="text-gray-600 mb-2 text-sm">2 Pizzas & 2 Sides of your choice</p>
+        <div class="flex justify-center gap-4 text-sm font-semibold text-gray-700">
+          <div>Medium<br><span class="text-xl text-farmRed">£24.99</span></div>
+          <div>Large<br><span class="text-xl text-farmRed">£25.99</span></div>
+          <div>XL<br><span class="text-xl text-farmRed">£26.99</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Menu -->
+<section id="menu" class="py-16 bg-white">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <h2 class="font-pacifico text-4xl text-center text-farmRed mb-8">Our Menu</h2>
+    <div class="flex justify-center space-x-4 mb-10 overflow-x-auto hide-scrollbar pb-2">
+      <button onclick="switchTab('pizzas')" id="tab-pizzas" class="px-6 py-2 rounded-full font-semibold bg-farmRed text-white transition">Pizzas</button>
+      <button onclick="switchTab('sides')" id="tab-sides" class="px-6 py-2 rounded-full font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition">Side Orders</button>
+      <button onclick="switchTab('dips')" id="tab-dips" class="px-6 py-2 rounded-full font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition">Dips</button>
+      <button onclick="switchTab('drinks')" id="tab-drinks" class="px-6 py-2 rounded-full font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition">Drinks</button>
+    </div>
+    <div id="pizza-subcategories" class="flex flex-wrap justify-center gap-2 mb-8">
+      <button onclick="filterPizzas('all')" id="subcat-all" class="px-4 py-1.5 rounded-full border border-farmRed text-farmRed text-sm font-semibold hover:bg-farmRed hover:text-white transition bg-farmRed text-white">All Pizzas</button>
+      <button onclick="filterPizzas('veg')" id="subcat-veg" class="px-4 py-1.5 rounded-full border border-farmRed text-farmRed text-sm font-semibold hover:bg-farmRed hover:text-white transition">Vegetarian</button>
+      <button onclick="filterPizzas('chicken')" id="subcat-chicken" class="px-4 py-1.5 rounded-full border border-farmRed text-farmRed text-sm font-semibold hover:bg-farmRed hover:text-white transition">Chicken</button>
+      <button onclick="filterPizzas('ham_pepperoni')" id="subcat-ham_pepperoni" class="px-4 py-1.5 rounded-full border border-farmRed text-farmRed text-sm font-semibold hover:bg-farmRed hover:text-white transition">Ham & Pepperoni</button>
+    </div>
+    <div id="pizzas-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    <div id="sides-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6 hidden"></div>
+    <div id="dips-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 hidden"></div>
+    <div id="drinks-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6 hidden"></div>
+  </div>
+</section>
+
+<!-- Create Your Own -->
+<section class="py-16 bg-farmCream">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <h2 class="font-pacifico text-4xl text-farmRed mb-4">Create Your Own Pizza</h2>
+    <p class="text-gray-700 mb-2">Choose any size, crust, and your favourite toppings.</p>
+    <p class="text-sm text-gray-600 mb-8">
+      <span class="inline-flex items-center bg-green-100 text-green-800 px-3 py-1 rounded-full font-semibold mr-1"><i class="fas fa-gift mr-1"></i> First 3 toppings FREE</span>
+      <span class="inline-flex items-center bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full font-semibold">Each extra topping £1.00</span>
+    </p>
+    <div class="bg-white rounded-2xl shadow-xl p-8">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div>
+          <label class="block font-semibold mb-2">Size</label>
+          <select id="custom-size" onchange="updateCustomPizzaPrice()" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed">
+            <option value="Medium">Medium (10")</option>
+            <option value="Large">Large (12")</option>
+            <option value="XL" selected>XL (14")</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-semibold mb-2">Crust</label>
+          <select id="custom-crust" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed">
+            <option value="Thin Crust">Thin Crust</option>
+            <option value="Deep Pan" selected>Deep Pan</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-semibold mb-2">Base</label>
+          <select id="custom-base" onchange="updateCustomPizzaPrice()" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed">
+            <option value="Tomato" selected>Tomato Base</option>
+            <option value="BBQ">BBQ Base (+£1.00)</option>
+          </select>
+        </div>
+      </div>
+      <div class="mb-6 text-left">
+        <label class="block font-semibold mb-3 text-center">Select Your Toppings</label>
+        <div id="toppings-container" class="flex flex-wrap justify-center gap-2"></div>
+      </div>
+      <div class="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-200">
+        <div class="flex justify-between text-sm text-gray-600 mb-1"><span>Base (<span id="custom-size-label">XL</span>):</span><span id="custom-base-price">£10.99</span></div>
+        <div class="flex justify-between text-sm text-gray-600 mb-1"><span>Extra toppings (<span id="custom-extra-count">0</span> beyond 3 free):</span><span id="custom-extra-cost">£0.00</span></div>
+        <div class="flex justify-between text-sm text-gray-500 italic mb-2"><span id="custom-topping-summary">No toppings selected</span><span id="custom-topping-total-qty"></span></div>
+        <div class="flex justify-between font-bold text-lg pt-2 border-t border-gray-200"><span>Total:</span><span id="custom-total" class="text-farmRed">£10.99</span></div>
+      </div>
+      <button onclick="addCustomPizza()" class="bg-farmRed text-white font-bold py-3 px-8 rounded-full hover:bg-red-700 transition w-full md:w-auto"><i class="fas fa-cart-plus mr-1"></i> Add Custom Pizza to Cart</button>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer id="contact" class="bg-farmDark text-white py-12">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+    <div>
+      <h3 class="font-pacifico text-2xl text-farmYellow mb-4">Farm Pizza</h3>
+      <p class="text-gray-300 mb-2">325 Vicarage Farm Road,</p>
+      <p class="text-gray-300 mb-4">Hounslow, TW5 0DR</p>
+      <p class="text-gray-300"><i class="fas fa-phone mr-2"></i> 0208 737 5731</p>
+      <p class="text-gray-300"><i class="fas fa-phone mr-2"></i> 0208 230 0023</p>
+      <p class="text-gray-300 mt-2"><i class="fas fa-globe mr-2"></i> farmpizza.co.uk</p>
+    </div>
+    <div>
+      <h3 class="font-semibold text-xl mb-4 text-farmYellow">Opening Hours</h3>
+      <p class="text-gray-300 mb-2">Monday - Thursday: 11:00 am - 11:00 pm</p>
+      <p class="text-gray-300 mb-2">Friday - Saturday: 11:00 am - 12:00 am</p>
+      <p class="text-gray-300">Sunday: 11:00 am - 11:00 pm</p>
+      <p id="footer-live-status" class="mt-3 font-bold text-sm"></p>
+    </div>
+    <div>
+      <h3 class="font-semibold text-xl mb-4 text-farmYellow">Terms & Conditions</h3>
+      <ul class="text-sm text-gray-400 space-y-1 list-disc pl-4">
+        <li>Please mention offer when you place your order.</li>
+        <li>Minimum order for delivery is £17.99.</li>
+        <li>Offers are not to be used in conjunction with any other offer.</li>
+        <li>Prices may vary depending on the specific dish.</li>
+        <li>Allow 15 minutes before closing time.</li>
+        <li>Please check your pizzas when you receive them. Complaints over the phone will not be addressed.</li>
+        <li>If you have a food allergy or intolerance, please ask a member of staff.</li>
+        <li>There is an extra charge of £1.00 for half-and-half pizza.</li>
+        <li>We make pizzas to our own standards. Extra toppings are chargeable.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="text-center text-gray-500 text-sm mt-8 border-t border-gray-700 pt-4">&copy; 2026 Farm Pizza. All rights reserved.</div>
+</footer>
+
+<!-- Cart Drawer -->
+<div id="cart-drawer" class="fixed inset-y-0 right-0 w-full md:w-96 bg-white shadow-2xl z-50 cart-closed flex flex-col">
+  <div class="p-6 bg-farmRed text-white flex justify-between items-center">
+    <h3 class="text-xl font-bold"><i class="fas fa-shopping-cart mr-2"></i> Your Order</h3>
+    <button onclick="toggleCart()" class="text-2xl hover:text-farmYellow">&times;</button>
+  </div>
+  <div id="cart-items" class="flex-1 overflow-y-auto p-6"><p class="text-gray-500 text-center mt-10">Your cart is empty.</p></div>
+  <div class="p-6 border-t bg-gray-50">
+    <div class="flex justify-between mb-2 font-bold text-lg"><span>Subtotal:</span><span id="cart-total">£0.00</span></div>
+    <div id="delivery-min-info" class="text-xs mb-4"></div>
+    <button onclick="checkout()" class="w-full bg-farmRed text-white font-bold py-3 rounded-full hover:bg-red-700 transition">Proceed to Checkout</button>
+  </div>
+</div>
+<div id="cart-overlay" onclick="toggleCart()" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden"></div>
+
+<!-- Customization Modal -->
+<div id="customize-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div class="flex justify-between items-center mb-4">
+      <h3 id="modal-title" class="text-xl font-bold text-farmRed">Customize Pizza</h3>
+      <button onclick="closeModal()" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+    </div>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<!-- Checkout Modal -->
+<div id="checkout-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl max-h-[95vh] overflow-y-auto">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-xl font-bold text-farmRed">Checkout</h3>
+      <button onclick="closeCheckoutModal()" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+    </div>
+    <div class="space-y-4">
+      <div>
+        <label class="block font-semibold text-sm mb-2">How would you like to receive your order?</label>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="cursor-pointer">
+            <input type="radio" name="fulfillment" value="collection" checked onchange="toggleDeliveryAddress()" class="peer sr-only">
+            <div class="py-3 rounded-xl border-2 border-gray-200 text-center font-bold text-gray-600 transition peer-checked:border-farmRed peer-checked:bg-farmRed peer-checked:text-white peer-checked:shadow-lg hover:border-gray-300"><i class="fas fa-store mr-1"></i> Collection</div>
+          </label>
+          <label class="cursor-pointer">
+            <input type="radio" name="fulfillment" value="delivery" onchange="toggleDeliveryAddress()" class="peer sr-only">
+            <div class="py-3 rounded-xl border-2 border-gray-200 text-center font-bold text-gray-600 transition peer-checked:border-farmRed peer-checked:bg-farmRed peer-checked:text-white peer-checked:shadow-lg hover:border-gray-300"><i class="fas fa-motorcycle mr-1"></i> Delivery</div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Customer Name (Mandatory) -->
+      <div>
+        <label class="block font-semibold text-sm mb-1">Your Name <span class="text-farmRed">*</span></label>
+        <input type="text" id="customer-name" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="Full name">
+      </div>
+
+      <!-- Phone Number (Mandatory for BOTH collection and delivery) -->
+      <div>
+        <label class="block font-semibold text-sm mb-1">Phone Number <span class="text-farmRed">*</span></label>
+        <input type="tel" id="customer-phone" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="e.g. 07123 456789">
+        <p class="text-xs text-gray-500 mt-1">We use this to confirm your order. Mandatory.</p>
+      </div>
+
+      <div id="collection-info" class="bg-green-50 border border-green-200 p-3 rounded-lg text-sm text-gray-700">
+        <p><i class="fas fa-map-marker-alt mr-1 text-farmRed"></i> 325 Vicarage Farm Road, Hounslow, TW5 0DR</p>
+        <p class="mt-1"><i class="fas fa-clock mr-1 text-farmRed"></i> Collection ready in <strong>less than 15 minutes</strong></p>
+        <p class="mt-1 text-green-700 font-semibold"><i class="fas fa-check-circle mr-1"></i> No minimum order for collection</p>
+      </div>
+
+      <div id="delivery-info" class="hidden space-y-2">
+        <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg text-sm text-gray-700">
+          <p><i class="fas fa-clock mr-1 text-farmRed"></i> Delivery estimated in <strong>10–30 minutes</strong></p>
+          <p class="mt-1 text-blue-700 font-semibold"><i class="fas fa-info-circle mr-1"></i> Minimum order £17.99 for delivery</p>
+        </div>
+        <label class="block font-semibold text-sm mb-1">Delivery Address <span class="text-farmRed">*</span></label>
+        <div class="grid grid-cols-2 gap-2">
+          <input type="text" id="delivery-house" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="House / Flat No.">
+          <input type="text" id="delivery-street" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="Street Name">
+        </div>
+        <input type="text" id="delivery-postcode" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="Postcode (e.g. TW5 0DR)">
+        <div class="mt-2">
+          <label class="block font-semibold text-sm mb-1">Delivery Note (Optional)</label>
+          <textarea id="delivery-note" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" rows="2" placeholder="e.g. Ring the bell, leave at door…"></textarea>
+        </div>
+      </div>
+
+      <div id="checkout-min-warning" class="hidden bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">
+        <i class="fas fa-exclamation-triangle mr-1"></i><span id="checkout-min-warning-text"></span>
+      </div>
+
+      <div class="flex justify-between items-center font-bold text-lg pt-2 border-t border-gray-200">
+        <span>Total to Pay:</span>
+        <span id="checkout-total" class="text-farmRed">£0.00</span>
+      </div>
+      <button id="confirm-order-btn" onclick="placeOrder()" class="w-full bg-farmRed text-white font-bold py-3 rounded-lg hover:bg-red-700 transition disabled:opacity-50">Confirm Order</button>
+    </div>
+  </div>
+</div>
+
+<!-- Welcome Modal -->
+<div id="welcome-modal" class="fixed inset-0 bg-black bg-opacity-70 z-[100] hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl text-center relative">
+    <button onclick="closeWelcomeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+    <div id="welcome-step-1">
+      <h2 class="font-pacifico text-3xl text-farmRed mb-4">Welcome!</h2>
+      <p class="text-gray-700 mb-6">Are you a new or regular customer?</p>
+      <div class="flex flex-col gap-3">
+        <button onclick="showAllergyInfo()" class="bg-farmRed text-white font-bold py-3 rounded-full hover:bg-red-700 transition">I'm a New Customer</button>
+        <button onclick="closeWelcomeModal()" class="bg-gray-200 text-gray-800 font-bold py-3 rounded-full hover:bg-gray-300 transition">I'm a Regular Customer</button>
+      </div>
+    </div>
+    <div id="welcome-step-2" class="hidden">
+      <div class="text-farmYellow text-5xl mb-4"><i class="fas fa-exclamation-triangle"></i></div>
+      <h3 class="font-bold text-xl text-farmRed mb-2">Food Allergies & Intolerances</h3>
+      <p class="text-sm text-gray-600 mb-4">If you have a food allergy or intolerance, please don't hesitate to contact our receptionist.</p>
+      <div class="bg-gray-50 p-4 rounded-lg mb-6 border border-gray-200">
+        <p class="font-semibold text-gray-800 mb-1">Call us directly:</p>
+        <a href="tel:02087375731" class="text-farmRed text-xl font-bold hover:underline flex items-center justify-center"><i class="fas fa-phone-alt mr-2 text-lg"></i> 0208 737 5731</a>
+      </div>
+      <button onclick="closeWelcomeModal()" class="w-full bg-farmRed text-white font-bold py-3 rounded-full hover:bg-red-700 transition">I Understand, Continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- Floating Cart Button -->
+<button id="floating-cart" onclick="toggleCart()" class="fixed bottom-6 left-6 z-[150] hidden bg-farmRed text-white h-16 w-16 rounded-full shadow-2xl hover:bg-red-700 transition flex items-center justify-center">
+  <i class="fas fa-shopping-cart text-2xl"></i>
+  <span id="floating-cart-count" class="absolute -top-1 -right-1 bg-farmYellow text-farmDark text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-md">0</span>
+</button>
+
+<!-- Toast Container -->
+<div id="toast-container" class="fixed bottom-28 left-6 z-[200] space-y-2 pointer-events-none"></div>
+
+<script>
+/* ============================================================
+   FIREBASE INIT
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyDPtj4qRDowQAdyF_oFX8Jqbxw1agB_Vv8",
+  authDomain: "pizza-9363e.firebaseapp.com",
+  projectId: "pizza-9363e",
+  storageBucket: "pizza-9363e.firebasestorage.app",
+  messagingSenderId: "21639403716",
+  appId: "1:21639403716:web:f0644243df9cca3a92d191",
+  measurementId: "G-99HJBP9SE0"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+/* ============================================================
+   DEFAULT MENU (used if Firestore is empty on first run)
+   ============================================================ */
+const DEFAULT_MENU = {
+  pizzas: [
+    {id:1,name:"Margherita",desc:"Cheese & tomato sauce",veg:true,basePrice:5.99,image:"https://image.pollinations.ai/prompt/margherita%20pizza%20with%20fresh%20basil%20and%20tomato?width=400&height=300&nologo=true"},
+    {id:2,name:"Funghi",desc:"Cheese, tomato sauce & mushroom",veg:true,basePrice:5.99,image:"https://image.pollinations.ai/prompt/mushroom%20pizza%20top%20view?width=400&height=300&nologo=true"},
+    {id:3,name:"Peppermoni",desc:"Cheese, tomato sauce & peppermoni slices",veg:false,basePrice:5.99,image:"https://image.pollinations.ai/prompt/pepperoni%20pizza%20top%20view?width=400&height=300&nologo=true"},
+    {id:4,name:"Farm House",desc:"Ham & mushroom",veg:false,basePrice:5.99,image:"https://image.pollinations.ai/prompt/ham%20and%20mushroom%20pizza?width=400&height=300&nologo=true"},
+    {id:5,name:"Hawaiian",desc:"Ham & pineapple",veg:false,basePrice:5.99,image:"https://image.pollinations.ai/prompt/hawaiian%20pizza%20with%20ham%20and%20pineapple?width=400&height=300&nologo=true"},
+    {id:6,name:"Vegetarian",desc:"Mixed peppers, onion, mushroom & sweetcorn",veg:true,basePrice:5.99,image:"https://image.pollinations.ai/prompt/vegetarian%20pizza%20with%20peppers%20and%20mushrooms?width=400&height=300&nologo=true"},
+    {id:7,name:"Vegetarian Hot",desc:"Mixed peppers, onion, mushroom, sweetcorn & hot chillies",veg:true,basePrice:5.99,image:"https://image.pollinations.ai/prompt/spicy%20vegetarian%20pizza%20with%20chillies?width=400&height=300&nologo=true"},
+    {id:8,name:"Vegetarian Supreme",desc:"Mushroom, onion, jalapeno pepper & fresh tomato",veg:true,basePrice:5.99,image:"https://image.pollinations.ai/prompt/supreme%20vegetarian%20pizza?width=400&height=300&nologo=true"},
+    {id:9,name:"Heatwave",desc:"Fresh garlic, black olives & hot chillies",veg:true,basePrice:5.99,image:"https://image.pollinations.ai/prompt/spicy%20pizza%20with%20chillies%20and%20olives?width=400&height=300&nologo=true"},
+    {id:10,name:"Mediterranean",desc:"Fresh tomato, black olives & sweetcorn",veg:true,basePrice:5.99,image:"https://image.pollinations.ai/prompt/mediterranean%20pizza%20with%20tomatoes%20and%20olives?width=400&height=300&nologo=true"},
+    {id:11,name:"Chicken Delight",desc:"Tandoori Chicken, chicken tikka & onion",veg:false,basePrice:5.99,image:"https://image.pollinations.ai/prompt/tandoori%20chicken%20pizza?width=400&height=300&nologo=true"},
+    {id:12,name:"Volcano",desc:"Tandoori chicken, onion, mushroom, fresh garlic & hot chillies",veg:false,basePrice:5.99,image:"https://image.pollinations.ai/prompt/spicy%20chicken%20pizza%20with%20chillies?width=400&height=300&nologo=true"},
+    {id:13,name:"Chicken Supreme",desc:"Spicy Tandoori chicken, chicken tikka, onion, jalapeno pepper & hot chillies",veg:false,basePrice:5.99,image:"https://image.pollinations.ai/prompt/chicken%20supreme%20pizza?width=400&height=300&nologo=true"},
+    {id:14,name:"Meat Feast",desc:"Peppermoni, ham & plain chicken",veg:false,basePrice:5.99,image:"https://image.pollinations.ai/prompt/meat%20feast%20pizza?width=400&height=300&nologo=true"},
+    {id:15,name:"Seafood",desc:"Tuna, black olives & prawns",veg:false,basePrice:5.99,image:"https://image.pollinations.ai/prompt/seafood%20pizza%20with%20prawns%20and%20tuna?width=400&height=300&nologo=true"},
+    {id:16,name:"Mexican",desc:"Jalapeno peppers, green peppers & plain chicken",veg:false,basePrice:5.99,image:"https://image.pollinations.ai/prompt/mexican%20pizza%20with%20jalapenos?width=400&height=300&nologo=true"},
+    {id:17,name:"Farm Feast",desc:"Double layers of cheese & two of your favorite toppings",veg:false,basePrice:5.99,image:"https://image.pollinations.ai/prompt/double%20cheese%20pizza?width=400&height=300&nologo=true"},
+    {id:18,name:"Free Choice",desc:"Cheese and tomato & 3 of your favorite toppings",veg:true,basePrice:5.99,image:"https://image.pollinations.ai/prompt/custom%20pizza%20with%20various%20toppings?width=400&height=300&nologo=true"}
+  ],
+  sides: [
+    {id:101,name:"Garlic Bread (4 pcs)",price:1.99,image:"https://image.pollinations.ai/prompt/garlic%20bread%20slices?width=200&height=200&nologo=true"},
+    {id:102,name:"Garlic Bread with Cheese (4 pcs)",price:2.49,image:"https://image.pollinations.ai/prompt/cheesy%20garlic%20bread?width=200&height=200&nologo=true"},
+    {id:103,name:"Potato Wedges",price:2.49,image:"https://image.pollinations.ai/prompt/potato%20wedges?width=200&height=200&nologo=true"},
+    {id:104,name:"BBQ Chicken Wings",price:3.99,image:"https://image.pollinations.ai/prompt/bbq%20chicken%20wings?width=200&height=200&nologo=true"}
+  ],
+  dips: [
+    {id:301,name:"Garlic & Herb Dip",price:0.30,image:"https://image.pollinations.ai/prompt/garlic%20herb%20dip%20sauce%20cup?width=200&height=200&nologo=true"},
+    {id:302,name:"Chilli Dip",price:0.30,image:"https://image.pollinations.ai/prompt/chilli%20sauce%20dip%20cup?width=200&height=200&nologo=true"},
+    {id:303,name:"Ketchup Dip",price:0.30,image:"https://image.pollinations.ai/prompt/ketchup%20dip%20cup?width=200&height=200&nologo=true"},
+    {id:304,name:"Mayo Dip",price:0.30,image:"https://image.pollinations.ai/prompt/mayonnaise%20dip%20cup?width=200&height=200&nologo=true"},
+    {id:305,name:"BBQ Dip",price:0.30,image:"https://image.pollinations.ai/prompt/bbq%20sauce%20dip%20cup?width=200&height=200&nologo=true"}
+  ],
+  drinks: [
+    {id:201,name:"Coke (Bottle)",price:2.99,image:"https://image.pollinations.ai/prompt/bottle%20of%20coca%20cola?width=200&height=200&nologo=true"},
+    {id:202,name:"Diet Coke (Bottle)",price:2.99,image:"https://image.pollinations.ai/prompt/bottle%20of%20diet%20coke?width=200&height=200&nologo=true"},
+    {id:203,name:"Fanta (Bottle)",price:2.99,image:"https://image.pollinations.ai/prompt/bottle%20of%20fanta%20orange?width=200&height=200&nologo=true"},
+    {id:204,name:"Sprite (Bottle)",price:2.99,image:"https://image.pollinations.ai/prompt/bottle%20of%20sprite?width=200&height=200&nologo=true"}
+  ]
+};
+
+const toppings = {
+  vegetables:["Onion","Mushroom","Green peppers","Cheese","Jalapeno peppers","Sweetcorn","Fresh tomato","Fresh garlic","Black olives","Pineapple","Hot chillies"],
+  meat:["Pepperoni","Ham","Plain chicken","Tandoori chicken","Chicken tikka","Bacon","Tuna","Prawns"]
+};
+
+const BASE_PRICES = { Medium:5.99, Large:8.99, XL:10.99 };
+const DELIVERY_MINIMUM = 17.99;
+const FREE_TOPPINGS = 3;
+const EXTRA_TOPPING_PRICE = 1.00;
+const HALF_AND_HALF_CHARGE = 1.00;
+
+/* Global state */
+let menuData = { pizzas:[], sides:[], dips:[], drinks:[] };
+let cart = [];
+let currentCustomPizza = null;
+let previousCartCount = 0;
+
+/* ============================================================
+   INIT
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadMenuFromFirestore();
+  switchTab('pizzas');
+  renderToppings();
+  updateCustomPizzaPrice();
+  updateCartUI();
+  checkOpenStatus();
+  setInterval(checkOpenStatus, 60000);
+
+  const customerType = localStorage.getItem('customerType');
+  if (!customerType) {
+    setTimeout(() => document.getElementById('welcome-modal').classList.remove('hidden'), 1000);
+  }
+
+  document.getElementById('loading-overlay').style.display = 'none';
+});
+
+/* ============================================================
+   MENU FROM FIRESTORE (real-time)
+   ============================================================ */
+async function loadMenuFromFirestore() {
+  try {
+    // Seed products collection if empty (first run)
+    const snap = await db.collection('products').limit(1).get();
+    if (snap.empty) {
+      const batch = db.batch();
+      DEFAULT_MENU.pizzas.forEach(p => batch.set(db.collection('products').doc('pizza_'+p.id), {...p,category:'pizza',available:true}));
+      DEFAULT_MENU.sides.forEach(s => batch.set(db.collection('products').doc('side_'+s.id), {...s,category:'side',available:true}));
+      DEFAULT_MENU.dips.forEach(d => batch.set(db.collection('products').doc('dip_'+d.id), {...d,category:'dip',available:true}));
+      DEFAULT_MENU.drinks.forEach(d => batch.set(db.collection('products').doc('drink_'+d.id), {...d,category:'drink',available:true}));
+      await batch.commit();
+    }
+
+    // Real-time listener
+    db.collection('products').onSnapshot(snapshot => {
+      const pizzas=[],sides=[],dips=[],drinks=[];
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        if (d.available === false) return;
+        const item = { id: d.id, name: d.name, desc: d.desc||'', veg: !!d.veg, price: d.price, basePrice: d.basePrice, image: d.image, category: d.category };
+        if (d.category==='pizza') pizzas.push(item);
+        else if (d.category==='side') sides.push(item);
+        else if (d.category==='dip') dips.push(item);
+        else if (d.category==='drink') drinks.push(item);
+      });
+      menuData = { pizzas, sides, dips, drinks };
+      // Re-render current tab
+      const activeTab = document.querySelector('[id^="tab-"][class*="bg-farmRed"]');
+      if (activeTab) {
+        const cat = activeTab.id.replace('tab-','');
+        if (cat==='pizzas') filterPizzas('all');
+        else renderMenu(cat);
+      }
+    });
+  } catch (e) {
+    console.error('Menu load error:', e);
+    // Fallback to defaults
+    menuData = {
+      pizzas: DEFAULT_MENU.pizzas.map(p=>({...p, basePrice:p.basePrice})),
+      sides: DEFAULT_MENU.sides, dips: DEFAULT_MENU.dips, drinks: DEFAULT_MENU.drinks
+    };
+  }
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+function showToast(item) {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+  const toast = document.createElement('div');
+  toast.className = 'bg-white border-l-4 border-green-500 shadow-2xl rounded-lg p-3 flex items-start gap-3 max-w-xs pointer-events-auto transition-all duration-300 toast-enter';
+  let details = [];
+  if (item.isHalfAndHalf) details.push(`Half ${item.name} / Half ${item.secondHalfName}`);
+  else {
+    if (item.size) details.push(item.size);
+    if (item.crust) details.push(item.crust);
+    if (item.base && item.base!=='Tomato') details.push(item.base+' Base');
+    if (item.extras && item.extras.length) details.push('+ '+item.extras.join(', '));
+  }
+  const detailsStr = details.length ? details.join(' • ') : '';
+  toast.innerHTML = `
+    <div class="text-green-500 text-lg mt-0.5"><i class="fas fa-check-circle"></i></div>
+    <div class="flex-1 min-w-0">
+      <p class="font-bold text-farmDark text-xs">Added to Cart</p>
+      <p class="text-sm text-gray-800 font-semibold truncate">${item.isHalfAndHalf?'Half & Half Pizza':item.name}</p>
+      ${detailsStr?`<p class="text-[11px] text-gray-500 mt-0.5 leading-snug">${detailsStr}</p>`:''}
+      <p class="text-xs text-farmRed font-bold mt-1">£${item.price.toFixed(2)} × ${item.quantity}</p>
+    </div>
+    <button onclick="this.parentElement.remove()" class="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>`;
+  container.appendChild(toast);
+  requestAnimationFrame(()=>{toast.classList.remove('toast-enter');toast.classList.add('toast-show');});
+  setTimeout(()=>{toast.classList.remove('toast-show');toast.classList.add('toast-enter');setTimeout(()=>toast.remove(),300);},2800);
+}
+
+/* ============================================================
+   WELCOME
+   ============================================================ */
+function showAllergyInfo(){document.getElementById('welcome-step-1').classList.add('hidden');document.getElementById('welcome-step-2').classList.remove('hidden');}
+function closeWelcomeModal(){localStorage.setItem('customerType','acknowledged');document.getElementById('welcome-modal').classList.add('hidden');}
+
+/* ============================================================
+   LIVE STATUS
+   ============================================================ */
+function checkOpenStatus() {
+  const now=new Date(),day=now.getDay(),h=now.getHours(),m=now.getMinutes();
+  const cm=h*60+m, open=11*60;
+  let close=23*60;
+  if(day===5||day===6) close=24*60;
+  const isOpen=cm>=open&&cm<close, left=close-cm;
+  const badge=document.getElementById('live-badge'), st=document.getElementById('live-status-text'), fs=document.getElementById('footer-live-status');
+  badge.className='ml-4 px-3 py-1 rounded-full text-xs font-bold shadow-md transition-all duration-300 ';
+  if(isOpen){
+    let tc='',fc='',bc='bg-green-500 text-white',bi=`<i class="fas fa-circle text-[8px] mr-1"></i> LIVE`;
+    if(left<=10){bc='bg-red-600 text-white animate-bounce';tc=`<span class="text-red-600 font-bold animate-pulse"><i class="fas fa-exclamation-triangle mr-1"></i> Closing in 10 mins!</span>`;fc=`<span class="text-red-500 font-bold animate-pulse"><i class="fas fa-exclamation-triangle mr-1"></i> Closing in 10 mins!</span>`;bi=`<i class="fas fa-exclamation-triangle mr-1"></i> 10 MINS LEFT`;}
+    else if(left<=20){bc='bg-orange-500 text-white';tc=`<span class="text-orange-500 font-bold"><i class="fas fa-clock mr-1"></i> Closes in 20 mins</span>`;fc=`<span class="text-orange-400 font-bold"><i class="fas fa-clock mr-1"></i> Closes in 20 mins</span>`;bi=`<i class="fas fa-clock mr-1"></i> 20 MINS LEFT`;}
+    else if(left<=90){bc='bg-yellow-500 text-white';tc=`<span class="text-yellow-600 font-bold"><i class="fas fa-clock mr-1"></i> Closes in 1h 30m</span>`;fc=`<span class="text-yellow-500 font-bold"><i class="fas fa-clock mr-1"></i> Closes in 1h 30m</span>`;bi=`<i class="fas fa-clock mr-1"></i> 1.5 HRS LEFT`;}
+    else{tc=`<span class="text-green-600 font-bold"><i class="fas fa-circle text-[10px] mr-1 animate-pulse"></i> Open Now</span>`;fc=`<span class="text-green-500 font-bold"><i class="fas fa-circle text-[10px] mr-1 animate-pulse"></i> We are Open!</span>`;}
+    badge.classList.add(...bc.split(' ')); badge.classList.remove('hidden'); badge.innerHTML=bi;
+    if(st)st.innerHTML=tc; if(fs)fs.innerHTML=fc;
+  }else{
+    badge.classList.add('hidden');
+    const next=cm<open?"Opens today at 11:00 AM":"Opens tomorrow at 11:00 AM";
+    if(st)st.innerHTML=`<span class="text-red-600 font-bold"><i class="fas fa-clock text-[10px] mr-1"></i> Closed - ${next}</span>`;
+    if(fs)fs.innerHTML=`<span class="text-red-500 font-bold"><i class="fas fa-clock text-[10px] mr-1"></i> Closed - ${next}</span>`;
+  }
+}
+
+/* ============================================================
+   TOPPING HIGHLIGHT
+   ============================================================ */
+function updateToppingHighlight(cb){
+  const l=cb.closest('label'), s=l.querySelector('span');
+  if(cb.checked){l.classList.add('bg-farmRed','border-farmRed');l.classList.remove('bg-white','border-gray-300');if(s){s.classList.add('text-white');s.classList.remove('text-gray-700');}}
+  else{l.classList.remove('bg-farmRed','border-farmRed');l.classList.add('bg-white','border-gray-300');if(s){s.classList.remove('text-white');s.classList.add('text-gray-700');}}
+}
+
+/* ============================================================
+   MENU TABS
+   ============================================================ */
+function switchTab(category){
+  ['pizzas','sides','dips','drinks'].forEach(cat=>{
+    const g=document.getElementById(cat+'-grid'); if(g)g.classList.add('hidden');
+    const t=document.getElementById('tab-'+cat); if(t){t.classList.remove('bg-farmRed','text-white');t.classList.add('bg-gray-200','text-gray-700');}
+  });
+  document.getElementById(category+'-grid').classList.remove('hidden');
+  const at=document.getElementById('tab-'+category);
+  at.classList.remove('bg-gray-200','text-gray-700'); at.classList.add('bg-farmRed','text-white');
+  if(category==='pizzas'){document.getElementById('pizza-subcategories').classList.remove('hidden');filterPizzas('all');}
+  else{document.getElementById('pizza-subcategories').classList.add('hidden');renderMenu(category);}
+}
+
+function filterPizzas(type){
+  document.querySelectorAll('#pizza-subcategories button').forEach(b=>{b.classList.remove('bg-farmRed','text-white');b.classList.add('text-farmRed','border-farmRed','bg-transparent');});
+  const ab=document.getElementById('subcat-'+type);
+  if(ab){ab.classList.remove('text-farmRed','border-farmRed','bg-transparent');ab.classList.add('bg-farmRed','text-white');}
+  let fp=menuData.pizzas;
+  if(type==='veg') fp=menuData.pizzas.filter(p=>p.veg);
+  else if(type==='chicken') fp=menuData.pizzas.filter(p=>p.name.toLowerCase().includes('chicken')||p.desc.toLowerCase().includes('chicken'));
+  else if(type==='ham_pepperoni') fp=menuData.pizzas.filter(p=>p.name.toLowerCase().includes('peppermoni')||p.desc.toLowerCase().includes('peppermoni')||p.name.toLowerCase().includes('ham')||p.desc.toLowerCase().includes('ham')||p.name.toLowerCase().includes('meat'));
+  renderPizzaGrid(fp);
+}
+
+function renderPizzaGrid(pizzas){
+  const grid=document.getElementById('pizzas-grid'); let html='';
+  pizzas.forEach(p=>{
+    const base = p.basePrice || BASE_PRICES.XL;
+    html+=`
+      <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition flex flex-col">
+        <div class="relative">
+          <img src="${p.image}" alt="" class="h-48 w-full object-cover bg-gradient-to-br from-farmRed to-farmYellow">
+          <span id="pizza-badge-${p.id}" class="hidden absolute top-2 right-2 bg-green-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg"><i class="fas fa-check mr-1"></i> In cart</span>
+          <span class="absolute top-2 left-2 bg-farmYellow text-farmDark text-[10px] font-bold px-2 py-0.5 rounded-full shadow"><i class="fas fa-adjust mr-1"></i> Half & Half +£1</span>
+        </div>
+        <div class="p-5 flex-1 flex flex-col justify-between">
+          <div>
+            <div class="flex justify-between items-start mb-2">
+              <h3 class="font-bold text-lg text-farmDark">${p.name}</h3>
+              ${p.veg?'<span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-semibold">Veg</span>':''}
+            </div>
+            <p class="text-gray-600 text-sm mb-2">${p.desc}</p>
+            <p class="text-farmRed font-bold text-sm mb-4">From £${(base).toFixed(2)}</p>
+          </div>
+          <button id="pizza-btn-${p.id}" onclick="openCustomizeModal(${p.id})" class="w-full bg-farmRed text-white font-semibold py-2 rounded-lg hover:bg-red-700 transition text-sm mt-auto">
+            <i class="fas fa-plus-circle mr-1"></i> Add to Order</button>
+        </div>
+      </div>`;
+  });
+  grid.innerHTML=html; updatePizzaButtonStates();
+}
+
+function updatePizzaButtonStates(){
+  menuData.pizzas.forEach(p=>{
+    const btn=document.getElementById('pizza-btn-'+p.id), badge=document.getElementById('pizza-badge-'+p.id);
+    if(!btn)return;
+    const qty=cart.filter(i=>i.name===p.name&&!i.isHalfAndHalf).reduce((s,i)=>s+i.quantity,0);
+    if(qty>0){btn.className='w-full bg-green-600 text-white font-semibold py-2 rounded-lg hover:bg-green-700 transition text-sm mt-auto';btn.innerHTML=`<i class="fas fa-check-circle mr-1"></i> In Cart · ${qty} — Add More`;if(badge){badge.classList.remove('hidden');badge.innerHTML=`<i class="fas fa-check mr-1"></i> ${qty} in cart`;}}
+    else{btn.className='w-full bg-farmRed text-white font-semibold py-2 rounded-lg hover:bg-red-700 transition text-sm mt-auto';btn.innerHTML=`<i class="fas fa-plus-circle mr-1"></i> Add to Order`;if(badge)badge.classList.add('hidden');}
+  });
+}
+
+function renderMenu(category){
+  const grid=document.getElementById(category+'-grid'); if(!grid)return; let html='';
+  if(category==='sides'){
+    menuData.sides.forEach(s=>{
+      html+=`<div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 flex items-center p-4">
+        <img src="${s.image}" alt="" class="h-20 w-20 object-cover rounded-lg mr-4 bg-gradient-to-br from-farmRed to-farmYellow">
+        <div class="flex-1"><h3 class="font-bold text-md text-farmDark">${s.name}</h3><p class="text-farmRed font-bold">£${s.price.toFixed(2)}</p></div>
+        <button onclick="addToCartFromId(${s.id},'side')" class="bg-farmRed text-white h-10 w-10 rounded-full hover:bg-red-700 transition flex items-center justify-center ml-2"><i class="fas fa-plus"></i></button></div>`;
+    });
+  } else if(category==='dips'){
+    menuData.dips.forEach(d=>{
+      html+=`<div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 flex flex-col items-center p-3 text-center">
+        <img src="${d.image}" alt="" class="h-16 w-16 object-cover rounded-full mb-2 border-2 border-farmYellow bg-gradient-to-br from-farmRed to-farmYellow">
+        <h3 class="font-bold text-xs text-farmDark leading-tight mb-1 h-8 flex items-center justify-center">${d.name}</h3>
+        <p class="text-farmRed font-bold text-sm mb-2">£${d.price.toFixed(2)}</p>
+        <button onclick="addToCartFromId(${d.id},'dip')" class="bg-farmRed text-white h-8 w-8 rounded-full hover:bg-red-700 transition flex items-center justify-center"><i class="fas fa-plus text-xs"></i></button></div>`;
+    });
+  } else if(category==='drinks'){
+    menuData.drinks.forEach(d=>{
+      html+=`<div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 flex items-center p-4">
+        <img src="${d.image}" alt="" class="h-20 w-20 object-cover rounded-lg mr-4 bg-gradient-to-br from-farmRed to-farmYellow">
+        <div class="flex-1"><h3 class="font-bold text-md text-farmDark">${d.name}</h3><p class="text-farmRed font-bold">£${d.price.toFixed(2)}</p></div>
+        <button onclick="addToCartFromId(${d.id},'drink')" class="bg-farmRed text-white h-10 w-10 rounded-full hover:bg-red-700 transition flex items-center justify-center ml-2"><i class="fas fa-plus"></i></button></div>`;
+    });
+  }
+  grid.innerHTML=html;
+}
+
+function addToCartFromId(id,type){
+  let item;
+  if(type==='side')item=menuData.sides.find(i=>i.id===id);
+  else if(type==='drink')item=menuData.drinks.find(i=>i.id===id);
+  else if(type==='dip')item=menuData.dips.find(i=>i.id===id);
+  if(item)addToCart({id:item.id,name:item.name,price:parseFloat(item.price),quantity:1});
+}
+
+/* ============================================================
+   CUSTOMIZATION MODAL
+   ============================================================ */
+function openCustomizeModal(pizzaId){
+  const pizza=menuData.pizzas.find(p=>p.id===pizzaId); if(!pizza)return;
+  currentCustomPizza={...pizza,size:'XL',crust:'Deep Pan',base:'Tomato',extras:[],isHalfAndHalf:false,secondHalfId:null,secondHalfName:null};
+  const modal=document.getElementById('customize-modal'), title=document.getElementById('modal-title'), content=document.getElementById('modal-content');
+  title.innerText='Customize: '+pizza.name;
+  const fc=pizza.name.includes('Free Choice')?3:0;
+  const tn=fc===3?`<span class="text-green-600 font-semibold">First 3 FREE</span> · then £1.00 each`:`£1.00 each (max 3)`;
+  let th='';
+  toppings.vegetables.forEach(t=>{th+=`<label class="topping-label inline-flex items-center bg-white border border-gray-300 rounded-full px-3 py-1 cursor-pointer hover:bg-gray-100 transition mr-2 mb-2"><input type="checkbox" value="${t}" onchange="toggleExtra(this);updateToppingHighlight(this);" class="form-checkbox h-4 w-4 text-farmRed rounded"><span class="ml-2 text-sm text-gray-700 flex items-center"><i class="fas fa-leaf text-green-500 mr-1 text-xs"></i> ${t}</span></label>`;});
+  toppings.meat.forEach(t=>{th+=`<label class="topping-label inline-flex items-center bg-white border border-gray-300 rounded-full px-3 py-1 cursor-pointer hover:bg-gray-100 transition mr-2 mb-2"><input type="checkbox" value="${t}" onchange="toggleExtra(this);updateToppingHighlight(this);" class="form-checkbox h-4 w-4 text-farmRed rounded"><span class="ml-2 text-sm text-gray-700 flex items-center"><i class="fas fa-drumstick-bite text-red-500 mr-1 text-xs"></i> ${t}</span></label>`;});
+  const shOpts=menuData.pizzas.filter(p=>p.id!==pizza.id).map(p=>`<option value="${p.id}">${p.name} — ${p.desc}</option>`).join('');
+  content.innerHTML=`
+    <div class="space-y-4">
+      <div><label class="block font-semibold text-sm mb-1">Size</label>
+        <select id="modal-size" onchange="updateModalPrice()" class="w-full p-2 border rounded-lg">
+          <option value="Medium">Medium (10") - £${BASE_PRICES.Medium.toFixed(2)}</option>
+          <option value="Large">Large (12") - £${BASE_PRICES.Large.toFixed(2)}</option>
+          <option value="XL" selected>XL (14") - £${BASE_PRICES.XL.toFixed(2)}</option></select></div>
+      <div><label class="block font-semibold text-sm mb-1">Crust</label>
+        <select id="modal-crust" class="w-full p-2 border rounded-lg"><option value="Thin Crust">Thin Crust</option><option value="Deep Pan" selected>Deep Pan</option></select></div>
+      <div><label class="block font-semibold text-sm mb-1">Base</label>
+        <select id="modal-base" onchange="updateModalPrice()" class="w-full p-2 border rounded-lg"><option value="Tomato" selected>Tomato Base</option><option value="BBQ">BBQ Base (+£1.00)</option></select></div>
+      <div class="bg-farmCream border-2 border-farmYellow rounded-lg p-3">
+        <label class="flex items-start gap-3 cursor-pointer">
+          <input type="checkbox" id="modal-half-and-half" onchange="toggleHalfAndHalf(this)" class="mt-1 form-checkbox h-5 w-5 text-farmRed rounded">
+          <div class="flex-1"><p class="font-bold text-farmDark text-sm"><i class="fas fa-adjust mr-1 text-farmRed"></i> Make it Half & Half</p>
+            <p class="text-xs text-gray-600 mt-0.5">Choose a second pizza for the other half.</p>
+            <p class="text-xs text-farmRed font-bold mt-1">+ £${HALF_AND_HALF_CHARGE.toFixed(2)} extra</p></div></label>
+        <div id="modal-half-and-half-picker" class="hidden mt-3">
+          <label class="block font-semibold text-xs mb-1">Other half:</label>
+          <select id="modal-second-half" onchange="updateModalPrice()" class="w-full p-2 border rounded-lg text-sm">${shOpts}</select></div>
+      </div>
+      <div><label class="block font-semibold text-sm mb-2">Extra Toppings <span class="text-xs font-normal text-gray-500">(${tn})</span></label>
+        <div class="max-h-40 overflow-y-auto border p-3 rounded-lg bg-gray-50 flex flex-wrap">${th}</div></div>
+      <div class="flex justify-between items-center font-bold text-lg pt-2 border-t"><span>Total:</span><span id="modal-price" class="text-farmRed">£${BASE_PRICES.XL.toFixed(2)}</span></div>
+      <button onclick="confirmCustomPizza()" class="w-full bg-farmRed text-white font-bold py-3 rounded-lg hover:bg-red-700 transition">Add to Cart</button>
+    </div>`;
+  modal.classList.remove('hidden'); updateModalPrice();
+}
+
+function toggleHalfAndHalf(cb){if(!currentCustomPizza)return;currentCustomPizza.isHalfAndHalf=cb.checked;const p=document.getElementById('modal-half-and-half-picker');if(cb.checked)p.classList.remove('hidden');else p.classList.add('hidden');updateModalPrice();}
+function closeModal(){document.getElementById('customize-modal').classList.add('hidden');currentCustomPizza=null;}
+function toggleExtra(cb){if(!currentCustomPizza)return;const v=cb.value;if(cb.checked){if(currentCustomPizza.extras.length>=3&&!currentCustomPizza.name.includes('Free Choice')){alert("Maximum 3 extra toppings allowed.");cb.checked=false;updateToppingHighlight(cb);return;}currentCustomPizza.extras.push(v);}else{currentCustomPizza.extras=currentCustomPizza.extras.filter(t=>t!==v);}updateModalPrice();}
+function updateModalPrice(){
+  if(!currentCustomPizza)return;
+  const size=document.getElementById('modal-size').value, base=document.getElementById('modal-base').value;
+  let price=parseFloat(BASE_PRICES[size]); if(base==='BBQ')price+=1.00;
+  const isFC=currentCustomPizza.name.includes('Free Choice');
+  const paid=isFC?Math.max(0,currentCustomPizza.extras.length-3):currentCustomPizza.extras.length;
+  price+=paid*EXTRA_TOPPING_PRICE;
+  const hh=document.getElementById('modal-half-and-half'); if(hh&&hh.checked)price+=HALF_AND_HALF_CHARGE;
+  price=Math.round(price*100)/100;
+  document.getElementById('modal-price').innerText='£'+price.toFixed(2);
+  currentCustomPizza.calculatedPrice=price;
+}
+function confirmCustomPizza(){
+  if(!currentCustomPizza)return;
+  const size=document.getElementById('modal-size').value, crust=document.getElementById('modal-crust').value, base=document.getElementById('modal-base').value;
+  const hh=document.getElementById('modal-half-and-half'); const isHH=hh&&hh.checked;
+  let shId=null,shName=null;
+  if(isHH){const s=document.getElementById('modal-second-half');shId=parseInt(s.value);const sp=menuData.pizzas.find(p=>p.id===shId);shName=sp?sp.name:null;}
+  const item={id:Date.now(),name:currentCustomPizza.name,size,crust,base,extras:[...currentCustomPizza.extras],price:currentCustomPizza.calculatedPrice,quantity:1,isHalfAndHalf:isHH,secondHalfId:shId,secondHalfName:shName};
+  addToCart(item); closeModal();
+}
+
+/* ============================================================
+   CREATE YOUR OWN
+   ============================================================ */
+function renderToppings(){
+  const c=document.getElementById('toppings-container'); if(!c)return; let html='';
+  const all=[...toppings.vegetables,...toppings.meat];
+  all.forEach(t=>{
+    const isV=toppings.vegetables.includes(t);
+    const icon=isV?'<i class="fas fa-leaf text-green-500 mr-1"></i>':'<i class="fas fa-drumstick-bite text-red-500 mr-1"></i>';
+    html+=`<label class="topping-label inline-flex items-center bg-white border border-gray-300 rounded-full px-3 py-1 cursor-pointer hover:bg-gray-100 transition"><input type="checkbox" value="${t}" class="custom-topping-checkbox form-checkbox h-4 w-4 text-farmRed rounded" onchange="updateToppingHighlight(this);updateCustomPizzaPrice();"><span class="ml-2 text-sm text-gray-700 flex items-center">${icon} ${t}</span></label>`;
+  });
+  c.innerHTML=html;
+}
+function updateCustomPizzaPrice(){
+  const size=document.getElementById('custom-size').value, base=document.getElementById('custom-base').value;
+  const cbs=document.querySelectorAll('.custom-topping-checkbox:checked');
+  const cnt=cbs.length, names=Array.from(cbs).map(cb=>cb.value);
+  let bp=parseFloat(BASE_PRICES[size]); if(base==='BBQ')bp+=1.00;
+  const paid=Math.max(0,cnt-FREE_TOPPINGS), ec=paid*EXTRA_TOPPING_PRICE;
+  const total=Math.round((bp+ec)*100)/100;
+  document.getElementById('custom-size-label').innerText=size;
+  document.getElementById('custom-base-price').innerText='£'+bp.toFixed(2);
+  document.getElementById('custom-extra-count').innerText=paid;
+  document.getElementById('custom-extra-cost').innerText='£'+ec.toFixed(2);
+  document.getElementById('custom-total').innerText='£'+total.toFixed(2);
+  const se=document.getElementById('custom-topping-summary'), tq=document.getElementById('custom-topping-total-qty');
+  if(cnt===0){se.innerText='No toppings selected';tq.innerText='';}
+  else{se.innerText=cnt+' topping'+(cnt>1?'s':'')+': '+names.join(', ');const fl=Math.max(0,FREE_TOPPINGS-cnt);tq.innerText=fl>0?fl+' free left':'All extra';}
+}
+function addCustomPizza(){
+  const size=document.getElementById('custom-size').value, crust=document.getElementById('custom-crust').value, base=document.getElementById('custom-base').value;
+  const cbs=document.querySelectorAll('.custom-topping-checkbox:checked'); const extras=Array.from(cbs).map(cb=>cb.value);
+  let bp=parseFloat(BASE_PRICES[size]); if(base==='BBQ')bp+=1.00;
+  const paid=Math.max(0,extras.length-FREE_TOPPINGS); const price=Math.round((bp+paid*EXTRA_TOPPING_PRICE)*100)/100;
+  const item={id:Date.now(),name:"Create Your Own",size,crust,base,extras,price,quantity:1};
+  addToCart(item);
+  document.querySelectorAll('.custom-topping-checkbox').forEach(cb=>{cb.checked=false;updateToppingHighlight(cb);});
+  updateCustomPizzaPrice();
+}
+
+/* ============================================================
+   RECOMMENDATIONS
+   ============================================================ */
+function getRecommendations(){
+  const recs=[]; if(cart.length===0)return recs;
+  const cSize=s=>cart.filter(i=>i.size===s).reduce((a,i)=>a+i.quantity,0);
+  const cName=n=>cart.filter(i=>i.name===n).reduce((a,i)=>a+i.quantity,0);
+  const SIDES=['Garlic Bread (4 pcs)','Garlic Bread with Cheese (4 pcs)','Potato Wedges','BBQ Chicken Wings'];
+  const totalSides=cart.filter(i=>SIDES.includes(i.name)).reduce((a,i)=>a+i.quantity,0);
+  const hasPizza=cart.some(i=>i.size);
+  const hasGB=cName('Garlic Bread (4 pcs)')>0||cName('Garlic Bread with Cheese (4 pcs)')>0;
+  const hasGD=cName('Garlic & Herb Dip')>0;
+  const sideOpts=[
+    {id:101,name:'Garlic Bread (4 pcs)',price:1.99},
+    {id:102,name:'Garlic Bread with Cheese (4 pcs)',price:2.49},
+    {id:103,name:'Potato Wedges',price:2.49},
+    {id:104,name:'BBQ Chicken Wings',price:3.99}
+  ];
+  if(cSize('Medium')>=2&&totalSides<1)recs.push({type:'deal',title:'Farm Deal',desc:'2 Medium Pizzas & 1 side of your choice',dealPrice:23.99,qtyNeeded:1-totalSides,sideOptions:sideOpts});
+  ['Medium','Large','XL'].forEach(s=>{const p=cSize(s);if(p>=3&&totalSides<2)recs.push({type:'deal',title:`Mega Deal (${s})`,desc:`3 ${s} Pizzas & 2 sides of your choice`,dealPrice:s==='Medium'?29.99:s==='Large'?30.99:31.99,qtyNeeded:2-totalSides,sideOptions:sideOpts});});
+  ['Medium','Large','XL'].forEach(s=>{const p=cSize(s);if(p>=2&&totalSides<2)recs.push({type:'deal',title:`Crazy Deal (${s})`,desc:`2 ${s} Pizzas & 2 sides of your choice`,dealPrice:s==='Medium'?24.99:s==='Large'?25.99:26.99,qtyNeeded:2-totalSides,sideOptions:sideOpts});});
+  if(!hasGD&&(hasPizza||hasGB))recs.push({type:'dip',title:hasGB?'Goes great with Garlic Bread':'Perfect pairing',desc:hasGB?'Add Garlic & Herb Dip for dipping your bread':'Customers love Garlic & Herb Dip with their pizza',price:0.30,missingItem:{name:'Garlic & Herb Dip',id:301,type:'dip'}});
+  return recs;
+}
+
+/* ============================================================
+   CART
+   ============================================================ */
+function addToCart(item){
+  item.price=parseFloat(item.price);
+  const ex=cart.find(c=>c.name===item.name&&c.size===item.size&&c.crust===item.crust&&c.base===item.base&&JSON.stringify(c.extras)===JSON.stringify(item.extras)&&!!c.isHalfAndHalf===!!item.isHalfAndHalf&&c.secondHalfId===item.secondHalfId);
+  if(ex){ex.quantity+=1;item=ex;}else cart.push(item);
+  updateCartUI(); showToast(item);
+}
+function removeFromCart(i){cart.splice(i,1);updateCartUI();}
+function updateQuantity(i,d){cart[i].quantity+=d;if(cart[i].quantity<=0)removeFromCart(i);else updateCartUI();}
+function addRecommendedItem(mi){if(!mi)return;addToCartFromId(mi.id,mi.type);}
+function addRecSide(i,qty){
+  const s=document.getElementById('rec-side-'+i); if(!s)return;
+  const id=parseInt(s.value); const si=menuData.sides.find(x=>x.id===id); if(!si)return;
+  const ex=cart.find(c=>c.name===si.name&&!c.size&&!c.crust&&!c.base);
+  if(ex)ex.quantity+=qty; else cart.push({id:si.id,name:si.name,price:parseFloat(si.price),quantity:qty});
+  updateCartUI(); showToast({name:si.name,price:si.price,quantity:qty});
+}
+
+function updateCartUI(){
+  const cc=document.getElementById('cart-items'), ct=document.getElementById('cart-total'), cce=document.getElementById('cart-count'), ccm=document.getElementById('cart-count-mobile'), dmi=document.getElementById('delivery-min-info');
+  let total=0,count=0;
+  if(cart.length===0){cc.innerHTML='<p class="text-gray-500 text-center mt-10">Your cart is empty.</p>';if(dmi)dmi.innerHTML='';}
+  else{
+    let html='';
+    cart.forEach((item,i)=>{
+      const it=parseFloat((item.price*item.quantity).toFixed(2)); total+=it; count+=item.quantity;
+      let titleHtml='', details='';
+      if(item.isHalfAndHalf){
+        titleHtml=`<div class="flex items-center gap-1 flex-wrap"><span class="inline-flex items-center bg-farmYellow text-farmDark text-[10px] font-bold px-2 py-0.5 rounded-full"><i class="fas fa-adjust mr-1"></i> HALF & HALF</span></div>
+          <div class="mt-1 bg-farmCream rounded-md px-2 py-1.5"><p class="text-sm font-bold text-farmDark">½ ${item.name}</p><div class="hh-divider my-1"></div><p class="text-sm font-bold text-farmDark">½ ${item.secondHalfName||'—'}</p></div>`;
+        details=`${item.size||''} ${item.crust||''} ${item.base||''}`.trim();
+        if(item.extras&&item.extras.length)details+=' | Extras: '+item.extras.join(', ');
+      }else{
+        titleHtml=`<h4 class="font-bold text-farmDark">${item.name}</h4>`;
+        details=`${item.size||''} ${item.crust||''} ${item.base||''}`.trim();
+        if(item.extras&&item.extras.length)details+=' | Extras: '+item.extras.join(', ');
+      }
+      html+=`<div class="flex justify-between items-start mb-4 pb-4 border-b border-gray-100">
+        <div class="flex-1">${titleHtml}<p class="text-xs text-gray-500 mt-1">${details}</p><p class="text-farmRed font-semibold mt-1">£${item.price.toFixed(2)}</p></div>
+        <div class="flex items-center space-x-2 ml-4">
+          <button onclick="updateQuantity(${i},-1)" class="bg-gray-200 text-gray-700 h-6 w-6 rounded-full flex items-center justify-center hover:bg-gray-300">-</button>
+          <span class="font-semibold w-4 text-center">${item.quantity}</span>
+          <button onclick="updateQuantity(${i},1)" class="bg-gray-200 text-gray-700 h-6 w-6 rounded-full flex items-center justify-center hover:bg-gray-300">+</button>
+          <button onclick="removeFromCart(${i})" class="text-red-500 hover:text-red-700 ml-2"><i class="fas fa-trash-alt"></i></button>
+        </div></div>`;
+    });
+    const recs=getRecommendations();
+    if(recs.length>0){
+      html+=`<div class="mt-2 mb-4"><div class="flex items-center gap-2 mb-3"><i class="fas fa-lightbulb text-farmYellow text-lg"></i><h4 class="font-bold text-farmDark text-sm uppercase tracking-wide">Recommended for you</h4></div>`;
+      recs.forEach((rec,i)=>{
+        if(rec.type==='deal'){
+          const opts=rec.sideOptions.map(o=>`<option value="${o.id}">${o.name} — £${o.price.toFixed(2)}</option>`).join('');
+          const lbl=rec.qtyNeeded>1?`Add ${rec.qtyNeeded}`:'Add';
+          html+=`<div class="border-farmYellow bg-yellow-50 border rounded-lg p-3 mb-2 recommendation-pulse">
+            <div class="flex items-start gap-2 mb-2"><i class="fas fa-tags text-farmRed mt-1"></i><div class="flex-1"><p class="font-bold text-farmDark text-sm">${rec.title}</p><p class="text-xs text-gray-600">${rec.desc}</p><p class="text-xs text-farmRed font-semibold mt-1">Deal price: £${rec.dealPrice.toFixed(2)}</p></div></div>
+            <div class="bg-white rounded-md p-2 border border-yellow-200"><p class="text-xs text-gray-700 mb-2"><i class="fas fa-utensils text-farmRed mr-1"></i> Choose your side${rec.qtyNeeded>1?'s':''}:</p>
+              <div class="flex items-center gap-2"><select id="rec-side-${i}" class="flex-1 text-xs p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-farmRed bg-white min-w-0">${opts}</select>
+                <button onclick="addRecSide(${i},${rec.qtyNeeded})" class="bg-farmRed text-white text-xs font-bold px-3 py-2 rounded-full hover:bg-red-700 transition whitespace-nowrap">${lbl}</button></div></div></div>`;
+        }else{
+          html+=`<div class="border-green-300 bg-green-50 border rounded-lg p-3 mb-2 recommendation-pulse">
+            <div class="flex items-start gap-2 mb-2"><i class="fas fa-utensils text-green-600 mt-1"></i><div class="flex-1"><p class="font-bold text-farmDark text-sm">${rec.title}</p><p class="text-xs text-gray-600">${rec.desc}</p><p class="text-xs text-green-700 font-semibold mt-1">£${rec.price.toFixed(2)} each</p></div></div>
+            <div class="flex items-center justify-between bg-white rounded-md p-2 border border-gray-200"><p class="text-xs text-gray-700 flex-1"><i class="fas fa-plus-circle text-farmRed mr-1"></i> Add <span class="font-semibold">${rec.missingItem.name}</span></p>
+              <button onclick="addRecommendedItem(${JSON.stringify(rec.missingItem).replace(/"/g,'&quot;')})" class="bg-farmRed text-white text-xs font-bold px-3 py-1.5 rounded-full hover:bg-red-700 transition ml-2 whitespace-nowrap">Add</button></div></div>`;
+        }
+      });
+      html+='</div>';
+    }
+    cc.innerHTML=html;
+  }
+  ct.innerText='£'+total.toFixed(2); cce.innerText=count; if(ccm)ccm.innerText=count;
+  if(dmi){
+    if(cart.length===0)dmi.innerHTML=`<span class="text-gray-500">Collection ready in &lt;15 mins. Delivery 10–30 mins. Minimum for delivery £${DELIVERY_MINIMUM.toFixed(2)}.</span>`;
+    else if(total<DELIVERY_MINIMUM){
+      const r=DELIVERY_MINIMUM-total;
+      dmi.innerHTML=`<div class="bg-orange-50 border border-orange-200 rounded-lg p-2"><p class="text-orange-700 font-semibold"><i class="fas fa-motorcycle mr-1"></i> Add <span class="font-bold">£${r.toFixed(2)}</span> more for delivery</p><p class="text-gray-500 mt-1">Or choose <span class="font-semibold text-farmRed">Collection</span> — no minimum, ready in &lt;15 mins.</p></div>`;
+    }else{
+      dmi.innerHTML=`<div class="bg-green-50 border border-green-200 rounded-lg p-2"><p class="text-green-700 font-semibold"><i class="fas fa-check-circle mr-1"></i> Delivery minimum reached!</p><p class="text-gray-500 mt-1">Collection in &lt;15 mins. Delivery 10–30 mins.</p></div>`;
+    }
+  }
+  updatePizzaButtonStates();
+  const changed=count!==previousCartCount;
+  updateFloatingCart(count,changed&&count>0);
+  previousCartCount=count;
+}
+
+function updateFloatingCart(count,animate){
+  const fab=document.getElementById('floating-cart'), fc=document.getElementById('floating-cart-count');
+  if(!fab||!fc)return;
+  if(count>0){
+    if(fab.classList.contains('hidden')){fab.classList.remove('hidden');fab.classList.remove('cart-pop','cart-bounce');void fab.offsetWidth;fab.classList.add('cart-pop');}
+    else if(animate){fab.classList.remove('cart-pop','cart-bounce');void fab.offsetWidth;fab.classList.add('cart-bounce');}
+    fc.innerText=count;
+    if(animate&&count!==previousCartCount){fc.classList.remove('count-pulse');void fc.offsetWidth;fc.classList.add('count-pulse');}
+  }else{fab.classList.add('hidden');fab.classList.remove('cart-pop','cart-bounce');}
+}
+
+function toggleCart(){
+  const d=document.getElementById('cart-drawer'), o=document.getElementById('cart-overlay');
+  if(d.classList.contains('cart-closed')){d.classList.remove('cart-closed');d.classList.add('cart-open');o.classList.remove('hidden');}
+  else{d.classList.remove('cart-open');d.classList.add('cart-closed');o.classList.add('hidden');}
+}
+
+/* ============================================================
+   CHECKOUT
+   ============================================================ */
+function checkout(){
+  if(cart.length===0){alert("Your cart is empty.");return;}
+  document.querySelector('input[name="fulfillment"][value="collection"]').checked=true;
+  toggleDeliveryAddress();
+  document.getElementById('checkout-modal').classList.remove('hidden');
+}
+function closeCheckoutModal(){document.getElementById('checkout-modal').classList.add('hidden');}
+function toggleDeliveryAddress(){
+  const f=document.querySelector('input[name="fulfillment"]:checked').value;
+  const ci=document.getElementById('collection-info'), di=document.getElementById('delivery-info'), mw=document.getElementById('checkout-min-warning'), mwt=document.getElementById('checkout-min-warning-text'), cte=document.getElementById('checkout-total');
+  const ct=cart.reduce((s,i)=>s+i.price*i.quantity,0);
+  if(f==='collection'){ci.classList.remove('hidden');di.classList.add('hidden');mw.classList.add('hidden');cte.innerText='£'+ct.toFixed(2);}
+  else{
+    ci.classList.add('hidden');di.classList.remove('hidden');
+    if(ct<DELIVERY_MINIMUM){cte.innerText='£'+DELIVERY_MINIMUM.toFixed(2);const r=DELIVERY_MINIMUM-ct;mwt.innerText=`Delivery minimum is £${DELIVERY_MINIMUM.toFixed(2)}. £${r.toFixed(2)} has been added to meet the minimum. Or switch to Collection (no minimum).`;mw.classList.remove('hidden');}
+    else{cte.innerText='£'+ct.toFixed(2);mw.classList.add('hidden');}
+  }
+}
+
+/* ============================================================
+   PLACE ORDER → save to Firestore
+   ============================================================ */
+async function placeOrder(){
+  const btn=document.getElementById('confirm-order-btn');
+  const f=document.querySelector('input[name="fulfillment"]:checked').value;
+  const name=document.getElementById('customer-name').value.trim();
+  const phone=document.getElementById('customer-phone').value.trim();
+
+  // MANDATORY VALIDATION
+  if(!name){alert("Please enter your name.");return;}
+  if(!phone){alert("Phone number is mandatory. Please enter it so we can confirm your order.");return;}
+  if(!/^[0-9+\s()-]{7,}$/.test(phone)){alert("Please enter a valid phone number.");return;}
+
+  let address='', postcode='', note='';
+  if(f==='delivery'){
+    const house=document.getElementById('delivery-house').value.trim();
+    const street=document.getElementById('delivery-street').value.trim();
+    postcode=document.getElementById('delivery-postcode').value.trim();
+    note=document.getElementById('delivery-note').value.trim();
+    if(!house||!postcode){alert("Please enter your house number and postcode.");return;}
+    address=`${house}, ${street?street+', ':''}${postcode}`;
+  }
+
+  const cartTotal=cart.reduce((s,i)=>s+i.price*i.quantity,0);
+  let payable=cartTotal;
+  if(f==='delivery'&&cartTotal<DELIVERY_MINIMUM)payable=DELIVERY_MINIMUM;
+
+  btn.disabled=true; btn.innerText='Placing order…';
+
+  try{
+    const today=new Date().toISOString().slice(0,10);
+
+    // 1. Save order
+    const orderRef=db.collection('orders').doc();
+    await orderRef.set({
+      orderNumber:null, // assigned below
+      customerName:name,
+      customerPhone:phone,
+      address:address,
+      postcode:postcode,
+      note:note,
+      items:cart.map(i=>({
+        name:i.isHalfAndHalf?`½ ${i.name} / ½ ${i.secondHalfName}`:i.name,
+        qty:i.quantity,
+        price:i.price,
+        options:{size:i.size,crust:i.crust,base:i.base,extras:i.extras||[],isHalfAndHalf:!!i.isHalfAndHalf}
+      })),
+      subtotal:cartTotal,
+      total:payable,
+      fulfillment:f,
+      status:'pending',
+      date:today,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    // 2. Increment daily counter for order number
+    const statsRef=db.collection('dailyStats').doc(today);
+    await db.runTransaction(async t=>{
+      const doc=await t.get(statsRef);
+      if(!doc.exists){t.set(statsRef,{date:today,orderCount:1,revenue:payable});}
+      else{t.update(statsRef,{orderCount:firebase.firestore.FieldValue.increment(1),revenue:firebase.firestore.FieldValue.increment(payable)});}
+      t.update(orderRef,{orderNumber:(doc.exists?doc.data().orderCount:0)+1});
+    });
+
+    // 3. Save/update customer record
+    const custRef=db.collection('customers').doc(phone.replace(/\s+/g,''));
+    const custDoc=await custRef.get();
+    if(custDoc.exists){
+      await custRef.update({
+        name:name,
+        lastAddress:address||custDoc.data().lastAddress||'',
+        postcode:postcode||custDoc.data().postcode||'',
+        lastOrderAt:firebase.firestore.FieldValue.serverTimestamp(),
+        orderCount:firebase.firestore.FieldValue.increment(1),
+        totalSpent:firebase.firestore.FieldValue.increment(payable)
+      });
+    }else{
+      await custRef.set({
+        phone:phone,
+        name:name,
+        lastAddress:address,
+        postcode:postcode,
+        createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+        lastOrderAt:firebase.firestore.FieldValue.serverTimestamp(),
+        orderCount:1,
+        totalSpent:payable
+      });
+    }
+
+    alert(`Thank you ${name}! Order placed.\n\nTotal: £${payable.toFixed(2)}\n${f==='delivery'?'Delivery in 10–30 mins':'Collection in <15 mins'}\n\nWe'll call you on ${phone} to confirm.`);
+    cart=[]; updateCartUI(); closeCheckoutModal(); toggleCart();
+  }catch(e){
+    console.error(e);
+    alert("Sorry, there was a problem placing your order. Please try again or call us on 0208 737 5731.");
+  }finally{
+    btn.disabled=false; btn.innerText='Confirm Order';
+  }
+}
+</script>
+</body>
+</html>
