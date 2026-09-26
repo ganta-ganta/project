@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' https: data:; img-src 'self' https: data: blob:; connect-src 'self' https: wss:; frame-src 'self' https:;">
 <title>Farm Pizza | Hounslow</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -44,7 +45,6 @@
 </head>
 <body class="bg-gray-50 text-farmDark">
 
-<!-- Connection status badge (visible bottom-right) -->
 <div id="firestore-status" class="fixed bottom-4 right-4 z-[300] bg-yellow-500 text-white text-xs font-bold px-3 py-2 rounded-full shadow-lg flex items-center gap-2">
   <i class="fas fa-spinner fa-spin"></i> Firestore: Connecting…
 </div>
@@ -143,21 +143,24 @@
       <span class="inline-flex items-center bg-green-100 text-green-800 px-3 py-1 rounded-full font-semibold mr-1"><i class="fas fa-gift mr-1"></i> First 3 toppings FREE</span>
       <span class="inline-flex items-center bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full font-semibold">Each extra topping £1.00</span>
     </p>
-    <div class="bg-white rounded-2xl shadow-xl p-8">
+    <form class="bg-white rounded-2xl shadow-xl p-8" onsubmit="event.preventDefault();addCustomPizza();">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div><label for="custom-size" class="block font-semibold mb-2">Size</label><select id="custom-size" name="custom-size" onchange="updateCustomPizzaPrice()" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed"><option value="Medium">Medium (10")</option><option value="Large">Large (12")</option><option value="XL" selected>XL (14")</option></select></div>
         <div><label for="custom-crust" class="block font-semibold mb-2">Crust</label><select id="custom-crust" name="custom-crust" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed"><option value="Thin Crust">Thin Crust</option><option value="Deep Pan" selected>Deep Pan</option></select></div>
         <div><label for="custom-base" class="block font-semibold mb-2">Base</label><select id="custom-base" name="custom-base" onchange="updateCustomPizzaPrice()" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed"><option value="Tomato" selected>Tomato Base</option><option value="BBQ">BBQ Base (+£1.00)</option></select></div>
       </div>
-      <div class="mb-6 text-left"><p class="block font-semibold mb-3 text-center">Select Your Toppings</p><div id="toppings-container" class="flex flex-wrap justify-center gap-2"></div></div>
+      <fieldset class="mb-6 text-left">
+        <legend class="block font-semibold mb-3 text-center">Select Your Toppings</legend>
+        <div id="toppings-container" class="flex flex-wrap justify-center gap-2"></div>
+      </fieldset>
       <div class="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-200">
         <div class="flex justify-between text-sm text-gray-600 mb-1"><span>Base (<span id="custom-size-label">XL</span>):</span><span id="custom-base-price">£10.99</span></div>
         <div class="flex justify-between text-sm text-gray-600 mb-1"><span>Extra toppings (<span id="custom-extra-count">0</span> beyond 3 free):</span><span id="custom-extra-cost">£0.00</span></div>
         <div class="flex justify-between text-sm text-gray-500 italic mb-2"><span id="custom-topping-summary">No toppings selected</span><span id="custom-topping-total-qty"></span></div>
         <div class="flex justify-between font-bold text-lg pt-2 border-t border-gray-200"><span>Total:</span><span id="custom-total" class="text-farmRed">£10.99</span></div>
       </div>
-      <button type="button" onclick="addCustomPizza()" class="bg-farmRed text-white font-bold py-3 px-8 rounded-full hover:bg-red-700 transition w-full md:w-auto"><i class="fas fa-cart-plus mr-1"></i> Add Custom Pizza to Cart</button>
-    </div>
+      <button type="submit" class="bg-farmRed text-white font-bold py-3 px-8 rounded-full hover:bg-red-700 transition w-full md:w-auto"><i class="fas fa-cart-plus mr-1"></i> Add Custom Pizza to Cart</button>
+    </form>
   </div>
 </section>
 
@@ -205,8 +208,11 @@
       <div id="delivery-info" class="hidden space-y-2">
         <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg text-sm text-gray-700"><p><i class="fas fa-clock mr-1 text-farmRed"></i> Delivery estimated in <strong>10–30 minutes</strong></p><p class="mt-1 text-blue-700 font-semibold"><i class="fas fa-info-circle mr-1"></i> Minimum order £17.99 for delivery</p></div>
         <p class="block font-semibold text-sm mb-1">Delivery Address <span class="text-farmRed">*</span></p>
-        <div class="grid grid-cols-2 gap-2"><label class="sr-only" for="delivery-house">House or flat number</label><input type="text" id="delivery-house" name="delivery-house" autocomplete="address-line1" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="House / Flat No."><label class="sr-only" for="delivery-street">Street name</label><input type="text" id="delivery-street" name="delivery-street" autocomplete="address-line2" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="Street Name"></div>
-        <label class="sr-only" for="delivery-postcode">Postcode</label><input type="text" id="delivery-postcode" name="delivery-postcode" autocomplete="postal-code" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="Postcode (e.g. TW5 0DR)">
+        <div class="grid grid-cols-2 gap-2">
+          <div><label for="delivery-house" class="sr-only">House or flat number</label><input type="text" id="delivery-house" name="delivery-house" autocomplete="address-line1" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="House / Flat No."></div>
+          <div><label for="delivery-street" class="sr-only">Street name</label><input type="text" id="delivery-street" name="delivery-street" autocomplete="address-line2" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="Street Name"></div>
+        </div>
+        <div><label for="delivery-postcode" class="sr-only">Postcode</label><input type="text" id="delivery-postcode" name="delivery-postcode" autocomplete="postal-code" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="Postcode (e.g. TW5 0DR)"></div>
         <div class="mt-2"><label for="delivery-note" class="block font-semibold text-sm mb-1">Delivery Note (Optional)</label><textarea id="delivery-note" name="delivery-note" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" rows="2" placeholder="e.g. Ring the bell, leave at door…"></textarea></div>
       </div>
       <div id="checkout-min-warning" class="hidden bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3" role="status"><i class="fas fa-exclamation-triangle mr-1"></i><span id="checkout-min-warning-text"></span></div>
@@ -234,7 +240,7 @@
 
 <script>
 /* ============================================================
-   FIREBASE + STATUS TRACKER
+   FIREBASE + STATUS
    ============================================================ */
 const firebaseConfig = {
   apiKey: "AIzaSyDPtj4qRDowQAdyF_oFX8Jqbxw1agB_Vv8",
@@ -247,76 +253,73 @@ const firebaseConfig = {
 };
 
 let db = null;
-
 function setFirestoreStatus(status, detail) {
   const el = document.getElementById('firestore-status');
   if (!el) return;
   const map = {
-    connecting: {cls:'bg-yellow-500', icon:'fa-spinner fa-spin', text:'Connecting…'},
-    connected:  {cls:'bg-green-600',  icon:'fa-circle',           text:'Firestore: Connected'},
-    offline:    {cls:'bg-gray-500',   icon:'fa-circle',           text:'Firestore: Offline mode'},
-    error:      {cls:'bg-red-600',    icon:'fa-exclamation-triangle', text:'Firestore: Error'}
+    connecting:{cls:'bg-yellow-500',icon:'fa-spinner fa-spin',text:'Firestore: Connecting…'},
+    connected: {cls:'bg-green-600', icon:'fa-circle',text:'Firestore: Connected'},
+    offline:   {cls:'bg-gray-500',  icon:'fa-circle',text:'Firestore: Offline mode'},
+    error:     {cls:'bg-red-600',   icon:'fa-exclamation-triangle',text:'Firestore: Error'}
   };
   const m = map[status] || map.error;
   el.className = `fixed bottom-4 right-4 z-[300] ${m.cls} text-white text-xs font-bold px-3 py-2 rounded-full shadow-lg flex items-center gap-2`;
   el.innerHTML = `<i class="fas ${m.icon}"></i> ${m.text}${detail ? ' — ' + detail : ''}`;
 }
 
-console.log('[FarmPizza] Initializing Firebase…');
 try {
   firebase.initializeApp(firebaseConfig);
   db = firebase.firestore();
-  db.enablePersistence({ synchronizeTabs: true }).catch(err => {
-    console.warn('[FarmPizza] Offline persistence not available:', err.code);
-  });
-  console.log('[FarmPizza] Firebase initialized. Project:', firebaseConfig.projectId);
+  db.enablePersistence({ synchronizeTabs: true }).catch(err => console.warn('[FarmPizza] Persistence:', err.code));
 } catch (e) {
   console.error('[FarmPizza] Firebase init failed:', e);
   setFirestoreStatus('error', 'Firebase init failed');
 }
 
 /* ============================================================
-   DEFAULT MENU
+   DEFAULT MENU — images now use picsum.photos (proper CORS)
    ============================================================ */
+const px = (seed, w, h) => `https://picsum.photos/seed/farmpizza-${seed}/${w}/${h}`;
+
 const DEFAULT_MENU = {
   pizzas: [
-    {id:1,name:"Margherita",desc:"Cheese & tomato sauce",veg:true,basePrice:5.99,image:"https://image.pollinations.ai/prompt/margherita%20pizza?width=400&height=300&nologo=true"},
-    {id:2,name:"Funghi",desc:"Cheese, tomato sauce & mushroom",veg:true,basePrice:5.99,image:"https://image.pollinations.ai/prompt/mushroom%20pizza?width=400&height=300&nologo=true"},
-    {id:3,name:"Peppermoni",desc:"Cheese, tomato sauce & peppermoni slices",veg:false,basePrice:5.99,image:"https://image.pollinations.ai/prompt/pepperoni%20pizza?width=400&height=300&nologo=true"},
-    {id:4,name:"Farm House",desc:"Ham & mushroom",veg:false,basePrice:5.99,image:"https://image.pollinations.ai/prompt/ham%20mushroom%20pizza?width=400&height=300&nologo=true"},
-    {id:5,name:"Hawaiian",desc:"Ham & pineapple",veg:false,basePrice:5.99,image:"https://image.pollinations.ai/prompt/hawaiian%20pizza?width=400&height=300&nologo=true"},
-    {id:6,name:"Vegetarian",desc:"Mixed peppers, onion, mushroom & sweetcorn",veg:true,basePrice:5.99,image:"https://image.pollinations.ai/prompt/vegetarian%20pizza?width=400&height=300&nologo=true"},
-    {id:7,name:"Vegetarian Hot",desc:"Mixed peppers, onion, mushroom, sweetcorn & hot chillies",veg:true,basePrice:5.99,image:"https://image.pollinations.ai/prompt/spicy%20veg%20pizza?width=400&height=300&nologo=true"},
-    {id:8,name:"Vegetarian Supreme",desc:"Mushroom, onion, jalapeno pepper & fresh tomato",veg:true,basePrice:5.99,image:"https://image.pollinations.ai/prompt/veg%20supreme%20pizza?width=400&height=300&nologo=true"},
-    {id:9,name:"Heatwave",desc:"Fresh garlic, black olives & hot chillies",veg:true,basePrice:5.99,image:"https://image.pollinations.ai/prompt/spicy%20pizza?width=400&height=300&nologo=true"},
-    {id:10,name:"Mediterranean",desc:"Fresh tomato, black olives & sweetcorn",veg:true,basePrice:5.99,image:"https://image.pollinations.ai/prompt/mediterranean%20pizza?width=400&height=300&nologo=true"},
-    {id:11,name:"Chicken Delight",desc:"Tandoori Chicken, chicken tikka & onion",veg:false,basePrice:5.99,image:"https://image.pollinations.ai/prompt/tandoori%20chicken%20pizza?width=400&height=300&nologo=true"},
-    {id:12,name:"Volcano",desc:"Tandoori chicken, onion, mushroom, fresh garlic & hot chillies",veg:false,basePrice:5.99,image:"https://image.pollinations.ai/prompt/spicy%20chicken%20pizza?width=400&height=300&nologo=true"},
-    {id:13,name:"Chicken Supreme",desc:"Spicy Tandoori chicken, chicken tikka, onion, jalapeno pepper & hot chillies",veg:false,basePrice:5.99,image:"https://image.pollinations.ai/prompt/chicken%20supreme%20pizza?width=400&height=300&nologo=true"},
-    {id:14,name:"Meat Feast",desc:"Peppermoni, ham & plain chicken",veg:false,basePrice:5.99,image:"https://image.pollinations.ai/prompt/meat%20feast%20pizza?width=400&height=300&nologo=true"},
-    {id:15,name:"Seafood",desc:"Tuna, black olives & prawns",veg:false,basePrice:5.99,image:"https://image.pollinations.ai/prompt/seafood%20pizza?width=400&height=300&nologo=true"},
-    {id:16,name:"Mexican",desc:"Jalapeno peppers, green peppers & plain chicken",veg:false,basePrice:5.99,image:"https://image.pollinations.ai/prompt/mexican%20pizza?width=400&height=300&nologo=true"},
-    {id:17,name:"Farm Feast",desc:"Double layers of cheese & two of your favorite toppings",veg:false,basePrice:5.99,image:"https://image.pollinations.ai/prompt/cheese%20pizza?width=400&height=300&nologo=true"},
-    {id:18,name:"Free Choice",desc:"Cheese and tomato & 3 of your favorite toppings",veg:true,basePrice:5.99,image:"https://image.pollinations.ai/prompt/custom%20pizza?width=400&height=300&nologo=true"}
+    {id:1,name:"Margherita",desc:"Cheese & tomato sauce",veg:true,basePrice:5.99,image:px('margherita',400,300)},
+    {id:2,name:"Funghi",desc:"Cheese, tomato sauce & mushroom",veg:true,basePrice:5.99,image:px('funghi',400,300)},
+    {id:3,name:"Peppermoni",desc:"Cheese, tomato sauce & peppermoni slices",veg:false,basePrice:5.99,image:px('pepperoni',400,300)},
+    {id:4,name:"Farm House",desc:"Ham & mushroom",veg:false,basePrice:5.99,image:px('farmhouse',400,300)},
+    {id:5,name:"Hawaiian",desc:"Ham & pineapple",veg:false,basePrice:5.99,image:px('hawaiian',400,300)},
+    {id:6,name:"Vegetarian",desc:"Mixed peppers, onion, mushroom & sweetcorn",veg:true,basePrice:5.99,image:px('vegetarian',400,300)},
+    {id:7,name:"Vegetarian Hot",desc:"Mixed peppers, onion, mushroom, sweetcorn & hot chillies",veg:true,basePrice:5.99,image:px('vegetarian-hot',400,300)},
+    {id:8,name:"Vegetarian Supreme",desc:"Mushroom, onion, jalapeno pepper & fresh tomato",veg:true,basePrice:5.99,image:px('veg-supreme',400,300)},
+    {id:9,name:"Heatwave",desc:"Fresh garlic, black olives & hot chillies",veg:true,basePrice:5.99,image:px('heatwave',400,300)},
+    {id:10,name:"Mediterranean",desc:"Fresh tomato, black olives & sweetcorn",veg:true,basePrice:5.99,image:px('mediterranean',400,300)},
+    {id:11,name:"Chicken Delight",desc:"Tandoori Chicken, chicken tikka & onion",veg:false,basePrice:5.99,image:px('chicken-delight',400,300)},
+    {id:12,name:"Volcano",desc:"Tandoori chicken, onion, mushroom, fresh garlic & hot chillies",veg:false,basePrice:5.99,image:px('volcano',400,300)},
+    {id:13,name:"Chicken Supreme",desc:"Spicy Tandoori chicken, chicken tikka, onion, jalapeno pepper & hot chillies",veg:false,basePrice:5.99,image:px('chicken-supreme',400,300)},
+    {id:14,name:"Meat Feast",desc:"Peppermoni, ham & plain chicken",veg:false,basePrice:5.99,image:px('meat-feast',400,300)},
+    {id:15,name:"Seafood",desc:"Tuna, black olives & prawns",veg:false,basePrice:5.99,image:px('seafood',400,300)},
+    {id:16,name:"Mexican",desc:"Jalapeno peppers, green peppers & plain chicken",veg:false,basePrice:5.99,image:px('mexican',400,300)},
+    {id:17,name:"Farm Feast",desc:"Double layers of cheese & two of your favorite toppings",veg:false,basePrice:5.99,image:px('farm-feast',400,300)},
+    {id:18,name:"Free Choice",desc:"Cheese and tomato & 3 of your favorite toppings",veg:true,basePrice:5.99,image:px('free-choice',400,300)}
   ],
   sides: [
-    {id:101,name:"Garlic Bread (4 pcs)",price:1.99,image:"https://image.pollinations.ai/prompt/garlic%20bread?width=200&height=200&nologo=true"},
-    {id:102,name:"Garlic Bread with Cheese (4 pcs)",price:2.49,image:"https://image.pollinations.ai/prompt/cheesy%20garlic%20bread?width=200&height=200&nologo=true"},
-    {id:103,name:"Potato Wedges",price:2.49,image:"https://image.pollinations.ai/prompt/potato%20wedges?width=200&height=200&nologo=true"},
-    {id:104,name:"BBQ Chicken Wings",price:3.99,image:"https://image.pollinations.ai/prompt/bbq%20wings?width=200&height=200&nologo=true"}
+    {id:101,name:"Garlic Bread (4 pcs)",price:1.99,image:px('garlic-bread',200,200)},
+    {id:102,name:"Garlic Bread with Cheese (4 pcs)",price:2.49,image:px('cheesy-garlic',200,200)},
+    {id:103,name:"Potato Wedges",price:2.49,image:px('wedges',200,200)},
+    {id:104,name:"BBQ Chicken Wings",price:3.99,image:px('bbq-wings',200,200)}
   ],
   dips: [
-    {id:301,name:"Garlic & Herb Dip",price:0.30,image:"https://image.pollinations.ai/prompt/garlic%20dip?width=200&height=200&nologo=true"},
-    {id:302,name:"Chilli Dip",price:0.30,image:"https://image.pollinations.ai/prompt/chilli%20dip?width=200&height=200&nologo=true"},
-    {id:303,name:"Ketchup Dip",price:0.30,image:"https://image.pollinations.ai/prompt/ketchup%20dip?width=200&height=200&nologo=true"},
-    {id:304,name:"Mayo Dip",price:0.30,image:"https://image.pollinations.ai/prompt/mayo%20dip?width=200&height=200&nologo=true"},
-    {id:305,name:"BBQ Dip",price:0.30,image:"https://image.pollinations.ai/prompt/bbq%20dip?width=200&height=200&nologo=true"}
+    {id:301,name:"Garlic & Herb Dip",price:0.30,image:px('garlic-dip',200,200)},
+    {id:302,name:"Chilli Dip",price:0.30,image:px('chilli-dip',200,200)},
+    {id:303,name:"Ketchup Dip",price:0.30,image:px('ketchup-dip',200,200)},
+    {id:304,name:"Mayo Dip",price:0.30,image:px('mayo-dip',200,200)},
+    {id:305,name:"BBQ Dip",price:0.30,image:px('bbq-dip',200,200)}
   ],
   drinks: [
-    {id:201,name:"Coke (Bottle)",price:2.99,image:"https://image.pollinations.ai/prompt/coca%20cola?width=200&height=200&nologo=true"},
-    {id:202,name:"Diet Coke (Bottle)",price:2.99,image:"https://image.pollinations.ai/prompt/diet%20coke?width=200&height=200&nologo=true"},
-    {id:203,name:"Fanta (Bottle)",price:2.99,image:"https://image.pollinations.ai/prompt/fanta?width=200&height=200&nologo=true"},
-    {id:204,name:"Sprite (Bottle)",price:2.99,image:"https://image.pollinations.ai/prompt/sprite?width=200&height=200&nologo=true"}
+    {id:201,name:"Coke (Bottle)",price:2.99,image:px('coke',200,200)},
+    {id:202,name:"Diet Coke (Bottle)",price:2.99,image:px('diet-coke',200,200)},
+    {id:203,name:"Fanta (Bottle)",price:2.99,image:px('fanta',200,200)},
+    {id:204,name:"Sprite (Bottle)",price:2.99,image:px('sprite',200,200)}
   ]
 };
 
@@ -336,9 +339,6 @@ let cart = [];
 let currentCustomPizza = null;
 let previousCartCount = 0;
 
-/* ============================================================
-   INIT
-   ============================================================ */
 document.addEventListener('DOMContentLoaded', () => {
   switchTab('pizzas');
   renderToppings();
@@ -346,105 +346,57 @@ document.addEventListener('DOMContentLoaded', () => {
   updateCartUI();
   checkOpenStatus();
   setInterval(checkOpenStatus, 60000);
-
   setTimeout(hideLoadingOverlay, 1500);
   requestAnimationFrame(() => setTimeout(hideLoadingOverlay, 300));
-
-  if (db) {
-    loadMenuFromFirestore().catch(err => {
-      console.warn('[FarmPizza] Menu load error:', err);
-    });
-  } else {
-    setFirestoreStatus('offline', 'using defaults');
-  }
-
-  const customerType = localStorage.getItem('customerType');
-  if (!customerType) setTimeout(() => document.getElementById('welcome-modal').classList.remove('hidden'), 1000);
+  if (db) loadMenuFromFirestore().catch(err => console.warn('[FarmPizza] Menu:', err));
+  else setFirestoreStatus('offline', 'using defaults');
+  const ct = localStorage.getItem('customerType');
+  if (!ct) setTimeout(() => document.getElementById('welcome-modal').classList.remove('hidden'), 1000);
 });
 
 function hideLoadingOverlay() {
   const lo = document.getElementById('loading-overlay');
-  if (lo && lo.style.display !== 'none') {
-    lo.style.opacity = '0'; lo.style.transition = 'opacity 0.3s';
-    setTimeout(() => lo.style.display = 'none', 300);
-  }
+  if (lo && lo.style.display !== 'none') { lo.style.opacity = '0'; lo.style.transition = 'opacity 0.3s'; setTimeout(() => lo.style.display = 'none', 300); }
 }
 
-/* ============================================================
-   FIRESTORE MENU — with detailed logging
-   ============================================================ */
 async function loadMenuFromFirestore() {
-  console.log('[FarmPizza] Attempting to load menu from Firestore…');
-
-  // Try to seed
   try {
     const seedCheck = db.collection('products').limit(1).get();
-    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout after 6s')), 6000));
+    const timeout = new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 6000));
     const snap = await Promise.race([seedCheck, timeout]);
-    console.log('[FarmPizza] Products collection exists?', !snap.empty);
-
     if (snap.empty) {
-      console.log('[FarmPizza] Seeding products collection…');
       const batch = db.batch();
       DEFAULT_MENU.pizzas.forEach(p => batch.set(db.collection('products').doc('pizza_'+p.id), {...p,category:'pizza',available:true}));
       DEFAULT_MENU.sides.forEach(s => batch.set(db.collection('products').doc('side_'+s.id), {...s,category:'side',available:true}));
       DEFAULT_MENU.dips.forEach(d => batch.set(db.collection('products').doc('dip_'+d.id), {...d,category:'dip',available:true}));
       DEFAULT_MENU.drinks.forEach(d => batch.set(db.collection('products').doc('drink_'+d.id), {...d,category:'drink',available:true}));
       await batch.commit();
-      console.log('[FarmPizza] Seed complete.');
     }
-  } catch (e) {
-    console.warn('[FarmPizza] Seed failed:', e.code || '', e.message);
-    if (e.code === 'permission-denied') {
-      setFirestoreStatus('error', 'rules block write');
-    }
-  }
+  } catch (e) { console.warn('[FarmPizza] Seed:', e.message); }
 
-  // Attach listener
   try {
-    db.collection('products').onSnapshot(
-      snapshot => {
-        console.log('[FarmPizza] Products snapshot received:', snapshot.size, 'items');
-        if (snapshot.empty) {
-          setFirestoreStatus('offline', 'using default menu');
-          return;
-        }
-        const pizzas=[],sides=[],dips=[],drinks=[];
-        snapshot.forEach(doc => {
-          const d = doc.data();
-          if (d.available === false) return;
-          const item = { id: d.id, name: d.name, desc: d.desc||'', veg: !!d.veg, price: d.price, basePrice: d.basePrice, image: d.image, category: d.category };
-          if (d.category==='pizza') pizzas.push(item);
-          else if (d.category==='side') sides.push(item);
-          else if (d.category==='dip') dips.push(item);
-          else if (d.category==='drink') drinks.push(item);
-        });
-        if (pizzas.length || sides.length || dips.length || drinks.length) {
-          menuData = { pizzas, sides, dips, drinks };
-          setFirestoreStatus('connected', `${snapshot.size} items`);
-          const activeTab = document.querySelector('[id^="tab-"][class*="bg-farmRed"]');
-          if (activeTab) {
-            const cat = activeTab.id.replace('tab-','');
-            if (cat==='pizzas') filterPizzas('all');
-            else renderMenu(cat);
-          }
-        }
-      },
-      err => {
-        console.error('[FarmPizza] Products listener error:', err.code, err.message);
-        if (err.code === 'permission-denied') setFirestoreStatus('error', 'rules block read');
-        else setFirestoreStatus('error', err.code || 'listener');
+    db.collection('products').onSnapshot(snapshot => {
+      if (snapshot.empty) return;
+      const pizzas=[],sides=[],dips=[],drinks=[];
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        if (d.available === false) return;
+        const item = { id: d.id, name: d.name, desc: d.desc||'', veg: !!d.veg, price: d.price, basePrice: d.basePrice, image: d.image, category: d.category };
+        if (d.category==='pizza') pizzas.push(item);
+        else if (d.category==='side') sides.push(item);
+        else if (d.category==='dip') dips.push(item);
+        else if (d.category==='drink') drinks.push(item);
+      });
+      if (pizzas.length || sides.length || dips.length || drinks.length) {
+        menuData = { pizzas, sides, dips, drinks };
+        setFirestoreStatus('connected', snapshot.size+' items');
+        const activeTab = document.querySelector('[id^="tab-"][class*="bg-farmRed"]');
+        if (activeTab) { const cat = activeTab.id.replace('tab-',''); if (cat==='pizzas') filterPizzas('all'); else renderMenu(cat); }
       }
-    );
-  } catch (e) {
-    console.error('[FarmPizza] Listener attach failed:', e);
-    setFirestoreStatus('error', 'listener');
-  }
+    }, err => { setFirestoreStatus('error', err.code || 'listener'); });
+  } catch (e) { setFirestoreStatus('error', 'listener'); }
 }
 
-/* ============================================================
-   TOAST
-   ============================================================ */
 function showToast(item) {
   const container = document.getElementById('toast-container'); if (!container) return;
   const toast = document.createElement('div');
@@ -452,16 +404,13 @@ function showToast(item) {
   let details = [];
   if (item.isHalfAndHalf) details.push(`Half ${item.name} / Half ${item.secondHalfName}`);
   else { if(item.size)details.push(item.size); if(item.crust)details.push(item.crust); if(item.base&&item.base!=='Tomato')details.push(item.base+' Base'); if(item.extras&&item.extras.length)details.push('+ '+item.extras.join(', ')); }
-  const detailsStr = details.length ? details.join(' • ') : '';
-  toast.innerHTML = `<div class="text-green-500 text-lg mt-0.5"><i class="fas fa-check-circle"></i></div><div class="flex-1 min-w-0"><p class="font-bold text-farmDark text-xs">Added to Cart</p><p class="text-sm text-gray-800 font-semibold truncate">${item.isHalfAndHalf?'Half & Half Pizza':item.name}</p>${detailsStr?`<p class="text-[11px] text-gray-500 mt-0.5 leading-snug">${detailsStr}</p>`:''}<p class="text-xs text-farmRed font-bold mt-1">£${item.price.toFixed(2)} × ${item.quantity}</p></div><button type="button" aria-label="Dismiss" onclick="this.parentElement.remove()" class="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>`;
+  const ds = details.length ? details.join(' • ') : '';
+  toast.innerHTML = `<div class="text-green-500 text-lg mt-0.5"><i class="fas fa-check-circle"></i></div><div class="flex-1 min-w-0"><p class="font-bold text-farmDark text-xs">Added to Cart</p><p class="text-sm text-gray-800 font-semibold truncate">${item.isHalfAndHalf?'Half & Half Pizza':item.name}</p>${ds?`<p class="text-[11px] text-gray-500 mt-0.5 leading-snug">${ds}</p>`:''}<p class="text-xs text-farmRed font-bold mt-1">£${item.price.toFixed(2)} × ${item.quantity}</p></div><button type="button" aria-label="Dismiss" onclick="this.parentElement.remove()" class="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>`;
   container.appendChild(toast);
   requestAnimationFrame(()=>{toast.classList.remove('toast-enter');toast.classList.add('toast-show');});
   setTimeout(()=>{toast.classList.remove('toast-show');toast.classList.add('toast-enter');setTimeout(()=>toast.remove(),300);},2800);
 }
 
-/* ============================================================
-   WELCOME / LIVE / TOPPINGS
-   ============================================================ */
 function showAllergyInfo(){document.getElementById('welcome-step-1').classList.add('hidden');document.getElementById('welcome-step-2').classList.remove('hidden');}
 function closeWelcomeModal(){localStorage.setItem('customerType','acknowledged');document.getElementById('welcome-modal').classList.add('hidden');}
 
@@ -494,9 +443,6 @@ function updateToppingHighlight(cb){
   else{l.classList.remove('bg-farmRed','border-farmRed');l.classList.add('bg-white','border-gray-300');if(s){s.classList.remove('text-white');s.classList.add('text-gray-700');}}
 }
 
-/* ============================================================
-   MENU TABS
-   ============================================================ */
 function switchTab(category){
   ['pizzas','sides','dips','drinks'].forEach(cat=>{
     const g=document.getElementById(cat+'-grid'); if(g)g.classList.add('hidden');
@@ -526,7 +472,7 @@ function renderPizzaGrid(pizzas){
     const base = p.basePrice || BASE_PRICES.XL;
     html+=`<div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition flex flex-col">
       <div class="relative">
-        <img src="${p.image}" alt="" loading="lazy" onerror="this.style.background='linear-gradient(135deg,#D32F2F,#FBC02D)';this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22200%22><rect width=%22400%22 height=%22200%22 fill=%22%23D32F2F%22/></svg>'" class="h-48 w-full object-cover bg-gradient-to-br from-farmRed to-farmYellow">
+        <img src="${p.image}" alt="${p.name}" loading="lazy" crossorigin="anonymous" onerror="this.style.background='linear-gradient(135deg,#D32F2F,#FBC02D)';this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22200%22><rect width=%22400%22 height=%22200%22 fill=%22%23D32F2F%22/></svg>'" class="h-48 w-full object-cover bg-gradient-to-br from-farmRed to-farmYellow">
         <span id="pizza-badge-${p.id}" class="hidden absolute top-2 right-2 bg-green-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg"><i class="fas fa-check mr-1"></i> In cart</span>
         <span class="absolute top-2 left-2 bg-farmYellow text-farmDark text-[10px] font-bold px-2 py-0.5 rounded-full shadow"><i class="fas fa-adjust mr-1"></i> Half & Half +£1</span>
       </div>
@@ -552,9 +498,9 @@ function updatePizzaButtonStates(){
 
 function renderMenu(category){
   const grid=document.getElementById(category+'-grid'); if(!grid)return; let html='';
-  if(category==='sides'){menuData.sides.forEach(s=>{html+=`<div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 flex items-center p-4"><img src="${s.image}" alt="" loading="lazy" class="h-20 w-20 object-cover rounded-lg mr-4 bg-gradient-to-br from-farmRed to-farmYellow"><div class="flex-1"><h3 class="font-bold text-md text-farmDark">${s.name}</h3><p class="text-farmRed font-bold">£${s.price.toFixed(2)}</p></div><button type="button" aria-label="Add ${s.name}" onclick="addToCartFromId(${s.id},'side')" class="bg-farmRed text-white h-10 w-10 rounded-full hover:bg-red-700 transition flex items-center justify-center ml-2"><i class="fas fa-plus"></i></button></div>`;});}
-  else if(category==='dips'){menuData.dips.forEach(d=>{html+=`<div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 flex flex-col items-center p-3 text-center"><img src="${d.image}" alt="" loading="lazy" class="h-16 w-16 object-cover rounded-full mb-2 border-2 border-farmYellow bg-gradient-to-br from-farmRed to-farmYellow"><h3 class="font-bold text-xs text-farmDark leading-tight mb-1 h-8 flex items-center justify-center">${d.name}</h3><p class="text-farmRed font-bold text-sm mb-2">£${d.price.toFixed(2)}</p><button type="button" aria-label="Add ${d.name}" onclick="addToCartFromId(${d.id},'dip')" class="bg-farmRed text-white h-8 w-8 rounded-full hover:bg-red-700 transition flex items-center justify-center"><i class="fas fa-plus text-xs"></i></button></div>`;});}
-  else if(category==='drinks'){menuData.drinks.forEach(d=>{html+=`<div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 flex items-center p-4"><img src="${d.image}" alt="" loading="lazy" class="h-20 w-20 object-cover rounded-lg mr-4 bg-gradient-to-br from-farmRed to-farmYellow"><div class="flex-1"><h3 class="font-bold text-md text-farmDark">${d.name}</h3><p class="text-farmRed font-bold">£${d.price.toFixed(2)}</p></div><button type="button" aria-label="Add ${d.name}" onclick="addToCartFromId(${d.id},'drink')" class="bg-farmRed text-white h-10 w-10 rounded-full hover:bg-red-700 transition flex items-center justify-center ml-2"><i class="fas fa-plus"></i></button></div>`;});}
+  if(category==='sides'){menuData.sides.forEach(s=>{html+=`<div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 flex items-center p-4"><img src="${s.image}" alt="${s.name}" loading="lazy" crossorigin="anonymous" class="h-20 w-20 object-cover rounded-lg mr-4 bg-gradient-to-br from-farmRed to-farmYellow"><div class="flex-1"><h3 class="font-bold text-md text-farmDark">${s.name}</h3><p class="text-farmRed font-bold">£${s.price.toFixed(2)}</p></div><button type="button" aria-label="Add ${s.name}" onclick="addToCartFromId(${s.id},'side')" class="bg-farmRed text-white h-10 w-10 rounded-full hover:bg-red-700 transition flex items-center justify-center ml-2"><i class="fas fa-plus"></i></button></div>`;});}
+  else if(category==='dips'){menuData.dips.forEach(d=>{html+=`<div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 flex flex-col items-center p-3 text-center"><img src="${d.image}" alt="${d.name}" loading="lazy" crossorigin="anonymous" class="h-16 w-16 object-cover rounded-full mb-2 border-2 border-farmYellow bg-gradient-to-br from-farmRed to-farmYellow"><h3 class="font-bold text-xs text-farmDark leading-tight mb-1 h-8 flex items-center justify-center">${d.name}</h3><p class="text-farmRed font-bold text-sm mb-2">£${d.price.toFixed(2)}</p><button type="button" aria-label="Add ${d.name}" onclick="addToCartFromId(${d.id},'dip')" class="bg-farmRed text-white h-8 w-8 rounded-full hover:bg-red-700 transition flex items-center justify-center"><i class="fas fa-plus text-xs"></i></button></div>`;});}
+  else if(category==='drinks'){menuData.drinks.forEach(d=>{html+=`<div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 flex items-center p-4"><img src="${d.image}" alt="${d.name}" loading="lazy" crossorigin="anonymous" class="h-20 w-20 object-cover rounded-lg mr-4 bg-gradient-to-br from-farmRed to-farmYellow"><div class="flex-1"><h3 class="font-bold text-md text-farmDark">${d.name}</h3><p class="text-farmRed font-bold">£${d.price.toFixed(2)}</p></div><button type="button" aria-label="Add ${d.name}" onclick="addToCartFromId(${d.id},'drink')" class="bg-farmRed text-white h-10 w-10 rounded-full hover:bg-red-700 transition flex items-center justify-center ml-2"><i class="fas fa-plus"></i></button></div>`;});}
   grid.innerHTML=html;
 }
 
@@ -566,9 +512,6 @@ function addToCartFromId(id,type){
   if(item)addToCart({id:item.id,name:item.name,price:parseFloat(item.price),quantity:1});
 }
 
-/* ============================================================
-   CUSTOMIZATION MODAL
-   ============================================================ */
 function openCustomizeModal(pizzaId){
   const pizza=menuData.pizzas.find(p=>p.id===pizzaId); if(!pizza)return;
   currentCustomPizza={...pizza,size:'XL',crust:'Deep Pan',base:'Tomato',extras:[],isHalfAndHalf:false,secondHalfId:null,secondHalfName:null};
@@ -580,15 +523,15 @@ function openCustomizeModal(pizzaId){
   toppings.vegetables.forEach((t,idx)=>{const id=`mtv-${idx}`;th+=`<label for="${id}" class="topping-label inline-flex items-center bg-white border border-gray-300 rounded-full px-3 py-1 cursor-pointer hover:bg-gray-100 transition mr-2 mb-2"><input type="checkbox" id="${id}" name="${id}" value="${t}" onchange="toggleExtra(this);updateToppingHighlight(this);" class="form-checkbox h-4 w-4 text-farmRed rounded"><span class="ml-2 text-sm text-gray-700 flex items-center"><i class="fas fa-leaf text-green-500 mr-1 text-xs"></i> ${t}</span></label>`;});
   toppings.meat.forEach((t,idx)=>{const id=`mtm-${idx}`;th+=`<label for="${id}" class="topping-label inline-flex items-center bg-white border border-gray-300 rounded-full px-3 py-1 cursor-pointer hover:bg-gray-100 transition mr-2 mb-2"><input type="checkbox" id="${id}" name="${id}" value="${t}" onchange="toggleExtra(this);updateToppingHighlight(this);" class="form-checkbox h-4 w-4 text-farmRed rounded"><span class="ml-2 text-sm text-gray-700 flex items-center"><i class="fas fa-drumstick-bite text-red-500 mr-1 text-xs"></i> ${t}</span></label>`;});
   const shOpts=menuData.pizzas.filter(p=>p.id!==pizza.id).map(p=>`<option value="${p.id}">${p.name} — ${p.desc}</option>`).join('');
-  content.innerHTML=`<div class="space-y-4">
+  content.innerHTML=`<form onsubmit="event.preventDefault();confirmCustomPizza();" class="space-y-4">
     <div><label for="modal-size" class="block font-semibold text-sm mb-1">Size</label><select id="modal-size" name="modal-size" onchange="updateModalPrice()" class="w-full p-2 border rounded-lg"><option value="Medium">Medium (10") - £${BASE_PRICES.Medium.toFixed(2)}</option><option value="Large">Large (12") - £${BASE_PRICES.Large.toFixed(2)}</option><option value="XL" selected>XL (14") - £${BASE_PRICES.XL.toFixed(2)}</option></select></div>
     <div><label for="modal-crust" class="block font-semibold text-sm mb-1">Crust</label><select id="modal-crust" name="modal-crust" class="w-full p-2 border rounded-lg"><option value="Thin Crust">Thin Crust</option><option value="Deep Pan" selected>Deep Pan</option></select></div>
     <div><label for="modal-base" class="block font-semibold text-sm mb-1">Base</label><select id="modal-base" name="modal-base" onchange="updateModalPrice()" class="w-full p-2 border rounded-lg"><option value="Tomato" selected>Tomato Base</option><option value="BBQ">BBQ Base (+£1.00)</option></select></div>
     <div class="bg-farmCream border-2 border-farmYellow rounded-lg p-3"><label for="modal-half-and-half" class="flex items-start gap-3 cursor-pointer"><input type="checkbox" id="modal-half-and-half" name="modal-half-and-half" onchange="toggleHalfAndHalf(this)" class="mt-1 form-checkbox h-5 w-5 text-farmRed rounded"><div class="flex-1"><p class="font-bold text-farmDark text-sm"><i class="fas fa-adjust mr-1 text-farmRed"></i> Make it Half & Half</p><p class="text-xs text-gray-600 mt-0.5">Choose a second pizza for the other half.</p><p class="text-xs text-farmRed font-bold mt-1">+ £${HALF_AND_HALF_CHARGE.toFixed(2)} extra</p></div></label><div id="modal-half-and-half-picker" class="hidden mt-3"><label for="modal-second-half" class="block font-semibold text-xs mb-1">Other half:</label><select id="modal-second-half" name="modal-second-half" onchange="updateModalPrice()" class="w-full p-2 border rounded-lg text-sm">${shOpts}</select></div></div>
-    <div><p class="block font-semibold text-sm mb-2">Extra Toppings <span class="text-xs font-normal text-gray-500">(${tn})</span></p><div class="max-h-40 overflow-y-auto border p-3 rounded-lg bg-gray-50 flex flex-wrap">${th}</div></div>
+    <fieldset><legend class="block font-semibold text-sm mb-2">Extra Toppings <span class="text-xs font-normal text-gray-500">(${tn})</span></legend><div class="max-h-40 overflow-y-auto border p-3 rounded-lg bg-gray-50 flex flex-wrap">${th}</div></fieldset>
     <div class="flex justify-between items-center font-bold text-lg pt-2 border-t"><span>Total:</span><span id="modal-price" class="text-farmRed">£${BASE_PRICES.XL.toFixed(2)}</span></div>
-    <button type="button" onclick="confirmCustomPizza()" class="w-full bg-farmRed text-white font-bold py-3 rounded-lg hover:bg-red-700 transition">Add to Cart</button>
-  </div>`;
+    <button type="submit" class="w-full bg-farmRed text-white font-bold py-3 rounded-lg hover:bg-red-700 transition">Add to Cart</button>
+  </form>`;
   modal.classList.remove('hidden'); updateModalPrice();
 }
 function toggleHalfAndHalf(cb){if(!currentCustomPizza)return;currentCustomPizza.isHalfAndHalf=cb.checked;const p=document.getElementById('modal-half-and-half-picker');if(cb.checked)p.classList.remove('hidden');else p.classList.add('hidden');updateModalPrice();}
@@ -597,9 +540,6 @@ function toggleExtra(cb){if(!currentCustomPizza)return;const v=cb.value;if(cb.ch
 function updateModalPrice(){if(!currentCustomPizza)return;const size=document.getElementById('modal-size').value,base=document.getElementById('modal-base').value;let price=parseFloat(BASE_PRICES[size]);if(base==='BBQ')price+=1.00;const isFC=currentCustomPizza.name.includes('Free Choice');const paid=isFC?Math.max(0,currentCustomPizza.extras.length-3):currentCustomPizza.extras.length;price+=paid*EXTRA_TOPPING_PRICE;const hh=document.getElementById('modal-half-and-half');if(hh&&hh.checked)price+=HALF_AND_HALF_CHARGE;price=Math.round(price*100)/100;document.getElementById('modal-price').innerText='£'+price.toFixed(2);currentCustomPizza.calculatedPrice=price;}
 function confirmCustomPizza(){if(!currentCustomPizza)return;const size=document.getElementById('modal-size').value,crust=document.getElementById('modal-crust').value,base=document.getElementById('modal-base').value;const hh=document.getElementById('modal-half-and-half');const isHH=hh&&hh.checked;let shId=null,shName=null;if(isHH){const s=document.getElementById('modal-second-half');shId=parseInt(s.value);const sp=menuData.pizzas.find(p=>p.id===shId);shName=sp?sp.name:null;}const item={id:Date.now(),name:currentCustomPizza.name,size,crust,base,extras:[...currentCustomPizza.extras],price:currentCustomPizza.calculatedPrice,quantity:1,isHalfAndHalf:isHH,secondHalfId:shId,secondHalfName:shName};addToCart(item);closeModal();}
 
-/* ============================================================
-   CREATE YOUR OWN
-   ============================================================ */
 function renderToppings(){
   const c=document.getElementById('toppings-container'); if(!c)return; let html='';
   const all=[...toppings.vegetables.map(t=>({t,isV:true})),...toppings.meat.map(t=>({t,isV:false}))];
@@ -633,9 +573,6 @@ function addCustomPizza(){
   updateCustomPizzaPrice();
 }
 
-/* ============================================================
-   RECOMMENDATIONS
-   ============================================================ */
 function getRecommendations(){
   const recs=[];if(cart.length===0)return recs;
   const cSize=s=>cart.filter(i=>i.size===s).reduce((a,i)=>a+i.quantity,0);
@@ -653,9 +590,6 @@ function getRecommendations(){
   return recs;
 }
 
-/* ============================================================
-   CART
-   ============================================================ */
 function addToCart(item){
   item.price=parseFloat(item.price);
   const ex=cart.find(c=>c.name===item.name&&c.size===item.size&&c.crust===item.crust&&c.base===item.base&&JSON.stringify(c.extras)===JSON.stringify(item.extras)&&!!c.isHalfAndHalf===!!item.isHalfAndHalf&&c.secondHalfId===item.secondHalfId);
@@ -726,9 +660,6 @@ function updateFloatingCart(count,animate){
 
 function toggleCart(){const d=document.getElementById('cart-drawer'),o=document.getElementById('cart-overlay');if(d.classList.contains('cart-closed')){d.classList.remove('cart-closed');d.classList.add('cart-open');o.classList.remove('hidden');}else{d.classList.remove('cart-open');d.classList.add('cart-closed');o.classList.add('hidden');}}
 
-/* ============================================================
-   CHECKOUT
-   ============================================================ */
 function checkout(){if(cart.length===0){alert("Your cart is empty.");return;}document.getElementById('fulfillment-collection').checked=true;toggleDeliveryAddress();document.getElementById('checkout-modal').classList.remove('hidden');}
 function closeCheckoutModal(){document.getElementById('checkout-modal').classList.add('hidden');}
 function toggleDeliveryAddress(){
@@ -739,19 +670,14 @@ function toggleDeliveryAddress(){
   else{ci.classList.add('hidden');di.classList.remove('hidden');if(ct<DELIVERY_MINIMUM){cte.innerText='£'+DELIVERY_MINIMUM.toFixed(2);const r=DELIVERY_MINIMUM-ct;mwt.innerText=`Delivery minimum is £${DELIVERY_MINIMUM.toFixed(2)}. £${r.toFixed(2)} has been added to meet the minimum. Or switch to Collection (no minimum).`;mw.classList.remove('hidden');}else{cte.innerText='£'+ct.toFixed(2);mw.classList.add('hidden');}}
 }
 
-/* ============================================================
-   PLACE ORDER — with detailed logs & visible errors
-   ============================================================ */
 async function placeOrder(){
   const btn=document.getElementById('confirm-order-btn');
   const f=document.querySelector('input[name="fulfillment"]:checked').value;
   const name=document.getElementById('customer-name').value.trim();
   const phone=document.getElementById('customer-phone').value.trim();
-
   if(!name){alert("Please enter your name.");return;}
   if(!phone){alert("Phone number is mandatory.");return;}
   if(!/^[0-9+\s()-]{7,}$/.test(phone)){alert("Please enter a valid phone number.");return;}
-
   let address='',postcode='',note='';
   if(f==='delivery'){
     const house=document.getElementById('delivery-house').value.trim();
@@ -761,61 +687,31 @@ async function placeOrder(){
     if(!house||!postcode){alert("Please enter your house number and postcode.");return;}
     address=`${house}, ${street?street+', ':''}${postcode}`;
   }
-
   const cartTotal=cart.reduce((s,i)=>s+i.price*i.quantity,0);
   let payable=cartTotal;
   if(f==='delivery'&&cartTotal<DELIVERY_MINIMUM)payable=DELIVERY_MINIMUM;
 
   if(!db){
-    alert(`Thank you ${name}!\n\nTotal: £${payable.toFixed(2)}\n${f==='delivery'?'Delivery in 10–30 mins':'Collection in <15 mins'}\n\nPlease call us on 0208 737 5731 to confirm.`);
-    cart=[];updateCartUI();closeCheckoutModal();toggleCart();
-    return;
+    alert(`Thank you ${name}!\n\nTotal: £${payable.toFixed(2)}\n${f==='delivery'?'Delivery in 10–30 mins':'Collection in <15 mins'}\n\nPlease call us on 0208 737 5731.`);
+    cart=[];updateCartUI();closeCheckoutModal();toggleCart();return;
   }
-
   btn.disabled=true;btn.innerText='Placing order…';
-  console.log('[FarmPizza] Placing order…', {name,phone,fulfillment:f,total:payable});
-
   try{
     const today=new Date().toISOString().slice(0,10);
     const orderRef=db.collection('orders').doc();
-    await orderRef.set({
-      orderNumber:null,customerName:name,customerPhone:phone,address,postcode,note,
-      items:cart.map(i=>({name:i.isHalfAndHalf?`½ ${i.name} / ½ ${i.secondHalfName}`:i.name,qty:i.quantity,price:i.price,options:{size:i.size,crust:i.crust,base:i.base,extras:i.extras||[],isHalfAndHalf:!!i.isHalfAndHalf}})),
-      subtotal:cartTotal,total:payable,fulfillment:f,status:'pending',date:today,
-      createdAt:firebase.firestore.FieldValue.serverTimestamp()
-    });
-    console.log('[FarmPizza] Order doc created:', orderRef.id);
-
+    await orderRef.set({orderNumber:null,customerName:name,customerPhone:phone,address,postcode,note,items:cart.map(i=>({name:i.isHalfAndHalf?`½ ${i.name} / ½ ${i.secondHalfName}`:i.name,qty:i.quantity,price:i.price,options:{size:i.size,crust:i.crust,base:i.base,extras:i.extras||[],isHalfAndHalf:!!i.isHalfAndHalf}})),subtotal:cartTotal,total:payable,fulfillment:f,status:'pending',date:today,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
     const statsRef=db.collection('dailyStats').doc(today);
-    await db.runTransaction(async t=>{
-      const doc=await t.get(statsRef);
-      const nextNum=(doc.exists?doc.data().orderCount:0)+1;
-      if(!doc.exists){t.set(statsRef,{date:today,orderCount:1,revenue:payable});}
-      else{t.update(statsRef,{orderCount:firebase.firestore.FieldValue.increment(1),revenue:firebase.firestore.FieldValue.increment(payable)});}
-      t.update(orderRef,{orderNumber:nextNum});
-    });
-    console.log('[FarmPizza] Order number assigned.');
-
+    await db.runTransaction(async t=>{const doc=await t.get(statsRef);const nextNum=(doc.exists?doc.data().orderCount:0)+1;if(!doc.exists){t.set(statsRef,{date:today,orderCount:1,revenue:payable});}else{t.update(statsRef,{orderCount:firebase.firestore.FieldValue.increment(1),revenue:firebase.firestore.FieldValue.increment(payable)});}t.update(orderRef,{orderNumber:nextNum});});
     const custRef=db.collection('customers').doc(phone.replace(/\s+/g,''));
     const custDoc=await custRef.get();
-    if(custDoc.exists){
-      await custRef.update({name,lastAddress:address||custDoc.data().lastAddress||'',postcode:postcode||custDoc.data().postcode||'',lastOrderAt:firebase.firestore.FieldValue.serverTimestamp(),orderCount:firebase.firestore.FieldValue.increment(1),totalSpent:firebase.firestore.FieldValue.increment(payable)});
-    }else{
-      await custRef.set({phone,name,lastAddress:address,postcode,createdAt:firebase.firestore.FieldValue.serverTimestamp(),lastOrderAt:firebase.firestore.FieldValue.serverTimestamp(),orderCount:1,totalSpent:payable});
-    }
-    console.log('[FarmPizza] Customer record saved.');
-
+    if(custDoc.exists){await custRef.update({name,lastAddress:address||custDoc.data().lastAddress||'',postcode:postcode||custDoc.data().postcode||'',lastOrderAt:firebase.firestore.FieldValue.serverTimestamp(),orderCount:firebase.firestore.FieldValue.increment(1),totalSpent:firebase.firestore.FieldValue.increment(payable)});}
+    else{await custRef.set({phone,name,lastAddress:address,postcode,createdAt:firebase.firestore.FieldValue.serverTimestamp(),lastOrderAt:firebase.firestore.FieldValue.serverTimestamp(),orderCount:1,totalSpent:payable});}
     alert(`Thank you ${name}! Order placed.\n\nTotal: £${payable.toFixed(2)}\n${f==='delivery'?'Delivery in 10–30 mins':'Collection in <15 mins'}\n\nWe'll call you on ${phone} to confirm.`);
     cart=[];updateCartUI();closeCheckoutModal();toggleCart();
   }catch(e){
-    console.error('[FarmPizza] Order FAILED:', e.code, e.message, e);
-    let hint='';
-    if(e.code==='permission-denied') hint='\n\n(Admin: check Firestore security rules allow order creation.)';
-    else if(e.code==='unavailable') hint='\n\n(Firestore is offline or unreachable.)';
-    alert(`We couldn't save your order online.${hint}\n\nPlease call 0208 737 5731.\nYour total: £${payable.toFixed(2)}`);
-  }finally{
-    btn.disabled=false;btn.innerText='Confirm Order';
-  }
+    console.error('[FarmPizza] Order failed:', e);
+    alert(`We couldn't save your order online. Please call 0208 737 5731.\nYour total: £${payable.toFixed(2)}`);
+  }finally{btn.disabled=false;btn.innerText='Confirm Order';}
 }
 </script>
 </body>
