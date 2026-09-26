@@ -7,14 +7,10 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-
-<script>
-tailwind.config={theme:{extend:{colors:{farmRed:'#D32F2F',farmYellow:'#FBC02D',farmDark:'#1F2937',farmCream:'#FEF3C7'},fontFamily:{pacifico:['Pacifico','cursive'],poppins:['Poppins','sans-serif']}}}}
-</script>
+<script>tailwind.config={theme:{extend:{colors:{farmRed:'#D32F2F',farmYellow:'#FBC02D',farmDark:'#1F2937',farmCream:'#FEF3C7'},fontFamily:{pacifico:['Pacifico','cursive'],poppins:['Poppins','sans-serif']}}}}</script>
 <style>
 body{font-family:'Poppins',sans-serif}
 .hide-scrollbar::-webkit-scrollbar{display:none}
@@ -32,6 +28,11 @@ body{font-family:'Poppins',sans-serif}
 </head>
 <body class="bg-gray-100 text-farmDark">
 
+<!-- Connection status badge -->
+<div id="firestore-status" class="fixed bottom-4 right-4 z-[300] bg-yellow-500 text-white text-xs font-bold px-3 py-2 rounded-full shadow-lg flex items-center gap-2">
+  <i class="fas fa-spinner fa-spin"></i> Firestore: Connecting…
+</div>
+
 <!-- LOGIN SCREEN -->
 <div id="login-screen" class="fixed inset-0 bg-farmDark z-[999] flex items-center justify-center p-4">
   <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8">
@@ -39,182 +40,117 @@ body{font-family:'Poppins',sans-serif}
       <h1 class="font-pacifico text-4xl text-farmRed mb-2">Farm Pizza</h1>
       <p class="text-gray-600 font-semibold">Admin Dashboard</p>
     </div>
-    <div class="space-y-4">
+    <form onsubmit="event.preventDefault();login();" class="space-y-4">
       <div>
-        <label class="block font-semibold text-sm mb-1">Email</label>
-        <input type="email" id="login-email" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="admin@farmpizza.co.uk">
+        <label for="login-email" class="block font-semibold text-sm mb-1">Email</label>
+        <input type="email" id="login-email" name="login-email" autocomplete="username" required class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="admin@farmpizza.co.uk">
       </div>
       <div>
-        <label class="block font-semibold text-sm mb-1">Password</label>
-        <input type="password" id="login-password" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()">
+        <label for="login-password" class="block font-semibold text-sm mb-1">Password</label>
+        <input type="password" id="login-password" name="login-password" autocomplete="current-password" required class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="••••••••">
       </div>
-      <p id="login-error" class="hidden text-red-600 text-sm"></p>
-      <button id="login-btn" onclick="login()" class="w-full bg-farmRed text-white font-bold py-3 rounded-lg hover:bg-red-700 transition">Sign In</button>
-      <p class="text-xs text-gray-500 text-center">Admin access only. Create users in Firebase Console → Authentication.</p>
+      <div id="login-error" class="hidden bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3"></div>
+      <button type="submit" id="login-btn" class="w-full bg-farmRed text-white font-bold py-3 rounded-lg hover:bg-red-700 transition">Sign In</button>
+    </form>
+    <div class="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs text-gray-600 leading-relaxed">
+      <p class="font-semibold text-farmDark mb-1"><i class="fas fa-info-circle text-farmRed mr-1"></i> First time?</p>
+      <ol class="list-decimal list-inside space-y-1">
+        <li>Firebase Console → <strong>Authentication</strong> → Sign-in method → enable <strong>Email/Password</strong>.</li>
+        <li>Go to the <strong>Users</strong> tab → <strong>Add user</strong> → enter an email and password.</li>
+        <li>Use that email + password here to log in.</li>
+      </ol>
     </div>
   </div>
 </div>
 
 <!-- DASHBOARD -->
 <div id="dashboard" class="hidden min-h-screen flex">
-  <!-- Sidebar -->
   <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-40 w-64 bg-farmDark text-white transform -translate-x-full md:translate-x-0 transition-transform duration-300 flex flex-col">
     <div class="p-6 border-b border-gray-700">
       <h1 class="font-pacifico text-2xl text-farmYellow">Farm Pizza</h1>
       <p class="text-xs text-gray-400 mt-1">Admin Dashboard</p>
     </div>
     <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
-      <button onclick="showPanel('dashboard')" data-panel="dashboard" class="sidebar-item active w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-700 transition text-left">
-        <i class="fas fa-chart-line w-5"></i><span>Dashboard</span>
-      </button>
-      <button onclick="showPanel('orders')" data-panel="orders" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-700 transition text-left">
-        <i class="fas fa-receipt w-5"></i><span>Orders</span>
-        <span id="pending-count" class="ml-auto bg-farmYellow text-farmDark text-xs font-bold px-2 py-0.5 rounded-full hidden">0</span>
-      </button>
-      <button onclick="showPanel('products')" data-panel="products" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-700 transition text-left">
-        <i class="fas fa-pizza-slice w-5"></i><span>Products & Prices</span>
-      </button>
-      <button onclick="showPanel('customers')" data-panel="customers" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-700 transition text-left">
-        <i class="fas fa-users w-5"></i><span>Customers</span>
-      </button>
+      <button type="button" onclick="showPanel('dashboard')" data-panel="dashboard" class="sidebar-item active w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-700 transition text-left"><i class="fas fa-chart-line w-5"></i><span>Dashboard</span></button>
+      <button type="button" onclick="showPanel('orders')" data-panel="orders" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-700 transition text-left"><i class="fas fa-receipt w-5"></i><span>Orders</span><span id="pending-count" class="ml-auto bg-farmYellow text-farmDark text-xs font-bold px-2 py-0.5 rounded-full hidden">0</span></button>
+      <button type="button" onclick="showPanel('products')" data-panel="products" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-700 transition text-left"><i class="fas fa-pizza-slice w-5"></i><span>Products & Prices</span></button>
+      <button type="button" onclick="showPanel('customers')" data-panel="customers" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-700 transition text-left"><i class="fas fa-users w-5"></i><span>Customers</span></button>
     </nav>
     <div class="p-4 border-t border-gray-700">
       <p id="admin-email" class="text-xs text-gray-400 truncate mb-3"></p>
-      <button onclick="logout()" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg transition text-sm"><i class="fas fa-sign-out-alt mr-1"></i> Sign Out</button>
+      <button type="button" onclick="logout()" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg transition text-sm"><i class="fas fa-sign-out-alt mr-1"></i> Sign Out</button>
     </div>
   </aside>
-
-  <!-- Mobile overlay -->
   <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
 
-  <!-- Main -->
   <main class="flex-1 min-w-0">
-    <!-- Top bar -->
     <header class="bg-white shadow-sm sticky top-0 z-20">
       <div class="flex items-center justify-between px-4 sm:px-6 py-4">
         <div class="flex items-center gap-3">
-          <button onclick="toggleSidebar()" class="md:hidden text-2xl text-farmDark"><i class="fas fa-bars"></i></button>
+          <button type="button" aria-label="Toggle sidebar" onclick="toggleSidebar()" class="md:hidden text-2xl text-farmDark"><i class="fas fa-bars"></i></button>
           <h2 id="panel-title" class="text-xl font-bold">Dashboard</h2>
         </div>
         <div class="flex items-center gap-3">
-          <span id="live-indicator" class="flex items-center gap-1 text-xs font-semibold text-green-600"><i class="fas fa-circle text-[8px]"></i> Live</span>
+          <span id="live-indicator" class="flex items-center gap-1 text-xs font-semibold text-yellow-600"><i class="fas fa-circle text-[8px]"></i> Connecting…</span>
           <span id="clock" class="text-sm text-gray-600 font-semibold"></span>
         </div>
       </div>
     </header>
 
-    <!-- Content -->
     <div class="p-4 sm:p-6">
-
-      <!-- ============ DASHBOARD PANEL ============ -->
       <div id="panel-dashboard" class="panel">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div class="bg-white rounded-xl shadow p-5">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm text-gray-500 font-semibold">Today's Orders</p>
-                <p id="stat-today-orders" class="text-3xl font-bold text-farmRed mt-1">0</p>
-              </div>
-              <div class="bg-red-100 text-farmRed rounded-full h-12 w-12 flex items-center justify-center"><i class="fas fa-receipt text-xl"></i></div>
-            </div>
-          </div>
-          <div class="bg-white rounded-xl shadow p-5">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm text-gray-500 font-semibold">Today's Revenue</p>
-                <p id="stat-today-revenue" class="text-3xl font-bold text-green-600 mt-1">£0.00</p>
-              </div>
-              <div class="bg-green-100 text-green-600 rounded-full h-12 w-12 flex items-center justify-center"><i class="fas fa-pound-sign text-xl"></i></div>
-            </div>
-          </div>
-          <div class="bg-white rounded-xl shadow p-5">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm text-gray-500 font-semibold">Pending</p>
-                <p id="stat-pending" class="text-3xl font-bold text-yellow-500 mt-1">0</p>
-              </div>
-              <div class="bg-yellow-100 text-yellow-600 rounded-full h-12 w-12 flex items-center justify-center"><i class="fas fa-clock text-xl"></i></div>
-            </div>
-          </div>
-          <div class="bg-white rounded-xl shadow p-5">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm text-gray-500 font-semibold">Total Customers</p>
-                <p id="stat-customers" class="text-3xl font-bold text-blue-600 mt-1">0</p>
-              </div>
-              <div class="bg-blue-100 text-blue-600 rounded-full h-12 w-12 flex items-center justify-center"><i class="fas fa-users text-xl"></i></div>
-            </div>
-          </div>
+        <div id="connection-hint" class="hidden bg-yellow-50 border border-yellow-300 text-yellow-800 text-sm rounded-xl p-4 mb-4">
+          <p class="font-bold mb-1"><i class="fas fa-exclamation-triangle mr-1"></i> No data from Firestore yet</p>
+          <p id="connection-hint-text">If this message persists, check your Firestore security rules and that Firestore is enabled in the Firebase Console.</p>
         </div>
-
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div class="bg-white rounded-xl shadow p-5"><div class="flex items-center justify-between"><div><p class="text-sm text-gray-500 font-semibold">Today's Orders</p><p id="stat-today-orders" class="text-3xl font-bold text-farmRed mt-1">0</p></div><div class="bg-red-100 text-farmRed rounded-full h-12 w-12 flex items-center justify-center"><i class="fas fa-receipt text-xl"></i></div></div></div>
+          <div class="bg-white rounded-xl shadow p-5"><div class="flex items-center justify-between"><div><p class="text-sm text-gray-500 font-semibold">Today's Revenue</p><p id="stat-today-revenue" class="text-3xl font-bold text-green-600 mt-1">£0.00</p></div><div class="bg-green-100 text-green-600 rounded-full h-12 w-12 flex items-center justify-center"><i class="fas fa-pound-sign text-xl"></i></div></div></div>
+          <div class="bg-white rounded-xl shadow p-5"><div class="flex items-center justify-between"><div><p class="text-sm text-gray-500 font-semibold">Pending</p><p id="stat-pending" class="text-3xl font-bold text-yellow-500 mt-1">0</p></div><div class="bg-yellow-100 text-yellow-600 rounded-full h-12 w-12 flex items-center justify-center"><i class="fas fa-clock text-xl"></i></div></div></div>
+          <div class="bg-white rounded-xl shadow p-5"><div class="flex items-center justify-between"><div><p class="text-sm text-gray-500 font-semibold">Total Customers</p><p id="stat-customers" class="text-3xl font-bold text-blue-600 mt-1">0</p></div><div class="bg-blue-100 text-blue-600 rounded-full h-12 w-12 flex items-center justify-center"><i class="fas fa-users text-xl"></i></div></div></div>
+        </div>
         <div class="bg-white rounded-xl shadow p-5 mb-6">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="font-bold text-lg">Latest Orders</h3>
-            <button onclick="showPanel('orders')" class="text-farmRed text-sm font-semibold hover:underline">View all →</button>
-          </div>
+          <div class="flex items-center justify-between mb-4"><h3 class="font-bold text-lg">Latest Orders</h3><button type="button" onclick="showPanel('orders')" class="text-farmRed text-sm font-semibold hover:underline">View all →</button></div>
           <div id="latest-orders" class="space-y-2"><p class="text-gray-500 text-sm">No orders yet.</p></div>
         </div>
-
-        <div class="bg-white rounded-xl shadow p-5">
-          <h3 class="font-bold text-lg mb-3">Daily Reset</h3>
-          <p class="text-sm text-gray-600">Stats automatically reset at <strong>12:00 AM</strong>. The dashboard reads only today's orders for live figures.</p>
-          <p id="next-reset" class="text-xs text-gray-500 mt-2"></p>
-        </div>
+        <div class="bg-white rounded-xl shadow p-5"><h3 class="font-bold text-lg mb-3">Daily Reset</h3><p class="text-sm text-gray-600">Stats automatically reset at <strong>12:00 AM</strong>. The dashboard reads only today's orders for live figures.</p><p id="next-reset" class="text-xs text-gray-500 mt-2"></p></div>
       </div>
 
-      <!-- ============ ORDERS PANEL ============ -->
       <div id="panel-orders" class="panel hidden">
         <div class="flex flex-wrap items-center gap-2 mb-4">
-          <button onclick="filterOrders('all')" id="of-all" class="px-4 py-2 rounded-full text-sm font-semibold bg-farmRed text-white">All</button>
-          <button onclick="filterOrders('pending')" id="of-pending" class="px-4 py-2 rounded-full text-sm font-semibold bg-gray-200 text-gray-700">Pending</button>
-          <button onclick="filterOrders('preparing')" id="of-preparing" class="px-4 py-2 rounded-full text-sm font-semibold bg-gray-200 text-gray-700">Preparing</button>
-          <button onclick="filterOrders('ready')" id="of-ready" class="px-4 py-2 rounded-full text-sm font-semibold bg-gray-200 text-gray-700">Ready</button>
-          <button onclick="filterOrders('completed')" id="of-completed" class="px-4 py-2 rounded-full text-sm font-semibold bg-gray-200 text-gray-700">Completed</button>
-          <input type="text" id="order-search" oninput="renderOrders()" placeholder="Search phone / name…" class="ml-auto p-2 border rounded-lg text-sm w-full sm:w-64">
+          <button type="button" onclick="filterOrders('all')" id="of-all" class="px-4 py-2 rounded-full text-sm font-semibold bg-farmRed text-white">All</button>
+          <button type="button" onclick="filterOrders('pending')" id="of-pending" class="px-4 py-2 rounded-full text-sm font-semibold bg-gray-200 text-gray-700">Pending</button>
+          <button type="button" onclick="filterOrders('preparing')" id="of-preparing" class="px-4 py-2 rounded-full text-sm font-semibold bg-gray-200 text-gray-700">Preparing</button>
+          <button type="button" onclick="filterOrders('ready')" id="of-ready" class="px-4 py-2 rounded-full text-sm font-semibold bg-gray-200 text-gray-700">Ready</button>
+          <button type="button" onclick="filterOrders('completed')" id="of-completed" class="px-4 py-2 rounded-full text-sm font-semibold bg-gray-200 text-gray-700">Completed</button>
+          <input type="text" id="order-search" name="order-search" oninput="renderOrders()" placeholder="Search phone / name…" class="ml-auto p-2 border rounded-lg text-sm w-full sm:w-64">
         </div>
         <div id="orders-list" class="space-y-3"><p class="text-gray-500 text-center py-8">Loading orders…</p></div>
       </div>
 
-      <!-- ============ PRODUCTS PANEL ============ -->
       <div id="panel-products" class="panel hidden">
-        <div class="bg-white rounded-xl shadow p-5 mb-4">
-          <p class="text-sm text-gray-600"><i class="fas fa-info-circle text-farmRed mr-1"></i> Change any price below and click <strong>Save</strong>. Updates appear instantly on the customer site.</p>
-        </div>
+        <div class="bg-white rounded-xl shadow p-5 mb-4"><p class="text-sm text-gray-600"><i class="fas fa-info-circle text-farmRed mr-1"></i> Change any price below and click <strong>Save</strong>. Updates appear instantly on the customer site.</p></div>
         <div id="products-list" class="space-y-4"><p class="text-gray-500 text-center py-8">Loading products…</p></div>
       </div>
 
-      <!-- ============ CUSTOMERS PANEL ============ -->
       <div id="panel-customers" class="panel hidden">
-        <div class="flex items-center gap-2 mb-4">
-          <input type="text" id="customer-search" oninput="renderCustomers()" placeholder="Search phone / name…" class="p-2 border rounded-lg text-sm w-full sm:w-72">
-          <span id="customer-total" class="text-sm text-gray-600 ml-auto"></span>
-        </div>
+        <div class="flex items-center gap-2 mb-4"><input type="text" id="customer-search" name="customer-search" oninput="renderCustomers()" placeholder="Search phone / name…" class="p-2 border rounded-lg text-sm w-full sm:w-72"><span id="customer-total" class="text-sm text-gray-600 ml-auto"></span></div>
         <div class="bg-white rounded-xl shadow overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
-              <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
-                <tr>
-                  <th class="text-left px-4 py-3">Name</th>
-                  <th class="text-left px-4 py-3">Phone</th>
-                  <th class="text-left px-4 py-3">Address</th>
-                  <th class="text-right px-4 py-3">Orders</th>
-                  <th class="text-right px-4 py-3">Total Spent</th>
-                  <th class="text-left px-4 py-3">Last Order</th>
-                </tr>
-              </thead>
+              <thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="text-left px-4 py-3">Name</th><th class="text-left px-4 py-3">Phone</th><th class="text-left px-4 py-3">Address</th><th class="text-right px-4 py-3">Orders</th><th class="text-right px-4 py-3">Total Spent</th><th class="text-left px-4 py-3">Last Order</th></tr></thead>
               <tbody id="customers-tbody"></tbody>
             </table>
           </div>
         </div>
       </div>
-
     </div>
   </main>
 </div>
 
 <script>
 /* ============================================================
-   FIREBASE
+   FIREBASE + STATUS
    ============================================================ */
 const firebaseConfig = {
   apiKey: "AIzaSyDPtj4qRDowQAdyF_oFX8Jqbxw1agB_Vv8",
@@ -229,14 +165,22 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-/* State */
-let allOrders = [];
-let allProducts = [];
-let allCustomers = [];
-let currentOrderFilter = 'all';
-let currentPanel = 'dashboard';
+function setFirestoreStatus(status, detail) {
+  const el = document.getElementById('firestore-status');
+  if (!el) return;
+  const map = {
+    connecting:{cls:'bg-yellow-500',icon:'fa-spinner fa-spin',text:'Firestore: Connecting…'},
+    connected: {cls:'bg-green-600', icon:'fa-circle',text:'Firestore: Connected'},
+    empty:     {cls:'bg-blue-500',  icon:'fa-inbox', text:'Firestore: No data yet'},
+    error:     {cls:'bg-red-600',   icon:'fa-exclamation-triangle',text:'Firestore: Error'}
+  };
+  const m = map[status] || map.error;
+  el.className = `fixed bottom-4 right-4 z-[300] ${m.cls} text-white text-xs font-bold px-3 py-2 rounded-full shadow-lg flex items-center gap-2`;
+  el.innerHTML = `<i class="fas ${m.icon}"></i> ${m.text}${detail ? ' — ' + detail : ''}`;
+}
 
-/* Live listeners */
+let allOrders=[], allProducts=[], allCustomers=[];
+let currentOrderFilter='all', currentPanel='dashboard';
 let unsubOrders=null, unsubProducts=null, unsubCustomers=null;
 
 /* ============================================================
@@ -246,7 +190,8 @@ auth.onAuthStateChanged(user=>{
   if(user){
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('dashboard').classList.remove('hidden');
-    document.getElementById('admin-email').innerText = user.email;
+    document.getElementById('admin-email').innerText=user.email;
+    console.log('[Admin] Signed in as', user.email);
     startListeners();
   }else{
     document.getElementById('login-screen').classList.remove('hidden');
@@ -264,8 +209,13 @@ async function login(){
   try{
     await auth.signInWithEmailAndPassword(email,pw);
   }catch(e){
-    err.innerText = e.code==='auth/wrong-password'||e.code==='auth/user-not-found' ? 'Invalid email or password.' : e.message;
+    let msg = e.message;
+    if(e.code==='auth/wrong-password'||e.code==='auth/user-not-found'||e.code==='auth/invalid-credential') msg='Invalid email or password.';
+    else if(e.code==='auth/operation-not-allowed') msg='Email/Password sign-in is not enabled. Enable it in Firebase Console → Authentication → Sign-in method.';
+    else if(e.code==='auth/invalid-email') msg='Invalid email format.';
+    err.innerHTML = `<i class="fas fa-exclamation-triangle mr-1"></i> ${msg}`;
     err.classList.remove('hidden');
+    console.error('[Admin] Login failed:', e.code, e.message);
   }finally{
     btn.disabled=false; btn.innerText='Sign In';
   }
@@ -273,30 +223,62 @@ async function login(){
 function logout(){auth.signOut();}
 
 /* ============================================================
-   LISTENERS (real-time)
+   LISTENERS
    ============================================================ */
 function startListeners(){
   stopListeners();
+  setFirestoreStatus('connecting');
+
+  let ordersOK=false, productsOK=false, customersOK=false;
+  const setConnectedIfAny=()=>{
+    if(ordersOK||productsOK||customersOK) setFirestoreStatus('connected');
+  };
 
   unsubOrders = db.collection('orders').orderBy('createdAt','desc').limit(500).onSnapshot(snap=>{
+    console.log('[Admin] Orders snapshot:', snap.size);
     allOrders = snap.docs.map(d=>({id:d.id,...d.data()}));
+    ordersOK=true; setConnectedIfAny();
     document.getElementById('live-indicator').innerHTML='<i class="fas fa-circle text-[8px]"></i> Live';
-    renderDashboardStats();
-    renderLatestOrders();
-    renderOrders();
-    updatePendingBadge();
-  },e=>console.error('orders listener',e));
+    document.getElementById('live-indicator').className='flex items-center gap-1 text-xs font-semibold text-green-600';
+    renderDashboardStats(); renderLatestOrders(); renderOrders(); updatePendingBadge();
+  },err=>{
+    console.error('[Admin] Orders listener error:', err.code, err.message);
+    setFirestoreStatus('error', err.code||'orders');
+    document.getElementById('live-indicator').innerHTML='<i class="fas fa-circle text-[8px]"></i> Error';
+    document.getElementById('live-indicator').className='flex items-center gap-1 text-xs font-semibold text-red-600';
+    document.getElementById('orders-list').innerHTML=`<p class="text-red-600 text-center py-8">Error loading orders: ${err.code||err.message}</p>`;
+  });
 
   unsubProducts = db.collection('products').onSnapshot(snap=>{
+    console.log('[Admin] Products snapshot:', snap.size);
     allProducts = snap.docs.map(d=>({id:d.id,...d.data()}));
+    productsOK=true; setConnectedIfAny();
     renderProducts();
-  },e=>console.error('products listener',e));
+  },err=>{
+    console.error('[Admin] Products listener error:', err.code, err.message);
+    setFirestoreStatus('error', err.code||'products');
+    document.getElementById('products-list').innerHTML=`<p class="text-red-600 text-center py-8">Error loading products: ${err.code||err.message}</p>`;
+  });
 
   unsubCustomers = db.collection('customers').orderBy('lastOrderAt','desc').onSnapshot(snap=>{
+    console.log('[Admin] Customers snapshot:', snap.size);
     allCustomers = snap.docs.map(d=>({id:d.id,...d.data()}));
+    customersOK=true; setConnectedIfAny();
     document.getElementById('stat-customers').innerText = allCustomers.length;
     renderCustomers();
-  },e=>console.error('customers listener',e));
+  },err=>{
+    console.error('[Admin] Customers listener error:', err.code, err.message);
+    setFirestoreStatus('error', err.code||'customers');
+  });
+
+  // If nothing arrives in 8s, hint at the problem
+  setTimeout(()=>{
+    if(!ordersOK && !productsOK && !customersOK){
+      setFirestoreStatus('empty', 'check security rules');
+      const hint = document.getElementById('connection-hint');
+      if(hint) hint.classList.remove('hidden');
+    }
+  }, 8000);
 }
 function stopListeners(){
   if(unsubOrders)unsubOrders(); if(unsubProducts)unsubProducts(); if(unsubCustomers)unsubCustomers();
@@ -304,57 +286,35 @@ function stopListeners(){
 }
 
 /* ============================================================
-   PANEL SWITCHING
+   UI helpers
    ============================================================ */
 function showPanel(name){
   currentPanel=name;
   document.querySelectorAll('.panel').forEach(p=>p.classList.add('hidden'));
   document.getElementById('panel-'+name).classList.remove('hidden');
-  document.querySelectorAll('.sidebar-item').forEach(b=>{
-    if(b.dataset.panel===name)b.classList.add('active'); else b.classList.remove('active');
-  });
+  document.querySelectorAll('.sidebar-item').forEach(b=>{ if(b.dataset.panel===name)b.classList.add('active'); else b.classList.remove('active'); });
   const titles={dashboard:'Dashboard',orders:'Orders',products:'Products & Prices',customers:'Customers'};
   document.getElementById('panel-title').innerText=titles[name]||name;
   if(window.innerWidth<768)closeSidebar();
 }
-function toggleSidebar(){
-  const s=document.getElementById('sidebar'), o=document.getElementById('sidebar-overlay');
-  s.classList.toggle('-translate-x-full'); o.classList.toggle('hidden');
-}
-function closeSidebar(){
-  document.getElementById('sidebar').classList.add('-translate-x-full');
-  document.getElementById('sidebar-overlay').classList.add('hidden');
-}
-
-/* ============================================================
-   HELPERS
-   ============================================================ */
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('-translate-x-full');document.getElementById('sidebar-overlay').classList.toggle('hidden');}
+function closeSidebar(){document.getElementById('sidebar').classList.add('-translate-x-full');document.getElementById('sidebar-overlay').classList.add('hidden');}
 function todayStr(){return new Date().toISOString().slice(0,10);}
-function fmtTime(ts){
-  if(!ts)return '—';
-  const d = ts.toDate ? ts.toDate() : new Date(ts);
-  return d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-}
-function fmtDate(ts){
-  if(!ts)return '—';
-  const d = ts.toDate ? ts.toDate() : new Date(ts);
-  return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
-}
+function fmtTime(ts){if(!ts)return'—';const d=ts.toDate?ts.toDate():new Date(ts);return d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});}
+function fmtDate(ts){if(!ts)return'—';const d=ts.toDate?ts.toDate():new Date(ts);return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});}
 function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-/* Clock + next reset countdown */
 setInterval(()=>{
   const now=new Date();
   document.getElementById('clock').innerText=now.toLocaleTimeString('en-GB');
-  const tomorrow=new Date(now); tomorrow.setHours(24,0,0,0);
-  const ms=tomorrow-now;
-  const h=Math.floor(ms/3600000), m=Math.floor(ms%3600000/60000);
+  const tomorrow=new Date(now);tomorrow.setHours(24,0,0,0);
+  const ms=tomorrow-now;const h=Math.floor(ms/3600000),m=Math.floor(ms%3600000/60000);
   const el=document.getElementById('next-reset');
   if(el)el.innerText=`Next daily reset in ${h}h ${m}m (at 12:00 AM).`;
 },1000);
 
 /* ============================================================
-   DASHBOARD STATS
+   DASHBOARD
    ============================================================ */
 function renderDashboardStats(){
   const today=todayStr();
@@ -369,49 +329,21 @@ function renderLatestOrders(){
   const el=document.getElementById('latest-orders');
   const latest=allOrders.slice(0,5);
   if(latest.length===0){el.innerHTML='<p class="text-gray-500 text-sm">No orders yet.</p>';return;}
-  el.innerHTML=latest.map(o=>`
-    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-      <div class="min-w-0">
-        <p class="font-semibold text-sm truncate">#${o.orderNumber||'—'} · ${esc(o.customerName)}</p>
-        <p class="text-xs text-gray-500">${fmtTime(o.createdAt)} · ${o.fulfillment} · ${esc(o.customerPhone)}</p>
-      </div>
-      <div class="text-right ml-2">
-        <p class="font-bold text-farmRed text-sm">£${(o.total||0).toFixed(2)}</p>
-        <span class="text-xs px-2 py-0.5 rounded-full ${statusBadge(o.status)}">${o.status}</span>
-      </div>
-    </div>`).join('');
+  el.innerHTML=latest.map(o=>`<div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg"><div class="min-w-0"><p class="font-semibold text-sm truncate">#${o.orderNumber||'—'} · ${esc(o.customerName)}</p><p class="text-xs text-gray-500">${fmtTime(o.createdAt)} · ${o.fulfillment} · ${esc(o.customerPhone)}</p></div><div class="text-right ml-2"><p class="font-bold text-farmRed text-sm">£${(o.total||0).toFixed(2)}</p><span class="text-xs px-2 py-0.5 rounded-full ${statusBadge(o.status)}">${o.status}</span></div></div>`).join('');
 }
-function statusBadge(s){
-  return {
-    pending:'bg-yellow-100 text-yellow-800',
-    preparing:'bg-orange-100 text-orange-800',
-    ready:'bg-green-100 text-green-800',
-    completed:'bg-gray-200 text-gray-700',
-    cancelled:'bg-red-100 text-red-700'
-  }[s]||'bg-gray-100 text-gray-700';
-}
-function updatePendingBadge(){
-  const p=allOrders.filter(o=>o.status==='pending').length;
-  const b=document.getElementById('pending-count');
-  b.innerText=p;
-  if(p>0)b.classList.remove('hidden'); else b.classList.add('hidden');
-}
+function statusBadge(s){return {pending:'bg-yellow-100 text-yellow-800',preparing:'bg-orange-100 text-orange-800',ready:'bg-green-100 text-green-800',completed:'bg-gray-200 text-gray-700',cancelled:'bg-red-100 text-red-700'}[s]||'bg-gray-100 text-gray-700';}
+function updatePendingBadge(){const p=allOrders.filter(o=>o.status==='pending').length;const b=document.getElementById('pending-count');b.innerText=p;if(p>0)b.classList.remove('hidden');else b.classList.add('hidden');}
 
 /* ============================================================
    ORDERS
    ============================================================ */
 function filterOrders(f){
   currentOrderFilter=f;
-  ['all','pending','preparing','ready','completed'].forEach(x=>{
-    const b=document.getElementById('of-'+x);
-    if(x===f){b.classList.remove('bg-gray-200','text-gray-700');b.classList.add('bg-farmRed','text-white');}
-    else{b.classList.remove('bg-farmRed','text-white');b.classList.add('bg-gray-200','text-gray-700');}
-  });
+  ['all','pending','preparing','ready','completed'].forEach(x=>{const b=document.getElementById('of-'+x);if(x===f){b.classList.remove('bg-gray-200','text-gray-700');b.classList.add('bg-farmRed','text-white');}else{b.classList.remove('bg-farmRed','text-white');b.classList.add('bg-gray-200','text-gray-700');}});
   renderOrders();
 }
 function renderOrders(){
-  const el=document.getElementById('orders-list');
-  if(!el)return;
+  const el=document.getElementById('orders-list'); if(!el)return;
   const q=(document.getElementById('order-search')?.value||'').toLowerCase().trim();
   let list=allOrders;
   if(currentOrderFilter!=='all')list=list.filter(o=>o.status===currentOrderFilter);
@@ -420,40 +352,23 @@ function renderOrders(){
   el.innerHTML=list.map(o=>orderCard(o)).join('');
 }
 function orderCard(o){
-  const itemsHtml=(o.items||[]).map(i=>`
-    <li class="flex justify-between text-sm">
-      <span>${i.qty}× ${esc(i.name)}${i.options&&i.options.size?' <span class="text-gray-500 text-xs">('+i.options.size+')</span>':''}</span>
-      <span class="font-semibold">£${(i.price*i.qty).toFixed(2)}</span>
-    </li>`).join('');
+  const itemsHtml=(o.items||[]).map(i=>`<li class="flex justify-between text-sm"><span>${i.qty}× ${esc(i.name)}${i.options&&i.options.size?' <span class="text-gray-500 text-xs">('+i.options.size+')</span>':''}</span><span class="font-semibold">£${(i.price*i.qty).toFixed(2)}</span></li>`).join('');
   const actions = o.status==='pending'
-    ? `<button onclick="setStatus('${o.id}','preparing')" class="bg-orange-500 text-white text-xs font-bold px-3 py-1.5 rounded-full hover:bg-orange-600">Start Preparing</button>
-       <button onclick="setStatus('${o.id}','cancelled')" class="bg-red-100 text-red-700 text-xs font-bold px-3 py-1.5 rounded-full hover:bg-red-200">Cancel</button>`
-    : o.status==='preparing'
-    ? `<button onclick="setStatus('${o.id}','ready')" class="bg-green-600 text-white text-xs font-bold px-3 py-1.5 rounded-full hover:bg-green-700">Mark Ready</button>`
-    : o.status==='ready'
-    ? `<button onclick="setStatus('${o.id}','completed')" class="bg-gray-700 text-white text-xs font-bold px-3 py-1.5 rounded-full hover:bg-gray-800">Complete</button>`
-    : '';
-  return `
-    <div class="order-card status-${o.status} bg-white rounded-xl shadow p-4">
-      <div class="flex flex-wrap items-start justify-between gap-2 mb-3">
-        <div>
-          <p class="font-bold text-lg">#${o.orderNumber||'—'} · ${esc(o.customerName)}</p>
-          <p class="text-sm text-gray-500">
-            <i class="fas fa-phone mr-1"></i><a href="tel:${esc(o.customerPhone)}" class="hover:underline">${esc(o.customerPhone)}</a>
-            · ${fmtTime(o.createdAt)} · ${fmtDate(o.createdAt)}
-          </p>
-          ${o.fulfillment==='delivery' ? `<p class="text-sm text-gray-600 mt-1"><i class="fas fa-motorcycle mr-1 text-farmRed"></i>${esc(o.address)} ${o.note?'<em class="text-gray-400">('+esc(o.note)+')</em>':''}</p>`
-            : `<p class="text-sm text-gray-600 mt-1"><i class="fas fa-store mr-1 text-farmRed"></i>Collection</p>`}
-        </div>
-        <div class="text-right">
-          <span class="text-xs px-2 py-1 rounded-full font-bold ${statusBadge(o.status)}">${o.status.toUpperCase()}</span>
-          <p class="font-bold text-farmRed text-xl mt-1">£${(o.total||0).toFixed(2)}</p>
-          <p class="text-xs text-gray-400">${o.fulfillment}</p>
-        </div>
+    ? `<button type="button" onclick="setStatus('${o.id}','preparing')" class="bg-orange-500 text-white text-xs font-bold px-3 py-1.5 rounded-full hover:bg-orange-600">Start Preparing</button><button type="button" onclick="setStatus('${o.id}','cancelled')" class="bg-red-100 text-red-700 text-xs font-bold px-3 py-1.5 rounded-full hover:bg-red-200">Cancel</button>`
+    : o.status==='preparing'?`<button type="button" onclick="setStatus('${o.id}','ready')" class="bg-green-600 text-white text-xs font-bold px-3 py-1.5 rounded-full hover:bg-green-700">Mark Ready</button>`
+    : o.status==='ready'?`<button type="button" onclick="setStatus('${o.id}','completed')" class="bg-gray-700 text-white text-xs font-bold px-3 py-1.5 rounded-full hover:bg-gray-800">Complete</button>`:'';
+  return `<div class="order-card status-${o.status} bg-white rounded-xl shadow p-4">
+    <div class="flex flex-wrap items-start justify-between gap-2 mb-3">
+      <div>
+        <p class="font-bold text-lg">#${o.orderNumber||'—'} · ${esc(o.customerName)}</p>
+        <p class="text-sm text-gray-500"><i class="fas fa-phone mr-1"></i><a href="tel:${esc(o.customerPhone)}" class="hover:underline">${esc(o.customerPhone)}</a> · ${fmtTime(o.createdAt)} · ${fmtDate(o.createdAt)}</p>
+        ${o.fulfillment==='delivery'?`<p class="text-sm text-gray-600 mt-1"><i class="fas fa-motorcycle mr-1 text-farmRed"></i>${esc(o.address)} ${o.note?'<em class="text-gray-400">('+esc(o.note)+')</em>':''}</p>`:`<p class="text-sm text-gray-600 mt-1"><i class="fas fa-store mr-1 text-farmRed"></i>Collection</p>`}
       </div>
-      <ul class="space-y-1 bg-gray-50 rounded-lg p-3 mb-3">${itemsHtml}</ul>
-      <div class="flex flex-wrap gap-2">${actions}</div>
-    </div>`;
+      <div class="text-right"><span class="text-xs px-2 py-1 rounded-full font-bold ${statusBadge(o.status)}">${o.status.toUpperCase()}</span><p class="font-bold text-farmRed text-xl mt-1">£${(o.total||0).toFixed(2)}</p><p class="text-xs text-gray-400">${o.fulfillment}</p></div>
+    </div>
+    <ul class="space-y-1 bg-gray-50 rounded-lg p-3 mb-3">${itemsHtml}</ul>
+    <div class="flex flex-wrap gap-2">${actions}</div>
+  </div>`;
 }
 async function setStatus(id,status){
   try{await db.collection('orders').doc(id).update({status,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});}
@@ -461,57 +376,38 @@ async function setStatus(id,status){
 }
 
 /* ============================================================
-   PRODUCTS (price editor)
+   PRODUCTS
    ============================================================ */
 const CATEGORY_LABELS={pizza:'🍕 Pizzas',side:'🍟 Sides',dip:'🥣 Dips',drink:'🥤 Drinks'};
 function renderProducts(){
-  const el=document.getElementById('products-list');
-  if(!el)return;
+  const el=document.getElementById('products-list'); if(!el)return;
+  if(allProducts.length===0){el.innerHTML='<p class="text-gray-500 text-center py-8">No products yet. Visit the customer site once — it seeds the products collection automatically.</p>';return;}
   const groups={pizza:[],side:[],dip:[],drink:[]};
   allProducts.forEach(p=>{if(groups[p.category])groups[p.category].push(p);});
   let html='';
   Object.keys(groups).forEach(cat=>{
     if(groups[cat].length===0)return;
-    html+=`<div class="bg-white rounded-xl shadow overflow-hidden">
-      <div class="bg-gray-50 px-4 py-3 border-b"><h3 class="font-bold text-lg">${CATEGORY_LABELS[cat]}</h3></div>
-      <div class="divide-y">`;
+    html+=`<div class="bg-white rounded-xl shadow overflow-hidden"><div class="bg-gray-50 px-4 py-3 border-b"><h3 class="font-bold text-lg">${CATEGORY_LABELS[cat]}</h3></div><div class="divide-y">`;
     groups[cat].forEach(p=>{
-      const priceField = cat==='pizza' ? 'basePrice' : 'price';
-      const currentPrice = p[priceField] ?? p.price ?? 0;
-      html+=`<div class="flex items-center gap-3 p-4">
-        <img src="${esc(p.image)}" class="h-14 w-14 object-cover rounded-lg bg-gradient-to-br from-farmRed to-farmYellow">
-        <div class="flex-1 min-w-0">
-          <p class="font-semibold truncate">${esc(p.name)}</p>
-          <p class="text-xs text-gray-500 truncate">${esc(p.desc||'')}</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="text-gray-500">£</span>
-          <input type="number" step="0.01" min="0" value="${Number(currentPrice).toFixed(2)}"
-                 data-id="${p.id}" data-field="${priceField}"
-                 class="price-input w-24 p-2 border rounded-lg text-right font-semibold focus:ring-2 focus:ring-farmRed">
-          <button onclick="savePrice('${p.id}','${priceField}',this)" class="bg-farmRed text-white text-sm font-bold px-3 py-2 rounded-lg hover:bg-red-700 transition">
-            <i class="fas fa-save"></i> Save
-          </button>
-        </div>
-      </div>`;
+      const priceField=cat==='pizza'?'basePrice':'price';
+      const currentPrice=p[priceField] ?? p.price ?? 0;
+      html+=`<div class="flex items-center gap-3 p-4"><img src="${esc(p.image)}" alt="" class="h-14 w-14 object-cover rounded-lg bg-gradient-to-br from-farmRed to-farmYellow"><div class="flex-1 min-w-0"><p class="font-semibold truncate">${esc(p.name)}</p><p class="text-xs text-gray-500 truncate">${esc(p.desc||'')}</p></div><div class="flex items-center gap-2"><span class="text-gray-500">£</span><label class="sr-only" for="price-${p.id}">Price for ${esc(p.name)}</label><input type="number" step="0.01" min="0" value="${Number(currentPrice).toFixed(2)}" id="price-${p.id}" name="price-${p.id}" data-id="${p.id}" data-field="${priceField}" class="price-input w-24 p-2 border rounded-lg text-right font-semibold focus:ring-2 focus:ring-farmRed"><button type="button" onclick="savePrice('${p.id}','${priceField}',this)" class="bg-farmRed text-white text-sm font-bold px-3 py-2 rounded-lg hover:bg-red-700 transition"><i class="fas fa-save"></i> Save</button></div></div>`;
     });
     html+=`</div></div>`;
   });
-  if(!html)html='<p class="text-gray-500 text-center py-8">No products. They will be seeded on the customer site.</p>';
   el.innerHTML=html;
 }
 async function savePrice(id,field,btn){
   const input=document.querySelector(`.price-input[data-id="${id}"][data-field="${field}"]`);
   const val=parseFloat(input.value);
   if(isNaN(val)||val<0){alert('Enter a valid price.');return;}
-  btn.disabled=true; btn.innerHTML='Saving…';
+  btn.disabled=true;btn.innerHTML='Saving…';
   try{
-    await db.collection('products').doc(id).update({[field]:val, updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
-    btn.innerHTML='<i class="fas fa-check"></i> Saved';
-    btn.classList.remove('bg-farmRed'); btn.classList.add('bg-green-600');
+    await db.collection('products').doc(id).update({[field]:val,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    btn.innerHTML='<i class="fas fa-check"></i> Saved';btn.classList.remove('bg-farmRed');btn.classList.add('bg-green-600');
     setTimeout(()=>{btn.innerHTML='<i class="fas fa-save"></i> Save';btn.classList.remove('bg-green-600');btn.classList.add('bg-farmRed');btn.disabled=false;},1500);
   }catch(e){
-    alert('Failed: '+e.message); btn.disabled=false; btn.innerHTML='<i class="fas fa-save"></i> Save';
+    alert('Failed: '+e.message);btn.disabled=false;btn.innerHTML='<i class="fas fa-save"></i> Save';
   }
 }
 
@@ -519,22 +415,13 @@ async function savePrice(id,field,btn){
    CUSTOMERS
    ============================================================ */
 function renderCustomers(){
-  const tb=document.getElementById('customers-tbody');
-  if(!tb)return;
+  const tb=document.getElementById('customers-tbody'); if(!tb)return;
   const q=(document.getElementById('customer-search')?.value||'').toLowerCase().trim();
   let list=allCustomers;
   if(q)list=list.filter(c=>(c.phone||'').toLowerCase().includes(q)||(c.name||'').toLowerCase().includes(q));
   document.getElementById('customer-total').innerText=`${list.length} customer${list.length!==1?'s':''}`;
   if(list.length===0){tb.innerHTML='<tr><td colspan="6" class="text-center text-gray-500 py-8">No customers yet.</td></tr>';return;}
-  tb.innerHTML=list.map(c=>`
-    <tr class="border-t hover:bg-gray-50">
-      <td class="px-4 py-3 font-semibold">${esc(c.name||'—')}</td>
-      <td class="px-4 py-3"><a href="tel:${esc(c.phone)}" class="text-farmRed hover:underline">${esc(c.phone||'—')}</a></td>
-      <td class="px-4 py-3 text-gray-600 max-w-xs truncate">${esc(c.lastAddress||'—')}</td>
-      <td class="px-4 py-3 text-right font-semibold">${c.orderCount||0}</td>
-      <td class="px-4 py-3 text-right font-bold text-farmRed">£${(c.totalSpent||0).toFixed(2)}</td>
-      <td class="px-4 py-3 text-gray-500 text-xs">${fmtDate(c.lastOrderAt)}</td>
-    </tr>`).join('');
+  tb.innerHTML=list.map(c=>`<tr class="border-t hover:bg-gray-50"><td class="px-4 py-3 font-semibold">${esc(c.name||'—')}</td><td class="px-4 py-3"><a href="tel:${esc(c.phone)}" class="text-farmRed hover:underline">${esc(c.phone||'—')}</a></td><td class="px-4 py-3 text-gray-600 max-w-xs truncate">${esc(c.lastAddress||'—')}</td><td class="px-4 py-3 text-right font-semibold">${c.orderCount||0}</td><td class="px-4 py-3 text-right font-bold text-farmRed">£${(c.totalSpent||0).toFixed(2)}</td><td class="px-4 py-3 text-gray-500 text-xs">${fmtDate(c.lastOrderAt)}</td></tr>`).join('');
 }
 </script>
 </body>
