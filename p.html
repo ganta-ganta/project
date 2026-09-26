@@ -8,10 +8,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-<!-- Firebase SDK (compat for simplicity) -->
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
 <script>
   tailwind.config = {
@@ -309,13 +308,11 @@
         </div>
       </div>
 
-      <!-- Customer Name (Mandatory) -->
       <div>
         <label class="block font-semibold text-sm mb-1">Your Name <span class="text-farmRed">*</span></label>
         <input type="text" id="customer-name" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="Full name">
       </div>
 
-      <!-- Phone Number (Mandatory for BOTH collection and delivery) -->
       <div>
         <label class="block font-semibold text-sm mb-1">Phone Number <span class="text-farmRed">*</span></label>
         <input type="tel" id="customer-phone" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="e.g. 07123 456789">
@@ -383,18 +380,18 @@
   </div>
 </div>
 
-<!-- Floating Cart Button -->
+<!-- Floating Cart -->
 <button id="floating-cart" onclick="toggleCart()" class="fixed bottom-6 left-6 z-[150] hidden bg-farmRed text-white h-16 w-16 rounded-full shadow-2xl hover:bg-red-700 transition flex items-center justify-center">
   <i class="fas fa-shopping-cart text-2xl"></i>
   <span id="floating-cart-count" class="absolute -top-1 -right-1 bg-farmYellow text-farmDark text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-md">0</span>
 </button>
 
-<!-- Toast Container -->
+<!-- Toast -->
 <div id="toast-container" class="fixed bottom-28 left-6 z-[200] space-y-2 pointer-events-none"></div>
 
 <script>
 /* ============================================================
-   FIREBASE INIT
+   FIREBASE
    ============================================================ */
 const firebaseConfig = {
   apiKey: "AIzaSyDPtj4qRDowQAdyF_oFX8Jqbxw1agB_Vv8",
@@ -405,11 +402,22 @@ const firebaseConfig = {
   appId: "1:21639403716:web:f0644243df9cca3a92d191",
   measurementId: "G-99HJBP9SE0"
 };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+
+let db = null;
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+  // Try to enable offline persistence so the site works even if Firestore is unreachable
+  db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+    console.warn('Offline persistence not available:', err.code);
+  });
+} catch (e) {
+  console.warn('Firebase init failed — running in offline/demo mode:', e.message);
+  db = null;
+}
 
 /* ============================================================
-   DEFAULT MENU (used if Firestore is empty on first run)
+   DEFAULT MENU — rendered immediately (no Firestore wait)
    ============================================================ */
 const DEFAULT_MENU = {
   pizzas: [
@@ -464,17 +472,23 @@ const FREE_TOPPINGS = 3;
 const EXTRA_TOPPING_PRICE = 1.00;
 const HALF_AND_HALF_CHARGE = 1.00;
 
-/* Global state */
-let menuData = { pizzas:[], sides:[], dips:[], drinks:[] };
+/* menuData is pre-populated with the defaults so the page renders instantly */
+let menuData = {
+  pizzas: DEFAULT_MENU.pizzas.map(p => ({...p})),
+  sides: [...DEFAULT_MENU.sides],
+  dips: [...DEFAULT_MENU.dips],
+  drinks: [...DEFAULT_MENU.drinks]
+};
 let cart = [];
 let currentCustomPizza = null;
 let previousCartCount = 0;
 
 /* ============================================================
-   INIT
+   INIT — renders immediately, hides overlay with hard timeout,
+   then loads Firestore in the background (non-blocking)
    ============================================================ */
-document.addEventListener('DOMContentLoaded', async () => {
-  await loadMenuFromFirestore();
+document.addEventListener('DOMContentLoaded', () => {
+  // 1. Render everything from defaults right now
   switchTab('pizzas');
   renderToppings();
   updateCustomPizzaPrice();
@@ -482,21 +496,47 @@ document.addEventListener('DOMContentLoaded', async () => {
   checkOpenStatus();
   setInterval(checkOpenStatus, 60000);
 
+  // 2. HARD TIMEOUT — overlay ALWAYS disappears within 1.5s
+  const overlayTimeout = setTimeout(hideLoadingOverlay, 1500);
+  // Also try to hide as soon as the browser paints (which is instant)
+  requestAnimationFrame(() => setTimeout(hideLoadingOverlay, 300));
+
+  // 3. Kick off Firestore in the background — never blocks the UI
+  if (db) {
+    loadMenuFromFirestore().catch(err => {
+      console.warn('Firestore unavailable, staying on default menu:', err && err.message);
+    });
+  } else {
+    console.info('Firebase not initialized — running in offline/demo mode.');
+  }
+
+  // 4. Welcome modal
   const customerType = localStorage.getItem('customerType');
   if (!customerType) {
     setTimeout(() => document.getElementById('welcome-modal').classList.remove('hidden'), 1000);
   }
-
-  document.getElementById('loading-overlay').style.display = 'none';
 });
 
+function hideLoadingOverlay() {
+  const lo = document.getElementById('loading-overlay');
+  if (lo && lo.style.display !== 'none') {
+    lo.style.opacity = '0';
+    lo.style.transition = 'opacity 0.3s';
+    setTimeout(() => lo.style.display = 'none', 300);
+  }
+}
+
 /* ============================================================
-   MENU FROM FIRESTORE (real-time)
+   MENU FROM FIRESTORE — non-blocking, with full error handling
    ============================================================ */
 async function loadMenuFromFirestore() {
+  // Try to seed products if the collection is empty. Uses Promise.race with a
+  // timeout so a slow/hanging request can never freeze the page.
   try {
-    // Seed products collection if empty (first run)
-    const snap = await db.collection('products').limit(1).get();
+    const seedCheck = db.collection('products').limit(1).get();
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Firestore timeout')), 6000));
+    const snap = await Promise.race([seedCheck, timeout]);
+
     if (snap.empty) {
       const batch = db.batch();
       DEFAULT_MENU.pizzas.forEach(p => batch.set(db.collection('products').doc('pizza_'+p.id), {...p,category:'pizza',available:true}));
@@ -505,35 +545,40 @@ async function loadMenuFromFirestore() {
       DEFAULT_MENU.drinks.forEach(d => batch.set(db.collection('products').doc('drink_'+d.id), {...d,category:'drink',available:true}));
       await batch.commit();
     }
-
-    // Real-time listener
-    db.collection('products').onSnapshot(snapshot => {
-      const pizzas=[],sides=[],dips=[],drinks=[];
-      snapshot.forEach(doc => {
-        const d = doc.data();
-        if (d.available === false) return;
-        const item = { id: d.id, name: d.name, desc: d.desc||'', veg: !!d.veg, price: d.price, basePrice: d.basePrice, image: d.image, category: d.category };
-        if (d.category==='pizza') pizzas.push(item);
-        else if (d.category==='side') sides.push(item);
-        else if (d.category==='dip') dips.push(item);
-        else if (d.category==='drink') drinks.push(item);
-      });
-      menuData = { pizzas, sides, dips, drinks };
-      // Re-render current tab
-      const activeTab = document.querySelector('[id^="tab-"][class*="bg-farmRed"]');
-      if (activeTab) {
-        const cat = activeTab.id.replace('tab-','');
-        if (cat==='pizzas') filterPizzas('all');
-        else renderMenu(cat);
-      }
-    });
   } catch (e) {
-    console.error('Menu load error:', e);
-    // Fallback to defaults
-    menuData = {
-      pizzas: DEFAULT_MENU.pizzas.map(p=>({...p, basePrice:p.basePrice})),
-      sides: DEFAULT_MENU.sides, dips: DEFAULT_MENU.dips, drinks: DEFAULT_MENU.drinks
-    };
+    console.warn('Could not seed products (continuing with defaults):', e.message);
+  }
+
+  // Attach real-time listener. If this fails, we keep the defaults already rendered.
+  try {
+    db.collection('products').onSnapshot(
+      snapshot => {
+        if (snapshot.empty) return; // keep defaults
+        const pizzas=[],sides=[],dips=[],drinks=[];
+        snapshot.forEach(doc => {
+          const d = doc.data();
+          if (d.available === false) return;
+          const item = { id: d.id, name: d.name, desc: d.desc||'', veg: !!d.veg, price: d.price, basePrice: d.basePrice, image: d.image, category: d.category };
+          if (d.category==='pizza') pizzas.push(item);
+          else if (d.category==='side') sides.push(item);
+          else if (d.category==='dip') dips.push(item);
+          else if (d.category==='drink') drinks.push(item);
+        });
+        // Only replace if we actually got something
+        if (pizzas.length || sides.length || dips.length || drinks.length) {
+          menuData = { pizzas, sides, dips, drinks };
+          const activeTab = document.querySelector('[id^="tab-"][class*="bg-farmRed"]');
+          if (activeTab) {
+            const cat = activeTab.id.replace('tab-','');
+            if (cat==='pizzas') filterPizzas('all');
+            else renderMenu(cat);
+          }
+        }
+      },
+      err => console.warn('Products listener error:', err.message)
+    );
+  } catch (e) {
+    console.warn('Could not attach Firestore listener:', e.message);
   }
 }
 
@@ -643,7 +688,7 @@ function renderPizzaGrid(pizzas){
     html+=`
       <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition flex flex-col">
         <div class="relative">
-          <img src="${p.image}" alt="" class="h-48 w-full object-cover bg-gradient-to-br from-farmRed to-farmYellow">
+          <img src="${p.image}" alt="" onerror="this.style.background='linear-gradient(135deg,#D32F2F,#FBC02D)';this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22200%22><rect width=%22400%22 height=%22200%22 fill=%22%23D32F2F%22/></svg>'" class="h-48 w-full object-cover bg-gradient-to-br from-farmRed to-farmYellow">
           <span id="pizza-badge-${p.id}" class="hidden absolute top-2 right-2 bg-green-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg"><i class="fas fa-check mr-1"></i> In cart</span>
           <span class="absolute top-2 left-2 bg-farmYellow text-farmDark text-[10px] font-bold px-2 py-0.5 rounded-full shadow"><i class="fas fa-adjust mr-1"></i> Half & Half +£1</span>
         </div>
@@ -970,7 +1015,7 @@ function toggleDeliveryAddress(){
 }
 
 /* ============================================================
-   PLACE ORDER → save to Firestore
+   PLACE ORDER → save to Firestore (with graceful fallback)
    ============================================================ */
 async function placeOrder(){
   const btn=document.getElementById('confirm-order-btn');
@@ -978,7 +1023,6 @@ async function placeOrder(){
   const name=document.getElementById('customer-name').value.trim();
   const phone=document.getElementById('customer-phone').value.trim();
 
-  // MANDATORY VALIDATION
   if(!name){alert("Please enter your name.");return;}
   if(!phone){alert("Phone number is mandatory. Please enter it so we can confirm your order.");return;}
   if(!/^[0-9+\s()-]{7,}$/.test(phone)){alert("Please enter a valid phone number.");return;}
@@ -997,15 +1041,21 @@ async function placeOrder(){
   let payable=cartTotal;
   if(f==='delivery'&&cartTotal<DELIVERY_MINIMUM)payable=DELIVERY_MINIMUM;
 
+  // If Firestore is unavailable, still let the customer know their order details
+  if(!db){
+    alert(`Thank you ${name}!\n\nTotal: £${payable.toFixed(2)}\n${f==='delivery'?'Delivery in 10–30 mins':'Collection in <15 mins'}\n\nPlease call us on 0208 737 5731 to confirm.`);
+    cart=[]; updateCartUI(); closeCheckoutModal(); toggleCart();
+    return;
+  }
+
   btn.disabled=true; btn.innerText='Placing order…';
 
   try{
     const today=new Date().toISOString().slice(0,10);
 
-    // 1. Save order
     const orderRef=db.collection('orders').doc();
     await orderRef.set({
-      orderNumber:null, // assigned below
+      orderNumber:null,
       customerName:name,
       customerPhone:phone,
       address:address,
@@ -1025,16 +1075,15 @@ async function placeOrder(){
       createdAt:firebase.firestore.FieldValue.serverTimestamp()
     });
 
-    // 2. Increment daily counter for order number
     const statsRef=db.collection('dailyStats').doc(today);
     await db.runTransaction(async t=>{
       const doc=await t.get(statsRef);
+      const nextNum = (doc.exists ? doc.data().orderCount : 0) + 1;
       if(!doc.exists){t.set(statsRef,{date:today,orderCount:1,revenue:payable});}
       else{t.update(statsRef,{orderCount:firebase.firestore.FieldValue.increment(1),revenue:firebase.firestore.FieldValue.increment(payable)});}
-      t.update(orderRef,{orderNumber:(doc.exists?doc.data().orderCount:0)+1});
+      t.update(orderRef,{orderNumber:nextNum});
     });
 
-    // 3. Save/update customer record
     const custRef=db.collection('customers').doc(phone.replace(/\s+/g,''));
     const custDoc=await custRef.get();
     if(custDoc.exists){
@@ -1063,7 +1112,7 @@ async function placeOrder(){
     cart=[]; updateCartUI(); closeCheckoutModal(); toggleCart();
   }catch(e){
     console.error(e);
-    alert("Sorry, there was a problem placing your order. Please try again or call us on 0208 737 5731.");
+    alert(`We couldn't save your order online, but you can still order by phone.\n\nPlease call 0208 737 5731.\n\nYour total: £${payable.toFixed(2)}`);
   }finally{
     btn.disabled=false; btn.innerText='Confirm Order';
   }
