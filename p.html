@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' https: data:; img-src 'self' https: data: blob:; connect-src 'self' https: wss:; frame-src 'self' https:;">
 <title>Farm Pizza | Hounslow</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -20,13 +21,12 @@
 <style>
   html,body{overflow-x:hidden}
   body{font-family:'Poppins',sans-serif}
-  .hero-bg{background-color:#1F2937;background-image:linear-gradient(rgba(0,0,0,.6),rgba(0,0,0,.6)),url('hero.jpg'),linear-gradient(135deg,#D32F2F 0%,#FBC02D 100%);background-size:cover,cover,cover;background-position:center,center,center;background-repeat:no-repeat,no-repeat,no-repeat;background-attachment:scroll,scroll,scroll;width:100%;max-width:100%}
+  .hero-bg{background-color:#1F2937;background-image:linear-gradient(rgba(0,0,0,.6),rgba(0,0,0,.6)),url('hero.jpg'),linear-gradient(135deg,#D32F2F 0%,#FBC02D 100%);background-size:cover,cover,cover;background-position:center,center,center;background-repeat:no-repeat,no-repeat,no-repeat;width:100%;max-width:100%}
   .hide-scrollbar::-webkit-scrollbar{display:none}
   .hide-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
   .cart-drawer{transition:transform .3s ease-in-out}
   .cart-open{transform:translateX(0)}
   .cart-closed{transform:translateX(100%)}
-  #welcome-modal{z-index:9999}
   .toast-enter{transform:translateX(-120%);opacity:0}
   .toast-show{transform:translateX(0);opacity:1}
   @keyframes softPulse{0%,100%{box-shadow:0 0 0 0 rgba(251,192,45,.5)}50%{box-shadow:0 0 0 8px rgba(251,192,45,0)}}
@@ -40,21 +40,29 @@
   .hh-divider{background:linear-gradient(90deg,transparent 0%,#FBC02D 49%,#FBC02D 51%,transparent 100%);height:3px}
   .spinner{width:40px;height:40px;border:4px solid #FBC02D;border-top-color:#D32F2F;border-radius:50%;animation:spin 1s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
+  .soldout{filter:grayscale(1);opacity:.6}
 </style>
 </head>
 <body class="bg-gray-50 text-farmDark">
 
-<div id="firestore-status" class="fixed bottom-4 right-4 z-[300] bg-yellow-500 text-white text-xs font-bold px-3 py-2 rounded-full shadow-lg flex items-center gap-2">
-  <i class="fas fa-spinner fa-spin"></i> Firestore: Connecting…
+<!-- Firestore status pill -->
+<div id="firestore-status" class="fixed bottom-4 right-4 z-[90] bg-yellow-500 text-white text-xs font-bold px-3 py-2 rounded-full shadow-lg flex items-center gap-2">
+  <i class="fas fa-spinner fa-spin"></i> Connecting…
 </div>
 
-<div id="loading-overlay" class="fixed inset-0 bg-white z-[9999] flex flex-col items-center justify-center">
+<!-- Loading overlay -->
+<div id="loading-overlay" class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center">
   <div class="spinner mb-4"></div>
   <p class="text-farmRed font-semibold">Loading menu…</p>
 </div>
 
+<!-- Store closed banner (driven by admin) -->
+<div id="store-banner" class="hidden bg-red-600 text-white text-center font-semibold text-sm py-3 px-4">
+  <i class="fas fa-exclamation-triangle mr-1"></i> <span id="store-banner-text"></span>
+</div>
+
 <!-- Navigation -->
-<nav class="bg-white shadow-lg sticky top-0 z-50">
+<nav class="bg-white shadow-lg sticky top-0 z-40">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex justify-between items-center h-20">
       <div class="flex-shrink-0 flex items-center">
@@ -67,12 +75,18 @@
         <a href="#deals" class="hover:text-farmRed font-semibold transition">Deals</a>
         <a href="#menu" class="hover:text-farmRed font-semibold transition">Menu</a>
         <a href="#contact" class="hover:text-farmRed font-semibold transition">Contact</a>
+        <button type="button" id="track-nav-btn" onclick="openTrackModal()" class="hidden relative text-farmRed border border-farmRed px-5 py-2 rounded-full hover:bg-farmRed hover:text-white transition font-semibold">
+          <i class="fas fa-location-arrow mr-1"></i> Track Order
+        </button>
         <button type="button" onclick="toggleCart()" class="relative bg-farmRed text-white px-5 py-2 rounded-full hover:bg-red-700 transition">
           <i class="fas fa-shopping-cart"></i> Cart
           <span id="cart-count" class="absolute -top-2 -right-2 bg-farmYellow text-farmDark text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">0</span>
         </button>
       </div>
-      <div class="md:hidden">
+      <div class="md:hidden flex items-center gap-2">
+        <button type="button" id="track-nav-btn-mobile" onclick="openTrackModal()" class="hidden bg-white border border-farmRed text-farmRed h-10 w-10 rounded-full flex items-center justify-center">
+          <i class="fas fa-location-arrow"></i>
+        </button>
         <button type="button" onclick="toggleCart()" class="relative bg-farmRed text-white px-4 py-2 rounded-full">
           <i class="fas fa-shopping-cart"></i>
           <span id="cart-count-mobile" class="absolute -top-2 -right-2 bg-farmYellow text-farmDark text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">0</span>
@@ -94,9 +108,9 @@
   </div>
 </header>
 
-<div class="bg-farmYellow text-farmDark py-3 text-center font-semibold text-sm flex justify-center items-center gap-2 flex-wrap">
-  <p>Mon - Thur: 11:00 am - 11:00 pm | Fri - Sat: 11:00 am - Midnight | Open 7 Days a Week</p>
-  <span id="live-status-text" class="ml-4"></span>
+<div class="bg-farmYellow text-farmDark py-3 text-center font-semibold text-sm flex justify-center items-center gap-2 flex-wrap px-3">
+  <p>Mon - Thu: 11:00 am - 11:00 pm | Fri - Sat: 11:00 am - Midnight | Sun: 11:00 am - 11:00 pm</p>
+  <span id="live-status-text" class="ml-2"></span>
 </div>
 
 <!-- Deals -->
@@ -104,9 +118,9 @@
   <h2 class="font-pacifico text-4xl text-center text-farmRed mb-12">Special Offers</h2>
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
     <div class="bg-white rounded-2xl shadow-lg overflow-hidden border-t-4 border-farmRed hover:shadow-2xl transition"><div class="p-6 text-center"><h3 class="font-bold text-2xl mb-2">Special Deal</h3><p class="text-gray-600 mb-4">Any Medium Pizza <br><span class="text-3xl font-bold text-farmRed">£5.99</span></p><p class="text-gray-600 mb-4">Any XL Pizza <br><span class="text-3xl font-bold text-farmRed">£7.99</span></p><p class="text-sm text-gray-500 italic">Collection only</p></div></div>
-    <div class="bg-white rounded-2xl shadow-lg overflow-hidden border-t-4 border-farmYellow hover:shadow-2xl transition"><div class="p-6 text-center"><h3 class="font-bold text-2xl mb-2">Farm Deal</h3><p class="text-gray-600 mb-4">2 Medium Pizzas & 1 Side of your choice</p><p class="text-3xl font-bold text-farmRed mb-4">£23.99</p></div></div>
-    <div class="bg-white rounded-2xl shadow-lg overflow-hidden border-t-4 border-farmRed hover:shadow-2xl transition"><div class="p-6 text-center"><h3 class="font-bold text-2xl mb-2">Mega Deals</h3><p class="text-gray-600 mb-2 text-sm">3 Pizzas & 2 Sides of your choice</p><div class="flex justify-center gap-4 text-sm font-semibold text-gray-700"><div>Medium<br><span class="text-xl text-farmRed">£29.99</span></div><div>Large<br><span class="text-xl text-farmRed">£30.99</span></div><div>XL<br><span class="text-xl text-farmRed">£31.99</span></div></div></div></div>
-    <div class="bg-white rounded-2xl shadow-lg overflow-hidden border-t-4 border-farmYellow hover:shadow-2xl transition"><div class="p-6 text-center"><h3 class="font-bold text-2xl mb-2">Crazy Deals</h3><p class="text-gray-600 mb-2 text-sm">2 Pizzas & 2 Sides of your choice</p><div class="flex justify-center gap-4 text-sm font-semibold text-gray-700"><div>Medium<br><span class="text-xl text-farmRed">£24.99</span></div><div>Large<br><span class="text-xl text-farmRed">£25.99</span></div><div>XL<br><span class="text-xl text-farmRed">£26.99</span></div></div></div></div>
+    <div class="bg-white rounded-2xl shadow-lg overflow-hidden border-t-4 border-farmYellow hover:shadow-2xl transition"><div class="p-6 text-center"><h3 class="font-bold text-2xl mb-2">Farm Deal</h3><p class="text-gray-600 mb-4">2 Medium Pizzas &amp; 1 Side of your choice</p><p class="text-3xl font-bold text-farmRed mb-4">£23.99</p></div></div>
+    <div class="bg-white rounded-2xl shadow-lg overflow-hidden border-t-4 border-farmRed hover:shadow-2xl transition"><div class="p-6 text-center"><h3 class="font-bold text-2xl mb-2">Mega Deals</h3><p class="text-gray-600 mb-2 text-sm">3 Pizzas &amp; 2 Sides of your choice</p><div class="flex justify-center gap-4 text-sm font-semibold text-gray-700"><div>Medium<br><span class="text-xl text-farmRed">£29.99</span></div><div>Large<br><span class="text-xl text-farmRed">£30.99</span></div><div>XL<br><span class="text-xl text-farmRed">£31.99</span></div></div></div></div>
+    <div class="bg-white rounded-2xl shadow-lg overflow-hidden border-t-4 border-farmYellow hover:shadow-2xl transition"><div class="p-6 text-center"><h3 class="font-bold text-2xl mb-2">Crazy Deals</h3><p class="text-gray-600 mb-2 text-sm">2 Pizzas &amp; 2 Sides of your choice</p><div class="flex justify-center gap-4 text-sm font-semibold text-gray-700"><div>Medium<br><span class="text-xl text-farmRed">£24.99</span></div><div>Large<br><span class="text-xl text-farmRed">£25.99</span></div><div>XL<br><span class="text-xl text-farmRed">£26.99</span></div></div></div></div>
   </div>
 </section>
 
@@ -115,16 +129,16 @@
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <h2 class="font-pacifico text-4xl text-center text-farmRed mb-8">Our Menu</h2>
     <div class="flex justify-center space-x-4 mb-10 overflow-x-auto hide-scrollbar pb-2">
-      <button type="button" onclick="switchTab('pizzas')" id="tab-pizzas" class="px-6 py-2 rounded-full font-semibold bg-farmRed text-white transition">Pizzas</button>
-      <button type="button" onclick="switchTab('sides')" id="tab-sides" class="px-6 py-2 rounded-full font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition">Side Orders</button>
-      <button type="button" onclick="switchTab('dips')" id="tab-dips" class="px-6 py-2 rounded-full font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition">Dips</button>
-      <button type="button" onclick="switchTab('drinks')" id="tab-drinks" class="px-6 py-2 rounded-full font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition">Drinks</button>
+      <button type="button" onclick="switchTab('pizzas')" id="tab-pizzas" class="px-6 py-2 rounded-full font-semibold bg-farmRed text-white transition whitespace-nowrap">Pizzas</button>
+      <button type="button" onclick="switchTab('sides')" id="tab-sides" class="px-6 py-2 rounded-full font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition whitespace-nowrap">Side Orders</button>
+      <button type="button" onclick="switchTab('dips')" id="tab-dips" class="px-6 py-2 rounded-full font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition whitespace-nowrap">Dips</button>
+      <button type="button" onclick="switchTab('drinks')" id="tab-drinks" class="px-6 py-2 rounded-full font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition whitespace-nowrap">Drinks</button>
     </div>
     <div id="pizza-subcategories" class="flex flex-wrap justify-center gap-2 mb-8">
-      <button type="button" onclick="filterPizzas('all')" id="subcat-all" class="px-4 py-1.5 rounded-full border border-farmRed text-farmRed text-sm font-semibold hover:bg-farmRed hover:text-white transition bg-farmRed text-white">All Pizzas</button>
+      <button type="button" onclick="filterPizzas('all')" id="subcat-all" class="px-4 py-1.5 rounded-full border border-farmRed text-sm font-semibold transition bg-farmRed text-white">All Pizzas</button>
       <button type="button" onclick="filterPizzas('veg')" id="subcat-veg" class="px-4 py-1.5 rounded-full border border-farmRed text-farmRed text-sm font-semibold hover:bg-farmRed hover:text-white transition">Vegetarian</button>
       <button type="button" onclick="filterPizzas('chicken')" id="subcat-chicken" class="px-4 py-1.5 rounded-full border border-farmRed text-farmRed text-sm font-semibold hover:bg-farmRed hover:text-white transition">Chicken</button>
-      <button type="button" onclick="filterPizzas('ham_pepperoni')" id="subcat-ham_pepperoni" class="px-4 py-1.5 rounded-full border border-farmRed text-farmRed text-sm font-semibold hover:bg-farmRed hover:text-white transition">Ham & Pepperoni</button>
+      <button type="button" onclick="filterPizzas('ham_pepperoni')" id="subcat-ham_pepperoni" class="px-4 py-1.5 rounded-full border border-farmRed text-farmRed text-sm font-semibold hover:bg-farmRed hover:text-white transition">Ham &amp; Pepperoni</button>
     </div>
     <div id="pizzas-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
     <div id="sides-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6 hidden"></div>
@@ -142,20 +156,20 @@
       <span class="inline-flex items-center bg-green-100 text-green-800 px-3 py-1 rounded-full font-semibold mr-1"><i class="fas fa-gift mr-1"></i> First 3 toppings FREE</span>
       <span class="inline-flex items-center bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full font-semibold">Each extra topping £1.00</span>
     </p>
-    <form class="bg-white rounded-2xl shadow-xl p-8" onsubmit="event.preventDefault();addCustomPizza();">
+    <form class="bg-white rounded-2xl shadow-xl p-8 text-left" onsubmit="event.preventDefault();addCustomPizza();">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div><label for="custom-size" class="block font-semibold mb-2">Size</label><select id="custom-size" name="custom-size" onchange="updateCustomPizzaPrice()" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed"><option value="Medium">Medium (10")</option><option value="Large">Large (12")</option><option value="XL" selected>XL (14")</option></select></div>
         <div><label for="custom-crust" class="block font-semibold mb-2">Crust</label><select id="custom-crust" name="custom-crust" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed"><option value="Thin Crust">Thin Crust</option><option value="Deep Pan" selected>Deep Pan</option></select></div>
         <div><label for="custom-base" class="block font-semibold mb-2">Base</label><select id="custom-base" name="custom-base" onchange="updateCustomPizzaPrice()" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed"><option value="Tomato" selected>Tomato Base</option><option value="BBQ">BBQ Base (+£1.00)</option></select></div>
       </div>
-      <fieldset class="mb-6 text-left">
+      <fieldset class="mb-6">
         <legend class="block font-semibold mb-3 text-center">Select Your Toppings</legend>
         <div id="toppings-container" class="flex flex-wrap justify-center gap-2"></div>
       </fieldset>
       <div class="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-200">
         <div class="flex justify-between text-sm text-gray-600 mb-1"><span>Base (<span id="custom-size-label">XL</span>):</span><span id="custom-base-price">£10.99</span></div>
         <div class="flex justify-between text-sm text-gray-600 mb-1"><span>Extra toppings (<span id="custom-extra-count">0</span> beyond 3 free):</span><span id="custom-extra-cost">£0.00</span></div>
-        <div class="flex justify-between text-sm text-gray-500 italic mb-2"><span id="custom-topping-summary">No toppings selected</span><span id="custom-topping-total-qty"></span></div>
+        <div class="flex justify-between text-sm text-gray-500 italic mb-2 gap-3"><span id="custom-topping-summary">No toppings selected</span><span id="custom-topping-total-qty" class="whitespace-nowrap"></span></div>
         <div class="flex justify-between font-bold text-lg pt-2 border-t border-gray-200"><span>Total:</span><span id="custom-total" class="text-farmRed">£10.99</span></div>
       </div>
       <button type="submit" class="bg-farmRed text-white font-bold py-3 px-8 rounded-full hover:bg-red-700 transition w-full md:w-auto"><i class="fas fa-cart-plus mr-1"></i> Add Custom Pizza to Cart</button>
@@ -168,21 +182,25 @@
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-8">
     <div><h3 class="font-pacifico text-2xl text-farmYellow mb-4">Farm Pizza</h3><p class="text-gray-300 mb-2">325 Vicarage Farm Road,</p><p class="text-gray-300 mb-4">Hounslow, TW5 0DR</p><p class="text-gray-300"><i class="fas fa-phone mr-2"></i> 0208 737 5731</p><p class="text-gray-300"><i class="fas fa-phone mr-2"></i> 0208 230 0023</p><p class="text-gray-300 mt-2"><i class="fas fa-globe mr-2"></i> farmpizza.co.uk</p></div>
     <div><h3 class="font-semibold text-xl mb-4 text-farmYellow">Opening Hours</h3><p class="text-gray-300 mb-2">Monday - Thursday: 11:00 am - 11:00 pm</p><p class="text-gray-300 mb-2">Friday - Saturday: 11:00 am - 12:00 am</p><p class="text-gray-300">Sunday: 11:00 am - 11:00 pm</p><p id="footer-live-status" class="mt-3 font-bold text-sm"></p></div>
-    <div><h3 class="font-semibold text-xl mb-4 text-farmYellow">Terms & Conditions</h3><ul class="text-sm text-gray-400 space-y-1 list-disc pl-4"><li>Please mention offer when you place your order.</li><li>Minimum order for delivery is £17.99.</li><li>Offers are not to be used in conjunction with any other offer.</li><li>Prices may vary depending on the specific dish.</li><li>Allow 15 minutes before closing time.</li><li>Please check your pizzas when you receive them. Complaints over the phone will not be addressed.</li><li>If you have a food allergy or intolerance, please ask a member of staff.</li><li>There is an extra charge of £1.00 for half-and-half pizza.</li><li>We make pizzas to our own standards. Extra toppings are chargeable.</li></ul></div>
+    <div><h3 class="font-semibold text-xl mb-4 text-farmYellow">Terms &amp; Conditions</h3><ul class="text-sm text-gray-400 space-y-1 list-disc pl-4"><li>Please mention offer when you place your order.</li><li>Minimum order for delivery is £17.99.</li><li>Offers are not to be used in conjunction with any other offer.</li><li>Prices may vary depending on the specific dish.</li><li>Allow 15 minutes before closing time.</li><li>Please check your pizzas when you receive them. Complaints over the phone will not be addressed.</li><li>If you have a food allergy or intolerance, please ask a member of staff.</li><li>There is an extra charge of £1.00 for half-and-half pizza.</li><li>We make pizzas to our own standards. Extra toppings are chargeable.</li></ul></div>
   </div>
   <div class="text-center text-gray-500 text-sm mt-8 border-t border-gray-700 pt-4">&copy; 2026 Farm Pizza. All rights reserved.</div>
 </footer>
 
 <!-- Cart Drawer -->
-<div id="cart-drawer" class="fixed inset-y-0 right-0 w-full md:w-96 bg-white shadow-2xl z-50 cart-closed flex flex-col">
+<div id="cart-drawer" class="fixed inset-y-0 right-0 w-full md:w-96 bg-white shadow-2xl z-[61] cart-closed flex flex-col">
   <div class="p-6 bg-farmRed text-white flex justify-between items-center"><h3 class="text-xl font-bold"><i class="fas fa-shopping-cart mr-2"></i> Your Order</h3><button type="button" onclick="toggleCart()" aria-label="Close" class="text-2xl hover:text-farmYellow">&times;</button></div>
   <div id="cart-items" class="flex-1 overflow-y-auto p-6"><p class="text-gray-500 text-center mt-10">Your cart is empty.</p></div>
-  <div class="p-6 border-t bg-gray-50"><div class="flex justify-between mb-2 font-bold text-lg"><span>Subtotal:</span><span id="cart-total">£0.00</span></div><div id="delivery-min-info" class="text-xs mb-4"></div><button type="button" onclick="checkout()" class="w-full bg-farmRed text-white font-bold py-3 rounded-full hover:bg-red-700 transition">Proceed to Checkout</button></div>
+  <div class="p-6 border-t bg-gray-50">
+    <div class="flex justify-between mb-2 font-bold text-lg"><span>Subtotal:</span><span id="cart-total">£0.00</span></div>
+    <div id="delivery-min-info" class="text-xs mb-4"></div>
+    <button type="button" id="cart-checkout-btn" onclick="checkout()" class="w-full bg-farmRed text-white font-bold py-3 rounded-full hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed">Proceed to Checkout</button>
+  </div>
 </div>
-<div id="cart-overlay" onclick="toggleCart()" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden"></div>
+<div id="cart-overlay" onclick="toggleCart()" class="fixed inset-0 bg-black bg-opacity-50 z-[60] hidden"></div>
 
-<!-- Customization Modal -->
-<div id="customize-modal" role="dialog" aria-modal="true" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+<!-- Customize Modal -->
+<div id="customize-modal" role="dialog" aria-modal="true" class="fixed inset-0 bg-black bg-opacity-50 z-[70] hidden flex items-center justify-center p-4">
   <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
     <div class="flex justify-between items-center mb-4"><h3 id="modal-title" class="text-xl font-bold text-farmRed">Customize Pizza</h3><button type="button" onclick="closeModal()" aria-label="Close" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button></div>
     <div id="modal-content"></div>
@@ -190,7 +208,7 @@
 </div>
 
 <!-- Checkout Modal -->
-<div id="checkout-modal" role="dialog" aria-modal="true" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+<div id="checkout-modal" role="dialog" aria-modal="true" class="fixed inset-0 bg-black bg-opacity-50 z-[70] hidden flex items-center justify-center p-4">
   <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl max-h-[95vh] overflow-y-auto">
     <div class="flex justify-between items-center mb-4"><h3 class="text-xl font-bold text-farmRed">Checkout</h3><button type="button" onclick="closeCheckoutModal()" aria-label="Close" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button></div>
     <form id="checkout-form" onsubmit="event.preventDefault();placeOrder();" class="space-y-4">
@@ -212,7 +230,7 @@
           <div><label for="delivery-street" class="sr-only">Street name</label><input type="text" id="delivery-street" name="delivery-street" autocomplete="address-line2" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="Street Name"></div>
         </div>
         <div><label for="delivery-postcode" class="sr-only">Postcode</label><input type="text" id="delivery-postcode" name="delivery-postcode" autocomplete="postal-code" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="Postcode (e.g. TW5 0DR)"></div>
-        <div class="mt-2"><label for="delivery-note" class="block font-semibold text-sm mb-1">Delivery Note (Optional)</label><textarea id="delivery-note" name="delivery-note" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" rows="2" placeholder="e.g. Ring the bell, leave at door…"></textarea></div>
+        <div><label for="delivery-note" class="block font-semibold text-sm mb-1">Delivery Note (Optional)</label><textarea id="delivery-note" name="delivery-note" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-farmRed" rows="2" placeholder="e.g. Ring the bell, leave at door…"></textarea></div>
       </div>
       <div id="checkout-min-warning" class="hidden bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3" role="status"><i class="fas fa-exclamation-triangle mr-1"></i><span id="checkout-min-warning-text"></span></div>
       <div class="flex justify-between items-center font-bold text-lg pt-2 border-t border-gray-200"><span>Total to Pay:</span><span id="checkout-total" class="text-farmRed">£0.00</span></div>
@@ -221,26 +239,57 @@
   </div>
 </div>
 
-<!-- Welcome Modal -->
-<div id="welcome-modal" role="dialog" aria-modal="true" class="fixed inset-0 bg-black bg-opacity-70 z-[100] hidden flex items-center justify-center p-4">
-  <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl text-center relative">
-    <button type="button" onclick="closeWelcomeModal()" aria-label="Close" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
-    <div id="welcome-step-1"><h2 class="font-pacifico text-3xl text-farmRed mb-4">Welcome!</h2><p class="text-gray-700 mb-6">Are you a new or regular customer?</p><div class="flex flex-col gap-3"><button type="button" onclick="showAllergyInfo()" class="bg-farmRed text-white font-bold py-3 rounded-full hover:bg-red-700 transition">I'm a New Customer</button><button type="button" onclick="closeWelcomeModal()" class="bg-gray-200 text-gray-800 font-bold py-3 rounded-full hover:bg-gray-300 transition">I'm a Regular Customer</button></div></div>
-    <div id="welcome-step-2" class="hidden"><div class="text-farmYellow text-5xl mb-4"><i class="fas fa-exclamation-triangle"></i></div><h3 class="font-bold text-xl text-farmRed mb-2">Food Allergies & Intolerances</h3><p class="text-sm text-gray-600 mb-4">If you have a food allergy or intolerance, please don't hesitate to contact our receptionist.</p><div class="bg-gray-50 p-4 rounded-lg mb-6 border border-gray-200"><p class="font-semibold text-gray-800 mb-1">Call us directly:</p><a href="tel:02087375731" class="text-farmRed text-xl font-bold hover:underline flex items-center justify-center"><i class="fas fa-phone-alt mr-2 text-lg"></i> 0208 737 5731</a></div><button type="button" onclick="closeWelcomeModal()" class="w-full bg-farmRed text-white font-bold py-3 rounded-full hover:bg-red-700 transition">I Understand, Continue</button></div>
+<!-- Order Success Modal -->
+<div id="success-modal" role="dialog" aria-modal="true" class="fixed inset-0 bg-black bg-opacity-60 z-[75] hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl text-center">
+    <div class="text-green-500 text-6xl mb-3"><i class="fas fa-check-circle"></i></div>
+    <h3 class="font-bold text-2xl text-farmDark mb-1">Order Placed!</h3>
+    <p class="text-gray-600 text-sm mb-4">Thank you <span id="success-name" class="font-semibold"></span>. We'll call you to confirm.</p>
+    <div class="bg-farmCream rounded-xl p-4 mb-4">
+      <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Order Number</p>
+      <p id="success-order-number" class="text-4xl font-bold text-farmRed">#—</p>
+      <p id="success-total" class="text-sm text-gray-700 mt-1 font-semibold"></p>
+      <p id="success-eta" class="text-xs text-gray-500 mt-1"></p>
+    </div>
+    <div class="flex flex-col gap-2">
+      <button type="button" onclick="closeSuccessModal();openTrackModal();" class="w-full bg-farmRed text-white font-bold py-3 rounded-full hover:bg-red-700 transition"><i class="fas fa-location-arrow mr-1"></i> Track My Order</button>
+      <button type="button" onclick="closeSuccessModal()" class="w-full bg-gray-200 text-gray-800 font-bold py-3 rounded-full hover:bg-gray-300 transition">Continue Browsing</button>
+    </div>
   </div>
 </div>
 
-<button type="button" id="floating-cart" onclick="toggleCart()" aria-label="Open cart" class="fixed bottom-6 left-6 z-[150] hidden bg-farmRed text-white h-16 w-16 rounded-full shadow-2xl hover:bg-red-700 transition flex items-center justify-center">
+<!-- Track Order Modal -->
+<div id="track-modal" role="dialog" aria-modal="true" class="fixed inset-0 bg-black bg-opacity-60 z-[75] hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div class="flex justify-between items-center mb-4"><h3 class="text-xl font-bold text-farmRed"><i class="fas fa-location-arrow mr-1"></i> Track Your Order</h3><button type="button" onclick="closeTrackModal()" aria-label="Close" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button></div>
+    <div id="track-content"><p class="text-gray-500 text-center py-6">Loading…</p></div>
+  </div>
+</div>
+
+<!-- Welcome Modal -->
+<div id="welcome-modal" role="dialog" aria-modal="true" class="fixed inset-0 bg-black bg-opacity-70 z-[80] hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl text-center relative">
+    <button type="button" onclick="closeWelcomeModal()" aria-label="Close" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+    <div id="welcome-step-1"><h2 class="font-pacifico text-3xl text-farmRed mb-4">Welcome!</h2><p class="text-gray-700 mb-6">Are you a new or regular customer?</p><div class="flex flex-col gap-3"><button type="button" onclick="showAllergyInfo()" class="bg-farmRed text-white font-bold py-3 rounded-full hover:bg-red-700 transition">I'm a New Customer</button><button type="button" onclick="closeWelcomeModal()" class="bg-gray-200 text-gray-800 font-bold py-3 rounded-full hover:bg-gray-300 transition">I'm a Regular Customer</button></div></div>
+    <div id="welcome-step-2" class="hidden"><div class="text-farmYellow text-5xl mb-4"><i class="fas fa-exclamation-triangle"></i></div><h3 class="font-bold text-xl text-farmRed mb-2">Food Allergies &amp; Intolerances</h3><p class="text-sm text-gray-600 mb-4">If you have a food allergy or intolerance, please don't hesitate to contact our receptionist.</p><div class="bg-gray-50 p-4 rounded-lg mb-6 border border-gray-200"><p class="font-semibold text-gray-800 mb-1">Call us directly:</p><a href="tel:02087375731" class="text-farmRed text-xl font-bold hover:underline flex items-center justify-center"><i class="fas fa-phone-alt mr-2 text-lg"></i> 0208 737 5731</a></div><button type="button" onclick="closeWelcomeModal()" class="w-full bg-farmRed text-white font-bold py-3 rounded-full hover:bg-red-700 transition">I Understand, Continue</button></div>
+  </div>
+</div>
+
+<button type="button" id="floating-cart" onclick="toggleCart()" aria-label="Open cart" class="fixed bottom-6 left-6 z-[75] hidden bg-farmRed text-white h-16 w-16 rounded-full shadow-2xl hover:bg-red-700 transition flex items-center justify-center">
   <i class="fas fa-shopping-cart text-2xl"></i>
   <span id="floating-cart-count" class="absolute -top-1 -right-1 bg-farmYellow text-farmDark text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-md">0</span>
 </button>
 
-<div id="toast-container" role="status" aria-live="polite" class="fixed bottom-28 left-6 z-[200] space-y-2 pointer-events-none"></div>
+<div id="toast-container" role="status" aria-live="polite" class="fixed bottom-28 left-6 z-[95] space-y-2 pointer-events-none"></div>
 
 <script>
 /* ============================================================
-   FIREBASE
+   FARM PIZZA — CUSTOMER SITE
+   Talks to Firestore: products (prices/availability),
+   settings/store (open/closed), orders + customers (writes)
    ============================================================ */
+
+/* ---------------- Firebase ---------------- */
 const firebaseConfig = {
   apiKey: "AIzaSyDPtj4qRDowQAdyF_oFX8Jqbxw1agB_Vv8",
   authDomain: "pizza-9363e.firebaseapp.com",
@@ -252,35 +301,33 @@ const firebaseConfig = {
 };
 
 let db = null;
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+  db.enablePersistence({ synchronizeTabs: true }).catch(err => console.warn('[FarmPizza] persistence:', err.code));
+} catch (e) {
+  console.error('[FarmPizza] Firebase init failed:', e);
+}
+
 function setFirestoreStatus(status, detail) {
   const el = document.getElementById('firestore-status');
   if (!el) return;
   const map = {
-    connecting:{cls:'bg-yellow-500',icon:'fa-spinner fa-spin',text:'Firestore: Connecting…'},
-    connected: {cls:'bg-green-600', icon:'fa-circle',text:'Firestore: Connected'},
-    offline:   {cls:'bg-gray-500',  icon:'fa-circle',text:'Firestore: Offline mode'},
-    error:     {cls:'bg-red-600',   icon:'fa-exclamation-triangle',text:'Firestore: Error'}
+    connecting:{cls:'bg-yellow-500',icon:'fa-spinner fa-spin',text:'Connecting…'},
+    connected: {cls:'bg-green-600', icon:'fa-circle',text:'Live menu'},
+    offline:   {cls:'bg-gray-500',  icon:'fa-circle',text:'Offline mode'},
+    error:     {cls:'bg-red-600',   icon:'fa-exclamation-triangle',text:'Connection error'}
   };
   const m = map[status] || map.error;
-  el.className = `fixed bottom-4 right-4 z-[300] ${m.cls} text-white text-xs font-bold px-3 py-2 rounded-full shadow-lg flex items-center gap-2`;
+  el.className = `fixed bottom-4 right-4 z-[90] ${m.cls} text-white text-xs font-bold px-3 py-2 rounded-full shadow-lg flex items-center gap-2`;
   el.innerHTML = `<i class="fas ${m.icon}"></i> ${m.text}${detail ? ' — ' + detail : ''}`;
 }
 
-try {
-  firebase.initializeApp(firebaseConfig);
-  db = firebase.firestore();
-  db.enablePersistence({ synchronizeTabs: true }).catch(err => console.warn('[FarmPizza] Persistence:', err.code));
-} catch (e) {
-  console.error('[FarmPizza] Firebase init failed:', e);
-  setFirestoreStatus('error', 'Firebase init failed');
-}
+/* ---------------- Images ---------------- */
+const pz   = (p) => `https://image.pollinations.ai/prompt/${encodeURIComponent(p)}?width=400&height=300&nologo=true`;
+const side = (p) => `https://image.pollinations.ai/prompt/${encodeURIComponent(p)}?width=200&height=200&nologo=true`;
 
-/* ============================================================
-   PIZZA IMAGES (pollinations.ai — real pizza photos)
-   ============================================================ */
-const pz = (prompt) => `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=400&height=300&nologo=true`;
-const side = (prompt) => `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=200&height=200&nologo=true`;
-
+/* ---------------- Default menu ---------------- */
 const DEFAULT_MENU = {
   pizzas: [
     {id:1,name:"Margherita",desc:"Cheese & tomato sauce",veg:true,basePrice:5.99,image:pz('margherita pizza fresh basil')},
@@ -328,17 +375,51 @@ const toppings = {
   meat:["Pepperoni","Ham","Plain chicken","Tandoori chicken","Chicken tikka","Bacon","Tuna","Prawns"]
 };
 
-const BASE_PRICES = { Medium:5.99, Large:8.99, XL:10.99 };
+/* Base price = MEDIUM price. Large +£3, XL +£5 */
+const SIZE_UPCHARGE = { Medium:0, Large:3.00, XL:5.00 };
+const BASE_PRICES   = { Medium:5.99, Large:8.99, XL:10.99 };
 const DELIVERY_MINIMUM = 17.99;
 const FREE_TOPPINGS = 3;
 const EXTRA_TOPPING_PRICE = 1.00;
 const HALF_AND_HALF_CHARGE = 1.00;
 
-let menuData = { pizzas: DEFAULT_MENU.pizzas.map(p=>({...p})), sides:[...DEFAULT_MENU.sides], dips:[...DEFAULT_MENU.dips], drinks:[...DEFAULT_MENU.drinks] };
+/* ---------------- State ---------------- */
+let menuData = {
+  pizzas: DEFAULT_MENU.pizzas.map(p => ({...p, available:true})),
+  sides:  DEFAULT_MENU.sides.map(p => ({...p, available:true})),
+  dips:   DEFAULT_MENU.dips.map(p => ({...p, available:true})),
+  drinks: DEFAULT_MENU.drinks.map(p => ({...p, available:true}))
+};
 let cart = [];
 let currentCustomPizza = null;
 let previousCartCount = 0;
+let activeCategory = 'pizzas';
+let activePizzaFilter = 'all';
+let storeSettings = { acceptingOrders: true, closedMessage: '' };
+let lastOrderId = localStorage.getItem('fp_lastOrderId') || null;
+let trackUnsub = null;
+let seeding = false;
 
+/* ---------------- Helpers ---------------- */
+function money(n){ return '£' + (Math.round(n*100)/100).toFixed(2); }
+function round2(n){ return Math.round(n*100)/100; }
+function localDateStr(d = new Date()){
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function pizzaPriceForSize(pizza, size){
+  const base = (typeof pizza.basePrice === 'number') ? pizza.basePrice : BASE_PRICES.Medium;
+  return round2(base + (SIZE_UPCHARGE[size] || 0));
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
 document.addEventListener('DOMContentLoaded', () => {
   switchTab('pizzas');
   renderToppings();
@@ -346,372 +427,1199 @@ document.addEventListener('DOMContentLoaded', () => {
   updateCartUI();
   checkOpenStatus();
   setInterval(checkOpenStatus, 60000);
-  setTimeout(hideLoadingOverlay, 1200);
-  requestAnimationFrame(() => setTimeout(hideLoadingOverlay, 300));
-  if (db) loadMenuFromFirestore().catch(err => console.warn('[FarmPizza] Menu:', err));
-  else setFirestoreStatus('offline', 'using defaults');
+  setTimeout(hideLoadingOverlay, 1000);
+  requestAnimationFrame(() => setTimeout(hideLoadingOverlay, 400));
+
+  if (lastOrderId) showTrackButtons(true);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeModal(); closeCheckoutModal(); closeTrackModal(); closeSuccessModal(); closeWelcomeModal();
+      const d = document.getElementById('cart-drawer');
+      if (d && d.classList.contains('cart-open')) toggleCart();
+    }
+  });
+
+  if (db) {
+    startMenuListener();
+    startSettingsListener();
+  } else {
+    setFirestoreStatus('offline', 'using default menu');
+    applyStoreSettings();
+  }
+
   const ct = localStorage.getItem('customerType');
-  if (!ct) setTimeout(() => document.getElementById('welcome-modal').classList.remove('hidden'), 1000);
+  if (!ct) setTimeout(() => document.getElementById('welcome-modal').classList.remove('hidden'), 1200);
 });
 
 function hideLoadingOverlay() {
   const lo = document.getElementById('loading-overlay');
-  if (lo && lo.style.display !== 'none') { lo.style.opacity = '0'; lo.style.transition = 'opacity 0.3s'; setTimeout(() => lo.style.display = 'none', 300); }
-}
-
-async function loadMenuFromFirestore() {
-  try {
-    const seedCheck = db.collection('products').limit(1).get();
-    const timeout = new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 6000));
-    const snap = await Promise.race([seedCheck, timeout]);
-    if (snap.empty) {
-      const batch = db.batch();
-      DEFAULT_MENU.pizzas.forEach(p => batch.set(db.collection('products').doc('pizza_'+p.id), {...p,category:'pizza',available:true}));
-      DEFAULT_MENU.sides.forEach(s => batch.set(db.collection('products').doc('side_'+s.id), {...s,category:'side',available:true}));
-      DEFAULT_MENU.dips.forEach(d => batch.set(db.collection('products').doc('dip_'+d.id), {...d,category:'dip',available:true}));
-      DEFAULT_MENU.drinks.forEach(d => batch.set(db.collection('products').doc('drink_'+d.id), {...d,category:'drink',available:true}));
-      await batch.commit();
-    }
-  } catch (e) { console.warn('[FarmPizza] Seed:', e.message); }
-
-  try {
-    db.collection('products').onSnapshot(snapshot => {
-      if (snapshot.empty) return;
-      const pizzas=[],sides=[],dips=[],drinks=[];
-      snapshot.forEach(doc => {
-        const d = doc.data();
-        if (d.available === false) return;
-        const item = { id: d.id, name: d.name, desc: d.desc||'', veg: !!d.veg, price: d.price, basePrice: d.basePrice, image: d.image, category: d.category };
-        if (d.category==='pizza') pizzas.push(item);
-        else if (d.category==='side') sides.push(item);
-        else if (d.category==='dip') dips.push(item);
-        else if (d.category==='drink') drinks.push(item);
-      });
-      if (pizzas.length || sides.length || dips.length || drinks.length) {
-        menuData = { pizzas, sides, dips, drinks };
-        setFirestoreStatus('connected', snapshot.size+' items');
-        const activeTab = document.querySelector('[id^="tab-"][class*="bg-farmRed"]');
-        if (activeTab) { const cat = activeTab.id.replace('tab-',''); if (cat==='pizzas') filterPizzas('all'); else renderMenu(cat); }
-      }
-    }, err => { setFirestoreStatus('error', err.code || 'listener'); });
-  } catch (e) { setFirestoreStatus('error', 'listener'); }
-}
-
-function showToast(item) {
-  const container = document.getElementById('toast-container'); if (!container) return;
-  const toast = document.createElement('div');
-  toast.className = 'bg-white border-l-4 border-green-500 shadow-2xl rounded-lg p-3 flex items-start gap-3 max-w-xs pointer-events-auto transition-all duration-300 toast-enter';
-  let details = [];
-  if (item.isHalfAndHalf) details.push(`Half ${item.name} / Half ${item.secondHalfName}`);
-  else { if(item.size)details.push(item.size); if(item.crust)details.push(item.crust); if(item.base&&item.base!=='Tomato')details.push(item.base+' Base'); if(item.extras&&item.extras.length)details.push('+ '+item.extras.join(', ')); }
-  const ds = details.length ? details.join(' • ') : '';
-  toast.innerHTML = `<div class="text-green-500 text-lg mt-0.5"><i class="fas fa-check-circle"></i></div><div class="flex-1 min-w-0"><p class="font-bold text-farmDark text-xs">Added to Cart</p><p class="text-sm text-gray-800 font-semibold truncate">${item.isHalfAndHalf?'Half & Half Pizza':item.name}</p>${ds?`<p class="text-[11px] text-gray-500 mt-0.5 leading-snug">${ds}</p>`:''}<p class="text-xs text-farmRed font-bold mt-1">£${item.price.toFixed(2)} × ${item.quantity}</p></div><button type="button" aria-label="Dismiss" onclick="this.parentElement.remove()" class="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>`;
-  container.appendChild(toast);
-  requestAnimationFrame(()=>{toast.classList.remove('toast-enter');toast.classList.add('toast-show');});
-  setTimeout(()=>{toast.classList.remove('toast-show');toast.classList.add('toast-enter');setTimeout(()=>toast.remove(),300);},2800);
-}
-
-function showAllergyInfo(){document.getElementById('welcome-step-1').classList.add('hidden');document.getElementById('welcome-step-2').classList.remove('hidden');}
-function closeWelcomeModal(){localStorage.setItem('customerType','acknowledged');document.getElementById('welcome-modal').classList.add('hidden');}
-
-function checkOpenStatus() {
-  const now=new Date(),day=now.getDay(),h=now.getHours(),m=now.getMinutes();
-  const cm=h*60+m, open=11*60;
-  let close=23*60; if(day===5||day===6) close=24*60;
-  const isOpen=cm>=open&&cm<close, left=close-cm;
-  const badge=document.getElementById('live-badge'), st=document.getElementById('live-status-text'), fs=document.getElementById('footer-live-status');
-  badge.className='ml-4 px-3 py-1 rounded-full text-xs font-bold shadow-md transition-all duration-300 ';
-  if(isOpen){
-    let tc='',fc='',bc='bg-green-500 text-white',bi=`<i class="fas fa-circle text-[8px] mr-1"></i> LIVE`;
-    if(left<=10){bc='bg-red-600 text-white animate-bounce';tc=`<span class="text-red-600 font-bold animate-pulse"><i class="fas fa-exclamation-triangle mr-1"></i> Closing in 10 mins!</span>`;fc=`<span class="text-red-500 font-bold animate-pulse"><i class="fas fa-exclamation-triangle mr-1"></i> Closing in 10 mins!</span>`;bi=`<i class="fas fa-exclamation-triangle mr-1"></i> 10 MINS LEFT`;}
-    else if(left<=20){bc='bg-orange-500 text-white';tc=`<span class="text-orange-500 font-bold"><i class="fas fa-clock mr-1"></i> Closes in 20 mins</span>`;fc=`<span class="text-orange-400 font-bold"><i class="fas fa-clock mr-1"></i> Closes in 20 mins</span>`;bi=`<i class="fas fa-clock mr-1"></i> 20 MINS LEFT`;}
-    else if(left<=90){bc='bg-yellow-500 text-white';tc=`<span class="text-yellow-600 font-bold"><i class="fas fa-clock mr-1"></i> Closes in 1h 30m</span>`;fc=`<span class="text-yellow-500 font-bold"><i class="fas fa-clock mr-1"></i> Closes in 1h 30m</span>`;bi=`<i class="fas fa-clock mr-1"></i> 1.5 HRS LEFT`;}
-    else{tc=`<span class="text-green-600 font-bold"><i class="fas fa-circle text-[10px] mr-1 animate-pulse"></i> Open Now</span>`;fc=`<span class="text-green-500 font-bold"><i class="fas fa-circle text-[10px] mr-1 animate-pulse"></i> We are Open!</span>`;}
-    badge.classList.add(...bc.split(' ')); badge.classList.remove('hidden'); badge.innerHTML=bi;
-    if(st)st.innerHTML=tc; if(fs)fs.innerHTML=fc;
-  }else{
-    badge.classList.add('hidden');
-    const next=cm<open?"Opens today at 11:00 AM":"Opens tomorrow at 11:00 AM";
-    if(st)st.innerHTML=`<span class="text-red-600 font-bold"><i class="fas fa-clock text-[10px] mr-1"></i> Closed - ${next}</span>`;
-    if(fs)fs.innerHTML=`<span class="text-red-500 font-bold"><i class="fas fa-clock text-[10px] mr-1"></i> Closed - ${next}</span>`;
+  if (lo && lo.style.display !== 'none') {
+    lo.style.opacity = '0';
+    lo.style.transition = 'opacity .3s';
+    setTimeout(() => { lo.style.display = 'none'; }, 300);
   }
 }
 
-function updateToppingHighlight(cb){
-  const l=cb.closest('label'), s=l.querySelector('span');
-  if(cb.checked){l.classList.add('bg-farmRed','border-farmRed');l.classList.remove('bg-white','border-gray-300');if(s){s.classList.add('text-white');s.classList.remove('text-gray-700');}}
-  else{l.classList.remove('bg-farmRed','border-farmRed');l.classList.add('bg-white','border-gray-300');if(s){s.classList.remove('text-white');s.classList.add('text-gray-700');}}
-}
-
-function switchTab(category){
-  ['pizzas','sides','dips','drinks'].forEach(cat=>{
-    const g=document.getElementById(cat+'-grid'); if(g)g.classList.add('hidden');
-    const t=document.getElementById('tab-'+cat); if(t){t.classList.remove('bg-farmRed','text-white');t.classList.add('bg-gray-200','text-gray-700');}
+/* ============================================================
+   FIRESTORE — PRODUCTS (admin edits price + availability)
+   ============================================================ */
+function startMenuListener() {
+  setFirestoreStatus('connecting');
+  db.collection('products').onSnapshot(snapshot => {
+    if (snapshot.empty) {
+      if (!seeding) seedProducts();
+      return;
+    }
+    const pizzas = [], sides = [], dips = [], drinks = [];
+    snapshot.forEach(doc => {
+      const d = doc.data();
+      const item = {
+        id: doc.id,
+        name: d.name || 'Item',
+        desc: d.desc || '',
+        veg: !!d.veg,
+        image: d.image || pz(d.name || 'pizza'),
+        category: d.category,
+        available: d.available !== false
+      };
+      if (d.category === 'pizza') {
+        item.basePrice = (typeof d.basePrice === 'number') ? d.basePrice
+                       : (typeof d.price === 'number') ? d.price : 5.99;
+        pizzas.push(item);
+      } else {
+        item.price = (typeof d.price === 'number') ? d.price : 0;
+        if (d.category === 'side') sides.push(item);
+        else if (d.category === 'dip') dips.push(item);
+        else if (d.category === 'drink') drinks.push(item);
+      }
+    });
+    if (pizzas.length || sides.length || dips.length || drinks.length) {
+      menuData = {
+        pizzas: pizzas.length ? pizzas : menuData.pizzas,
+        sides:  sides.length  ? sides  : menuData.sides,
+        dips:   dips.length   ? dips   : menuData.dips,
+        drinks: drinks.length ? drinks : menuData.drinks
+      };
+      setFirestoreStatus('connected', snapshot.size + ' items');
+      refreshMenu();
+      updatePizzaButtonStates();
+    }
+  }, err => {
+    console.warn('[FarmPizza] products listener:', err.code);
+    setFirestoreStatus('error', err.code || 'products');
   });
-  document.getElementById(category+'-grid').classList.remove('hidden');
-  const at=document.getElementById('tab-'+category);
-  at.classList.remove('bg-gray-200','text-gray-700'); at.classList.add('bg-farmRed','text-white');
-  if(category==='pizzas'){document.getElementById('pizza-subcategories').classList.remove('hidden');filterPizzas('all');}
-  else{document.getElementById('pizza-subcategories').classList.add('hidden');renderMenu(category);}
 }
 
-function filterPizzas(type){
-  document.querySelectorAll('#pizza-subcategories button').forEach(b=>{b.classList.remove('bg-farmRed','text-white');b.classList.add('text-farmRed','border-farmRed','bg-transparent');});
-  const ab=document.getElementById('subcat-'+type);
-  if(ab){ab.classList.remove('text-farmRed','border-farmRed','bg-transparent');ab.classList.add('bg-farmRed','text-white');}
-  let fp=menuData.pizzas;
-  if(type==='veg') fp=menuData.pizzas.filter(p=>p.veg);
-  else if(type==='chicken') fp=menuData.pizzas.filter(p=>p.name.toLowerCase().includes('chicken')||p.desc.toLowerCase().includes('chicken'));
-  else if(type==='ham_pepperoni') fp=menuData.pizzas.filter(p=>p.name.toLowerCase().includes('peppermoni')||p.desc.toLowerCase().includes('peppermoni')||p.name.toLowerCase().includes('ham')||p.desc.toLowerCase().includes('ham')||p.name.toLowerCase().includes('meat'));
-  renderPizzaGrid(fp);
+async function seedProducts() {
+  if (!db || seeding) return;
+  seeding = true;
+  try {
+    const batch = db.batch();
+    DEFAULT_MENU.pizzas.forEach(p => batch.set(db.collection('products').doc('pizza_' + p.id), { ...p, category:'pizza', available:true }));
+    DEFAULT_MENU.sides.forEach(s  => batch.set(db.collection('products').doc('side_'  + s.id), { ...s, category:'side',  available:true }));
+    DEFAULT_MENU.dips.forEach(d   => batch.set(db.collection('products').doc('dip_'   + d.id), { ...d, category:'dip',   available:true }));
+    DEFAULT_MENU.drinks.forEach(d => batch.set(db.collection('products').doc('drink_' + d.id), { ...d, category:'drink', available:true }));
+    await batch.commit();
+    console.log('[FarmPizza] Seeded products.');
+  } catch (e) {
+    console.warn('[FarmPizza] Seed failed:', e.message);
+    setFirestoreStatus('error', 'seed failed');
+  } finally {
+    seeding = false;
+  }
 }
 
-function renderPizzaGrid(pizzas){
-  const grid=document.getElementById('pizzas-grid'); let html='';
-  pizzas.forEach(p=>{
-    const base = p.basePrice || BASE_PRICES.XL;
-    html+=`<div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition flex flex-col">
+/* ============================================================
+   FIRESTORE — STORE SETTINGS (admin opens / closes the shop)
+   ============================================================ */
+function startSettingsListener() {
+  db.collection('settings').doc('store').onSnapshot(doc => {
+    if (doc.exists) {
+      const d = doc.data();
+      storeSettings = {
+        acceptingOrders: d.acceptingOrders !== false,
+        closedMessage: d.closedMessage || ''
+      };
+    } else {
+      // create defaults so the admin panel has something to toggle
+      db.collection('settings').doc('store').set({
+        acceptingOrders: true,
+        closedMessage: '',
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).catch(() => {});
+    }
+    applyStoreSettings();
+  }, err => console.warn('[FarmPizza] settings listener:', err.code));
+}
+
+function applyStoreSettings() {
+  const banner = document.getElementById('store-banner');
+  const text = document.getElementById('store-banner-text');
+  const btn = document.getElementById('cart-checkout-btn');
+  if (!storeSettings.acceptingOrders) {
+    banner.classList.remove('hidden');
+    text.innerText = storeSettings.closedMessage || 'We are not accepting online orders right now. Please call 0208 737 5731.';
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-ban mr-1"></i> Online orders paused';
+    }
+  } else {
+    banner.classList.add('hidden');
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = 'Proceed to Checkout';
+    }
+  }
+}
+
+/* ============================================================
+   OPEN / CLOSED BADGE
+   ============================================================ */
+function checkOpenStatus() {
+  const now = new Date(), day = now.getDay();
+  const cm = now.getHours()*60 + now.getMinutes();
+  const open = 11*60;
+  const close = (day === 5 || day === 6) ? 24*60 : 23*60;
+  const isOpen = cm >= open && cm < close;
+  const left = close - cm;
+
+  const badge = document.getElementById('live-badge');
+  const st = document.getElementById('live-status-text');
+  const fs = document.getElementById('footer-live-status');
+
+  badge.className = 'ml-4 px-3 py-1 rounded-full text-xs font-bold shadow-md transition-all duration-300 ';
+
+  if (isOpen) {
+    let tc = '', fc = '', bc = 'bg-green-500 text-white';
+    let bi = '<i class="fas fa-circle text-[8px] mr-1"></i> LIVE';
+    if (left <= 10) {
+      bc = 'bg-red-600 text-white animate-bounce';
+      tc = '<span class="text-red-600 font-bold animate-pulse"><i class="fas fa-exclamation-triangle mr-1"></i> Closing in 10 mins!</span>';
+      fc = '<span class="text-red-500 font-bold animate-pulse"><i class="fas fa-exclamation-triangle mr-1"></i> Closing in 10 mins!</span>';
+      bi = '<i class="fas fa-exclamation-triangle mr-1"></i> 10 MINS LEFT';
+    } else if (left <= 20) {
+      bc = 'bg-orange-500 text-white';
+      tc = '<span class="text-orange-500 font-bold"><i class="fas fa-clock mr-1"></i> Closes in 20 mins</span>';
+      fc = '<span class="text-orange-400 font-bold"><i class="fas fa-clock mr-1"></i> Closes in 20 mins</span>';
+      bi = '<i class="fas fa-clock mr-1"></i> 20 MINS LEFT';
+    } else if (left <= 90) {
+      bc = 'bg-yellow-500 text-white';
+      tc = '<span class="text-yellow-600 font-bold"><i class="fas fa-clock mr-1"></i> Closes in 1h 30m</span>';
+      fc = '<span class="text-yellow-500 font-bold"><i class="fas fa-clock mr-1"></i> Closes in 1h 30m</span>';
+      bi = '<i class="fas fa-clock mr-1"></i> 1.5 HRS LEFT';
+    } else {
+      tc = '<span class="text-green-600 font-bold"><i class="fas fa-circle text-[10px] mr-1 animate-pulse"></i> Open Now</span>';
+      fc = '<span class="text-green-500 font-bold"><i class="fas fa-circle text-[10px] mr-1 animate-pulse"></i> We are Open!</span>';
+    }
+    badge.classList.add(...bc.split(' '));
+    badge.classList.remove('hidden');
+    badge.innerHTML = bi;
+    if (st) st.innerHTML = tc;
+    if (fs) fs.innerHTML = fc;
+  } else {
+    badge.classList.add('hidden');
+    const next = cm < open ? 'Opens today at 11:00 AM' : 'Opens tomorrow at 11:00 AM';
+    if (st) st.innerHTML = `<span class="text-red-600 font-bold"><i class="fas fa-clock text-[10px] mr-1"></i> Closed — ${next}</span>`;
+    if (fs) fs.innerHTML = `<span class="text-red-500 font-bold"><i class="fas fa-clock text-[10px] mr-1"></i> Closed — ${next}</span>`;
+  }
+}
+
+/* ============================================================
+   MENU RENDERING
+   ============================================================ */
+function refreshMenu() {
+  if (activeCategory === 'pizzas') applyPizzaFilter(activePizzaFilter);
+  else renderMenu(activeCategory);
+}
+
+function switchTab(category) {
+  activeCategory = category;
+  ['pizzas','sides','dips','drinks'].forEach(cat => {
+    const g = document.getElementById(cat + '-grid');
+    if (g) g.classList.add('hidden');
+    const t = document.getElementById('tab-' + cat);
+    if (t) { t.classList.remove('bg-farmRed','text-white'); t.classList.add('bg-gray-200','text-gray-700'); }
+  });
+  document.getElementById(category + '-grid').classList.remove('hidden');
+  const at = document.getElementById('tab-' + category);
+  at.classList.remove('bg-gray-200','text-gray-700');
+  at.classList.add('bg-farmRed','text-white');
+
+  if (category === 'pizzas') {
+    document.getElementById('pizza-subcategories').classList.remove('hidden');
+    applyPizzaFilter(activePizzaFilter);
+  } else {
+    document.getElementById('pizza-subcategories').classList.add('hidden');
+    renderMenu(category);
+  }
+}
+
+function filterPizzas(type) {
+  activePizzaFilter = type;
+  applyPizzaFilter(type);
+}
+
+function applyPizzaFilter(type) {
+  document.querySelectorAll('#pizza-subcategories button').forEach(b => {
+    b.classList.remove('bg-farmRed','text-white');
+    b.classList.add('text-farmRed','border-farmRed');
+  });
+  const ab = document.getElementById('subcat-' + type);
+  if (ab) { ab.classList.remove('text-farmRed','border-farmRed'); ab.classList.add('bg-farmRed','text-white'); }
+
+  let list = menuData.pizzas;
+  if (type === 'veg') list = menuData.pizzas.filter(p => p.veg);
+  else if (type === 'chicken') list = menuData.pizzas.filter(p =>
+    (p.name + ' ' + p.desc).toLowerCase().includes('chicken'));
+  else if (type === 'ham_pepperoni') list = menuData.pizzas.filter(p => {
+    const s = (p.name + ' ' + p.desc).toLowerCase();
+    return s.includes('peppermoni') || s.includes('pepperoni') || s.includes('ham') || s.includes('meat');
+  });
+  renderPizzaGrid(list);
+}
+
+function renderPizzaGrid(pizzas) {
+  const grid = document.getElementById('pizzas-grid');
+  if (!pizzas.length) {
+    grid.innerHTML = '<p class="col-span-full text-center text-gray-500 py-8">No pizzas in this category right now.</p>';
+    return;
+  }
+  let html = '';
+  pizzas.forEach(p => {
+    const mediumPrice = (typeof p.basePrice === 'number') ? p.basePrice : BASE_PRICES.Medium;
+    const soldOut = p.available === false;
+    html += `<div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition flex flex-col">
       <div class="relative">
-        <img src="${p.image}" alt="${p.name}" loading="lazy" onerror="this.style.background='linear-gradient(135deg,#D32F2F,#FBC02D)';this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22200%22><rect width=%22400%22 height=%22200%22 fill=%22%23D32F2F%22/></svg>'" class="h-48 w-full object-cover bg-gradient-to-br from-farmRed to-farmYellow">
+        <img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy"
+          onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22200%22><rect width=%22400%22 height=%22200%22 fill=%22%23D32F2F%22/></svg>'"
+          class="h-48 w-full object-cover bg-gradient-to-br from-farmRed to-farmYellow ${soldOut ? 'soldout' : ''}">
         <span id="pizza-badge-${p.id}" class="hidden absolute top-2 right-2 bg-green-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg"><i class="fas fa-check mr-1"></i> In cart</span>
-        <span class="absolute top-2 left-2 bg-farmYellow text-farmDark text-[10px] font-bold px-2 py-0.5 rounded-full shadow"><i class="fas fa-adjust mr-1"></i> Half & Half +£1</span>
+        ${soldOut
+          ? '<span class="absolute top-2 left-2 bg-gray-800 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow">SOLD OUT</span>'
+          : '<span class="absolute top-2 left-2 bg-farmYellow text-farmDark text-[10px] font-bold px-2 py-0.5 rounded-full shadow"><i class="fas fa-adjust mr-1"></i> Half &amp; Half +£1</span>'}
       </div>
       <div class="p-5 flex-1 flex flex-col justify-between">
-        <div><div class="flex justify-between items-start mb-2"><h3 class="font-bold text-lg text-farmDark">${p.name}</h3>${p.veg?'<span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-semibold">Veg</span>':''}</div>
-        <p class="text-gray-600 text-sm mb-2">${p.desc}</p>
-        <p class="text-farmRed font-bold text-sm mb-4">From £${(base).toFixed(2)}</p></div>
-        <button type="button" id="pizza-btn-${p.id}" onclick="openCustomizeModal(${p.id})" class="w-full bg-farmRed text-white font-semibold py-2 rounded-lg hover:bg-red-700 transition text-sm mt-auto"><i class="fas fa-plus-circle mr-1"></i> Add to Order</button>
+        <div>
+          <div class="flex justify-between items-start mb-2">
+            <h3 class="font-bold text-lg text-farmDark">${esc(p.name)}</h3>
+            ${p.veg ? '<span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-semibold">Veg</span>' : ''}
+          </div>
+          <p class="text-gray-600 text-sm mb-2">${esc(p.desc)}</p>
+          <p class="text-farmRed font-bold text-sm mb-4">From ${money(mediumPrice)}</p>
+        </div>
+        <button type="button" id="pizza-btn-${p.id}" onclick="openCustomizeModal('${p.id}')"
+          class="w-full font-semibold py-2 rounded-lg transition text-sm mt-auto ${soldOut ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-farmRed text-white hover:bg-red-700'}"
+          ${soldOut ? 'disabled' : ''}>
+          ${soldOut ? '<i class="fas fa-ban mr-1"></i> Sold Out' : '<i class="fas fa-plus-circle mr-1"></i> Add to Order'}
+        </button>
       </div></div>`;
   });
-  grid.innerHTML=html; updatePizzaButtonStates();
+  grid.innerHTML = html;
+  updatePizzaButtonStates();
 }
 
-function updatePizzaButtonStates(){
-  menuData.pizzas.forEach(p=>{
-    const btn=document.getElementById('pizza-btn-'+p.id), badge=document.getElementById('pizza-badge-'+p.id);
-    if(!btn)return;
-    const qty=cart.filter(i=>i.name===p.name&&!i.isHalfAndHalf).reduce((s,i)=>s+i.quantity,0);
-    if(qty>0){btn.className='w-full bg-green-600 text-white font-semibold py-2 rounded-lg hover:bg-green-700 transition text-sm mt-auto';btn.innerHTML=`<i class="fas fa-check-circle mr-1"></i> In Cart · ${qty} — Add More`;if(badge){badge.classList.remove('hidden');badge.innerHTML=`<i class="fas fa-check mr-1"></i> ${qty} in cart`;}}
-    else{btn.className='w-full bg-farmRed text-white font-semibold py-2 rounded-lg hover:bg-red-700 transition text-sm mt-auto';btn.innerHTML=`<i class="fas fa-plus-circle mr-1"></i> Add to Order`;if(badge)badge.classList.add('hidden');}
+function updatePizzaButtonStates() {
+  menuData.pizzas.forEach(p => {
+    const btn = document.getElementById('pizza-btn-' + p.id);
+    const badge = document.getElementById('pizza-badge-' + p.id);
+    if (!btn || p.available === false) return;
+    const qty = cart.filter(i => i.name === p.name && !i.isHalfAndHalf)
+                    .reduce((s, i) => s + i.quantity, 0);
+    if (qty > 0) {
+      btn.className = 'w-full bg-green-600 text-white font-semibold py-2 rounded-lg hover:bg-green-700 transition text-sm mt-auto';
+      btn.innerHTML = `<i class="fas fa-check-circle mr-1"></i> In Cart · ${qty} — Add More`;
+      if (badge) { badge.classList.remove('hidden'); badge.innerHTML = `<i class="fas fa-check mr-1"></i> ${qty} in cart`; }
+    } else {
+      btn.className = 'w-full bg-farmRed text-white font-semibold py-2 rounded-lg hover:bg-red-700 transition text-sm mt-auto';
+      btn.innerHTML = '<i class="fas fa-plus-circle mr-1"></i> Add to Order';
+      if (badge) badge.classList.add('hidden');
+    }
   });
 }
 
-function renderMenu(category){
-  const grid=document.getElementById(category+'-grid'); if(!grid)return; let html='';
-  if(category==='sides'){menuData.sides.forEach(s=>{html+=`<div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 flex items-center p-4"><img src="${s.image}" alt="${s.name}" loading="lazy" class="h-20 w-20 object-cover rounded-lg mr-4 bg-gradient-to-br from-farmRed to-farmYellow"><div class="flex-1"><h3 class="font-bold text-md text-farmDark">${s.name}</h3><p class="text-farmRed font-bold">£${s.price.toFixed(2)}</p></div><button type="button" aria-label="Add ${s.name}" onclick="addToCartFromId(${s.id},'side')" class="bg-farmRed text-white h-10 w-10 rounded-full hover:bg-red-700 transition flex items-center justify-center ml-2"><i class="fas fa-plus"></i></button></div>`;});}
-  else if(category==='dips'){menuData.dips.forEach(d=>{html+=`<div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 flex flex-col items-center p-3 text-center"><img src="${d.image}" alt="${d.name}" loading="lazy" class="h-16 w-16 object-cover rounded-full mb-2 border-2 border-farmYellow bg-gradient-to-br from-farmRed to-farmYellow"><h3 class="font-bold text-xs text-farmDark leading-tight mb-1 h-8 flex items-center justify-center">${d.name}</h3><p class="text-farmRed font-bold text-sm mb-2">£${d.price.toFixed(2)}</p><button type="button" aria-label="Add ${d.name}" onclick="addToCartFromId(${d.id},'dip')" class="bg-farmRed text-white h-8 w-8 rounded-full hover:bg-red-700 transition flex items-center justify-center"><i class="fas fa-plus text-xs"></i></button></div>`;});}
-  else if(category==='drinks'){menuData.drinks.forEach(d=>{html+=`<div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 flex items-center p-4"><img src="${d.image}" alt="${d.name}" loading="lazy" class="h-20 w-20 object-cover rounded-lg mr-4 bg-gradient-to-br from-farmRed to-farmYellow"><div class="flex-1"><h3 class="font-bold text-md text-farmDark">${d.name}</h3><p class="text-farmRed font-bold">£${d.price.toFixed(2)}</p></div><button type="button" aria-label="Add ${d.name}" onclick="addToCartFromId(${d.id},'drink')" class="bg-farmRed text-white h-10 w-10 rounded-full hover:bg-red-700 transition flex items-center justify-center ml-2"><i class="fas fa-plus"></i></button></div>`;});}
-  grid.innerHTML=html;
+function renderMenu(category) {
+  const grid = document.getElementById(category + '-grid');
+  if (!grid) return;
+  let html = '';
+
+  if (category === 'sides') {
+    if (!menuData.sides.length) { grid.innerHTML = '<p class="col-span-full text-center text-gray-500 py-8">No sides available.</p>'; return; }
+    menuData.sides.forEach(s => {
+      const out = s.available === false;
+      html += `<div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 flex items-center p-4 ${out ? 'opacity-60' : ''}">
+        <img src="${esc(s.image)}" alt="${esc(s.name)}" loading="lazy" class="h-20 w-20 object-cover rounded-lg mr-4 bg-gradient-to-br from-farmRed to-farmYellow ${out ? 'soldout' : ''}">
+        <div class="flex-1 min-w-0">
+          <h3 class="font-bold text-md text-farmDark">${esc(s.name)}</h3>
+          <p class="text-farmRed font-bold">${money(s.price)}</p>
+          ${out ? '<p class="text-xs text-gray-500 font-semibold">Sold out</p>' : ''}
+        </div>
+        <button type="button" aria-label="Add ${esc(s.name)}" onclick="addToCartFromId('${s.id}','side')"
+          class="h-10 w-10 rounded-full transition flex items-center justify-center ml-2 ${out ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-farmRed text-white hover:bg-red-700'}"
+          ${out ? 'disabled' : ''}><i class="fas fa-plus"></i></button>
+      </div>`;
+    });
+  } else if (category === 'dips') {
+    if (!menuData.dips.length) { grid.innerHTML = '<p class="col-span-full text-center text-gray-500 py-8">No dips available.</p>'; return; }
+    menuData.dips.forEach(d => {
+      const out = d.available === false;
+      html += `<div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 flex flex-col items-center p-3 text-center ${out ? 'opacity-60' : ''}">
+        <img src="${esc(d.image)}" alt="${esc(d.name)}" loading="lazy" class="h-16 w-16 object-cover rounded-full mb-2 border-2 border-farmYellow bg-gradient-to-br from-farmRed to-farmYellow ${out ? 'soldout' : ''}">
+        <h3 class="font-bold text-xs text-farmDark leading-tight mb-1 h-8 flex items-center justify-center">${esc(d.name)}</h3>
+        <p class="text-farmRed font-bold text-sm mb-2">${money(d.price)}</p>
+        <button type="button" aria-label="Add ${esc(d.name)}" onclick="addToCartFromId('${d.id}','dip')"
+          class="h-8 w-8 rounded-full transition flex items-center justify-center ${out ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-farmRed text-white hover:bg-red-700'}"
+          ${out ? 'disabled' : ''}><i class="fas fa-plus text-xs"></i></button>
+      </div>`;
+    });
+  } else if (category === 'drinks') {
+    if (!menuData.drinks.length) { grid.innerHTML = '<p class="col-span-full text-center text-gray-500 py-8">No drinks available.</p>'; return; }
+    menuData.drinks.forEach(d => {
+      const out = d.available === false;
+      html += `<div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 flex items-center p-4 ${out ? 'opacity-60' : ''}">
+        <img src="${esc(d.image)}" alt="${esc(d.name)}" loading="lazy" class="h-20 w-20 object-cover rounded-lg mr-4 bg-gradient-to-br from-farmRed to-farmYellow ${out ? 'soldout' : ''}">
+        <div class="flex-1 min-w-0">
+          <h3 class="font-bold text-md text-farmDark">${esc(d.name)}</h3>
+          <p class="text-farmRed font-bold">${money(d.price)}</p>
+          ${out ? '<p class="text-xs text-gray-500 font-semibold">Sold out</p>' : ''}
+        </div>
+        <button type="button" aria-label="Add ${esc(d.name)}" onclick="addToCartFromId('${d.id}','drink')"
+          class="h-10 w-10 rounded-full transition flex items-center justify-center ml-2 ${out ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-farmRed text-white hover:bg-red-700'}"
+          ${out ? 'disabled' : ''}><i class="fas fa-plus"></i></button>
+      </div>`;
+    });
+  }
+  grid.innerHTML = html;
 }
 
-function addToCartFromId(id,type){
-  let item;
-  if(type==='side')item=menuData.sides.find(i=>i.id===id);
-  else if(type==='drink')item=menuData.drinks.find(i=>i.id===id);
-  else if(type==='dip')item=menuData.dips.find(i=>i.id===id);
-  if(item)addToCart({id:item.id,name:item.name,price:parseFloat(item.price),quantity:1});
+function addToCartFromId(id, type) {
+  const pool = type === 'side' ? menuData.sides
+             : type === 'drink' ? menuData.drinks
+             : type === 'dip' ? menuData.dips : [];
+  const item = pool.find(i => String(i.id) === String(id));
+  if (!item) return;
+  if (item.available === false) { alert(item.name + ' is sold out.'); return; }
+  addToCart({ id: item.id, name: item.name, price: parseFloat(item.price), quantity: 1 });
 }
 
-function openCustomizeModal(pizzaId){
-  const pizza=menuData.pizzas.find(p=>p.id===pizzaId); if(!pizza)return;
-  currentCustomPizza={...pizza,size:'XL',crust:'Deep Pan',base:'Tomato',extras:[],isHalfAndHalf:false,secondHalfId:null,secondHalfName:null};
-  const modal=document.getElementById('customize-modal'), title=document.getElementById('modal-title'), content=document.getElementById('modal-content');
-  title.innerText='Customize: '+pizza.name;
-  const fc=pizza.name.includes('Free Choice')?3:0;
-  const tn=fc===3?`<span class="text-green-600 font-semibold">First 3 FREE</span> · then £1.00 each`:`£1.00 each (max 3)`;
-  let th='';
-  toppings.vegetables.forEach((t,idx)=>{const id=`mtv-${idx}`;th+=`<label for="${id}" class="topping-label inline-flex items-center bg-white border border-gray-300 rounded-full px-3 py-1 cursor-pointer hover:bg-gray-100 transition mr-2 mb-2"><input type="checkbox" id="${id}" name="${id}" value="${t}" onchange="toggleExtra(this);updateToppingHighlight(this);" class="form-checkbox h-4 w-4 text-farmRed rounded"><span class="ml-2 text-sm text-gray-700 flex items-center"><i class="fas fa-leaf text-green-500 mr-1 text-xs"></i> ${t}</span></label>`;});
-  toppings.meat.forEach((t,idx)=>{const id=`mtm-${idx}`;th+=`<label for="${id}" class="topping-label inline-flex items-center bg-white border border-gray-300 rounded-full px-3 py-1 cursor-pointer hover:bg-gray-100 transition mr-2 mb-2"><input type="checkbox" id="${id}" name="${id}" value="${t}" onchange="toggleExtra(this);updateToppingHighlight(this);" class="form-checkbox h-4 w-4 text-farmRed rounded"><span class="ml-2 text-sm text-gray-700 flex items-center"><i class="fas fa-drumstick-bite text-red-500 mr-1 text-xs"></i> ${t}</span></label>`;});
-  const shOpts=menuData.pizzas.filter(p=>p.id!==pizza.id).map(p=>`<option value="${p.id}">${p.name} — ${p.desc}</option>`).join('');
-  content.innerHTML=`<form onsubmit="event.preventDefault();confirmCustomPizza();" class="space-y-4">
-    <div><label for="modal-size" class="block font-semibold text-sm mb-1">Size</label><select id="modal-size" name="modal-size" onchange="updateModalPrice()" class="w-full p-2 border rounded-lg"><option value="Medium">Medium (10") - £${BASE_PRICES.Medium.toFixed(2)}</option><option value="Large">Large (12") - £${BASE_PRICES.Large.toFixed(2)}</option><option value="XL" selected>XL (14") - £${BASE_PRICES.XL.toFixed(2)}</option></select></div>
-    <div><label for="modal-crust" class="block font-semibold text-sm mb-1">Crust</label><select id="modal-crust" name="modal-crust" class="w-full p-2 border rounded-lg"><option value="Thin Crust">Thin Crust</option><option value="Deep Pan" selected>Deep Pan</option></select></div>
-    <div><label for="modal-base" class="block font-semibold text-sm mb-1">Base</label><select id="modal-base" name="modal-base" onchange="updateModalPrice()" class="w-full p-2 border rounded-lg"><option value="Tomato" selected>Tomato Base</option><option value="BBQ">BBQ Base (+£1.00)</option></select></div>
-    <div class="bg-farmCream border-2 border-farmYellow rounded-lg p-3"><label for="modal-half-and-half" class="flex items-start gap-3 cursor-pointer"><input type="checkbox" id="modal-half-and-half" name="modal-half-and-half" onchange="toggleHalfAndHalf(this)" class="mt-1 form-checkbox h-5 w-5 text-farmRed rounded"><div class="flex-1"><p class="font-bold text-farmDark text-sm"><i class="fas fa-adjust mr-1 text-farmRed"></i> Make it Half & Half</p><p class="text-xs text-gray-600 mt-0.5">Choose a second pizza for the other half.</p><p class="text-xs text-farmRed font-bold mt-1">+ £${HALF_AND_HALF_CHARGE.toFixed(2)} extra</p></div></label><div id="modal-half-and-half-picker" class="hidden mt-3"><label for="modal-second-half" class="block font-semibold text-xs mb-1">Other half:</label><select id="modal-second-half" name="modal-second-half" onchange="updateModalPrice()" class="w-full p-2 border rounded-lg text-sm">${shOpts}</select></div></div>
-    <fieldset><legend class="block font-semibold text-sm mb-2">Extra Toppings <span class="text-xs font-normal text-gray-500">(${tn})</span></legend><div class="max-h-40 overflow-y-auto border p-3 rounded-lg bg-gray-50 flex flex-wrap">${th}</div></fieldset>
-    <div class="flex justify-between items-center font-bold text-lg pt-2 border-t"><span>Total:</span><span id="modal-price" class="text-farmRed">£${BASE_PRICES.XL.toFixed(2)}</span></div>
+/* ============================================================
+   CUSTOMIZE MODAL
+   ============================================================ */
+function openCustomizeModal(pizzaId) {
+  const pizza = menuData.pizzas.find(p => String(p.id) === String(pizzaId));
+  if (!pizza) return;
+  if (pizza.available === false) { alert(pizza.name + ' is sold out.'); return; }
+
+  currentCustomPizza = { ...pizza, size:'XL', crust:'Deep Pan', base:'Tomato', extras:[], isHalfAndHalf:false, calculatedPrice:0 };
+
+  const modal = document.getElementById('customize-modal');
+  const title = document.getElementById('modal-title');
+  const content = document.getElementById('modal-content');
+  title.innerText = 'Customize: ' + pizza.name;
+
+  const mPrice = pizzaPriceForSize(pizza, 'Medium');
+  const lPrice = pizzaPriceForSize(pizza, 'Large');
+  const xPrice = pizzaPriceForSize(pizza, 'XL');
+
+  const vegHtml = toppings.vegetables.map((t, idx) => {
+    const id = 'mtv-' + idx;
+    return `<label for="${id}" class="topping-label inline-flex items-center bg-white border border-gray-300 rounded-full px-3 py-1 cursor-pointer hover:bg-gray-100 transition mr-2 mb-2">
+      <input type="checkbox" id="${id}" name="${id}" value="${esc(t)}" onchange="toggleExtra(this);updateToppingHighlight(this);" class="form-checkbox h-4 w-4 text-farmRed rounded">
+      <span class="ml-2 text-sm text-gray-700 flex items-center"><i class="fas fa-leaf text-green-500 mr-1 text-xs"></i> ${esc(t)}</span></label>`;
+  }).join('');
+
+  const meatHtml = toppings.meat.map((t, idx) => {
+    const id = 'mtm-' + idx;
+    return `<label for="${id}" class="topping-label inline-flex items-center bg-white border border-gray-300 rounded-full px-3 py-1 cursor-pointer hover:bg-gray-100 transition mr-2 mb-2">
+      <input type="checkbox" id="${id}" name="${id}" value="${esc(t)}" onchange="toggleExtra(this);updateToppingHighlight(this);" class="form-checkbox h-4 w-4 text-farmRed rounded">
+      <span class="ml-2 text-sm text-gray-700 flex items-center"><i class="fas fa-drumstick-bite text-red-500 mr-1 text-xs"></i> ${esc(t)}</span></label>`;
+  }).join('');
+
+  const shOpts = menuData.pizzas
+    .filter(p => String(p.id) !== String(pizza.id) && p.available !== false)
+    .map(p => `<option value="${p.id}">${esc(p.name)} — ${esc(p.desc)}</option>`).join('');
+
+  content.innerHTML = `<form onsubmit="event.preventDefault();confirmCustomPizza();" class="space-y-4">
+    <div><label for="modal-size" class="block font-semibold text-sm mb-1">Size</label>
+      <select id="modal-size" name="modal-size" onchange="updateModalPrice()" class="w-full p-2 border rounded-lg">
+        <option value="Medium">Medium (10") — ${money(mPrice)}</option>
+        <option value="Large">Large (12") — ${money(lPrice)}</option>
+        <option value="XL" selected>XL (14") — ${money(xPrice)}</option>
+      </select></div>
+    <div><label for="modal-crust" class="block font-semibold text-sm mb-1">Crust</label>
+      <select id="modal-crust" name="modal-crust" class="w-full p-2 border rounded-lg">
+        <option value="Thin Crust">Thin Crust</option>
+        <option value="Deep Pan" selected>Deep Pan</option>
+      </select></div>
+    <div><label for="modal-base" class="block font-semibold text-sm mb-1">Base</label>
+      <select id="modal-base" name="modal-base" onchange="updateModalPrice()" class="w-full p-2 border rounded-lg">
+        <option value="Tomato" selected>Tomato Base</option>
+        <option value="BBQ">BBQ Base (+£1.00)</option>
+      </select></div>
+    <div class="bg-farmCream border-2 border-farmYellow rounded-lg p-3">
+      <label for="modal-half-and-half" class="flex items-start gap-3 cursor-pointer">
+        <input type="checkbox" id="modal-half-and-half" name="modal-half-and-half" onchange="toggleHalfAndHalf(this)" class="mt-1 form-checkbox h-5 w-5 text-farmRed rounded">
+        <div class="flex-1">
+          <p class="font-bold text-farmDark text-sm"><i class="fas fa-adjust mr-1 text-farmRed"></i> Make it Half &amp; Half</p>
+          <p class="text-xs text-gray-600 mt-0.5">Choose a second pizza for the other half.</p>
+          <p class="text-xs text-farmRed font-bold mt-1">+ ${money(HALF_AND_HALF_CHARGE)} extra</p>
+        </div>
+      </label>
+      <div id="modal-half-and-half-picker" class="hidden mt-3">
+        <label for="modal-second-half" class="block font-semibold text-xs mb-1">Other half:</label>
+        <select id="modal-second-half" name="modal-second-half" onchange="updateModalPrice()" class="w-full p-2 border rounded-lg text-sm">${shOpts}</select>
+      </div>
+    </div>
+    <fieldset>
+      <legend class="block font-semibold text-sm mb-2">Extra Toppings <span class="text-xs font-normal text-gray-500">(first 3 FREE · then £1.00 each)</span></legend>
+      <div class="max-h-40 overflow-y-auto border p-3 rounded-lg bg-gray-50 flex flex-wrap">${vegHtml}${meatHtml}</div>
+    </fieldset>
+    <div class="flex justify-between items-center font-bold text-lg pt-2 border-t"><span>Total:</span><span id="modal-price" class="text-farmRed">${money(xPrice)}</span></div>
     <button type="submit" class="w-full bg-farmRed text-white font-bold py-3 rounded-lg hover:bg-red-700 transition">Add to Cart</button>
   </form>`;
-  modal.classList.remove('hidden'); updateModalPrice();
-}
-function toggleHalfAndHalf(cb){if(!currentCustomPizza)return;currentCustomPizza.isHalfAndHalf=cb.checked;const p=document.getElementById('modal-half-and-half-picker');if(cb.checked)p.classList.remove('hidden');else p.classList.add('hidden');updateModalPrice();}
-function closeModal(){document.getElementById('customize-modal').classList.add('hidden');currentCustomPizza=null;}
-function toggleExtra(cb){if(!currentCustomPizza)return;const v=cb.value;if(cb.checked){if(currentCustomPizza.extras.length>=3&&!currentCustomPizza.name.includes('Free Choice')){alert("Maximum 3 extra toppings allowed.");cb.checked=false;updateToppingHighlight(cb);return;}currentCustomPizza.extras.push(v);}else{currentCustomPizza.extras=currentCustomPizza.extras.filter(t=>t!==v);}updateModalPrice();}
-function updateModalPrice(){if(!currentCustomPizza)return;const size=document.getElementById('modal-size').value,base=document.getElementById('modal-base').value;let price=parseFloat(BASE_PRICES[size]);if(base==='BBQ')price+=1.00;const isFC=currentCustomPizza.name.includes('Free Choice');const paid=isFC?Math.max(0,currentCustomPizza.extras.length-3):currentCustomPizza.extras.length;price+=paid*EXTRA_TOPPING_PRICE;const hh=document.getElementById('modal-half-and-half');if(hh&&hh.checked)price+=HALF_AND_HALF_CHARGE;price=Math.round(price*100)/100;document.getElementById('modal-price').innerText='£'+price.toFixed(2);currentCustomPizza.calculatedPrice=price;}
-function confirmCustomPizza(){if(!currentCustomPizza)return;const size=document.getElementById('modal-size').value,crust=document.getElementById('modal-crust').value,base=document.getElementById('modal-base').value;const hh=document.getElementById('modal-half-and-half');const isHH=hh&&hh.checked;let shId=null,shName=null;if(isHH){const s=document.getElementById('modal-second-half');shId=parseInt(s.value);const sp=menuData.pizzas.find(p=>p.id===shId);shName=sp?sp.name:null;}const item={id:Date.now(),name:currentCustomPizza.name,size,crust,base,extras:[...currentCustomPizza.extras],price:currentCustomPizza.calculatedPrice,quantity:1,isHalfAndHalf:isHH,secondHalfId:shId,secondHalfName:shName};addToCart(item);closeModal();}
 
-function renderToppings(){
-  const c=document.getElementById('toppings-container'); if(!c)return; let html='';
-  const all=[...toppings.vegetables.map(t=>({t,isV:true})),...toppings.meat.map(t=>({t,isV:false}))];
-  all.forEach(({t,isV},idx)=>{const id=`cyo-${idx}`;const icon=isV?'<i class="fas fa-leaf text-green-500 mr-1"></i>':'<i class="fas fa-drumstick-bite text-red-500 mr-1"></i>';html+=`<label for="${id}" class="topping-label inline-flex items-center bg-white border border-gray-300 rounded-full px-3 py-1 cursor-pointer hover:bg-gray-100 transition"><input type="checkbox" id="${id}" name="${id}" value="${t}" class="custom-topping-checkbox form-checkbox h-4 w-4 text-farmRed rounded" onchange="updateToppingHighlight(this);updateCustomPizzaPrice();"><span class="ml-2 text-sm text-gray-700 flex items-center">${icon} ${t}</span></label>`;});
-  c.innerHTML=html;
+  modal.classList.remove('hidden');
+  updateModalPrice();
 }
-function updateCustomPizzaPrice(){
-  const size=document.getElementById('custom-size').value,base=document.getElementById('custom-base').value;
-  const cbs=document.querySelectorAll('.custom-topping-checkbox:checked');
-  const cnt=cbs.length,names=Array.from(cbs).map(cb=>cb.value);
-  let bp=parseFloat(BASE_PRICES[size]);if(base==='BBQ')bp+=1.00;
-  const paid=Math.max(0,cnt-FREE_TOPPINGS),ec=paid*EXTRA_TOPPING_PRICE;
-  const total=Math.round((bp+ec)*100)/100;
-  document.getElementById('custom-size-label').innerText=size;
-  document.getElementById('custom-base-price').innerText='£'+bp.toFixed(2);
-  document.getElementById('custom-extra-count').innerText=paid;
-  document.getElementById('custom-extra-cost').innerText='£'+ec.toFixed(2);
-  document.getElementById('custom-total').innerText='£'+total.toFixed(2);
-  const se=document.getElementById('custom-topping-summary'),tq=document.getElementById('custom-topping-total-qty');
-  if(cnt===0){se.innerText='No toppings selected';tq.innerText='';}
-  else{se.innerText=cnt+' topping'+(cnt>1?'s':'')+': '+names.join(', ');const fl=Math.max(0,FREE_TOPPINGS-cnt);tq.innerText=fl>0?fl+' free left':'All extra';}
+
+function toggleHalfAndHalf(cb) {
+  if (!currentCustomPizza) return;
+  currentCustomPizza.isHalfAndHalf = cb.checked;
+  const picker = document.getElementById('modal-half-and-half-picker');
+  if (cb.checked) picker.classList.remove('hidden');
+  else picker.classList.add('hidden');
+  updateModalPrice();
 }
-function addCustomPizza(){
-  const size=document.getElementById('custom-size').value,crust=document.getElementById('custom-crust').value,base=document.getElementById('custom-base').value;
-  const cbs=document.querySelectorAll('.custom-topping-checkbox:checked');const extras=Array.from(cbs).map(cb=>cb.value);
-  let bp=parseFloat(BASE_PRICES[size]);if(base==='BBQ')bp+=1.00;
-  const paid=Math.max(0,extras.length-FREE_TOPPINGS);const price=Math.round((bp+paid*EXTRA_TOPPING_PRICE)*100)/100;
-  const item={id:Date.now(),name:"Create Your Own",size,crust,base,extras,price,quantity:1};
+
+function closeModal() {
+  document.getElementById('customize-modal').classList.add('hidden');
+  currentCustomPizza = null;
+}
+
+function toggleExtra(cb) {
+  if (!currentCustomPizza) return;
+  const v = cb.value;
+  if (cb.checked) {
+    if (!currentCustomPizza.extras.includes(v)) currentCustomPizza.extras.push(v);
+  } else {
+    currentCustomPizza.extras = currentCustomPizza.extras.filter(t => t !== v);
+  }
+  updateModalPrice();
+}
+
+function updateModalPrice() {
+  if (!currentCustomPizza) return;
+  const sizeSel = document.getElementById('modal-size');
+  const baseSel = document.getElementById('modal-base');
+  if (!sizeSel || !baseSel) return;
+
+  const size = sizeSel.value;
+  const base = baseSel.value;
+
+  let price = pizzaPriceForSize(currentCustomPizza, size);
+  if (base === 'BBQ') price += 1.00;
+
+  const paid = Math.max(0, currentCustomPizza.extras.length - FREE_TOPPINGS);
+  price += paid * EXTRA_TOPPING_PRICE;
+
+  const hh = document.getElementById('modal-half-and-half');
+  if (hh && hh.checked) price += HALF_AND_HALF_CHARGE;
+
+  price = round2(price);
+  document.getElementById('modal-price').innerText = money(price);
+  currentCustomPizza.calculatedPrice = price;
+}
+
+function confirmCustomPizza() {
+  if (!currentCustomPizza) return;
+  const size = document.getElementById('modal-size').value;
+  const crust = document.getElementById('modal-crust').value;
+  const base = document.getElementById('modal-base').value;
+  const hh = document.getElementById('modal-half-and-half');
+  const isHH = !!(hh && hh.checked);
+
+  let shId = null, shName = null;
+  if (isHH) {
+    const sel = document.getElementById('modal-second-half');
+    if (sel && sel.value) {
+      shId = sel.value;
+      const sp = menuData.pizzas.find(p => String(p.id) === String(shId));
+      shName = sp ? sp.name : null;
+    } else {
+      alert('Please choose a pizza for the other half.');
+      return;
+    }
+  }
+
+  updateModalPrice();
+
+  const item = {
+    id: 'pz_' + Date.now(),
+    name: currentCustomPizza.name,
+    size, crust, base,
+    extras: [...currentCustomPizza.extras],
+    price: currentCustomPizza.calculatedPrice,
+    quantity: 1,
+    isHalfAndHalf: isHH,
+    secondHalfId: shId,
+    secondHalfName: shName
+  };
   addToCart(item);
-  document.querySelectorAll('.custom-topping-checkbox').forEach(cb=>{cb.checked=false;updateToppingHighlight(cb);});
+  closeModal();
+}
+
+/* ============================================================
+   CREATE YOUR OWN
+   ============================================================ */
+function renderToppings() {
+  const c = document.getElementById('toppings-container');
+  if (!c) return;
+  const all = [
+    ...toppings.vegetables.map(t => ({ t, isV: true })),
+    ...toppings.meat.map(t => ({ t, isV: false }))
+  ];
+  c.innerHTML = all.map(({ t, isV }, idx) => {
+    const id = 'cyo-' + idx;
+    const icon = isV
+      ? '<i class="fas fa-leaf text-green-500 mr-1"></i>'
+      : '<i class="fas fa-drumstick-bite text-red-500 mr-1"></i>';
+    return `<label for="${id}" class="topping-label inline-flex items-center bg-white border border-gray-300 rounded-full px-3 py-1 cursor-pointer hover:bg-gray-100 transition">
+      <input type="checkbox" id="${id}" name="${id}" value="${esc(t)}" class="custom-topping-checkbox form-checkbox h-4 w-4 text-farmRed rounded" onchange="updateToppingHighlight(this);updateCustomPizzaPrice();">
+      <span class="ml-2 text-sm text-gray-700 flex items-center">${icon} ${esc(t)}</span></label>`;
+  }).join('');
+}
+
+function updateToppingHighlight(cb) {
+  const label = cb.closest('label');
+  if (!label) return;
+  const span = label.querySelector('span');
+  if (cb.checked) {
+    label.classList.add('bg-farmRed','border-farmRed');
+    label.classList.remove('bg-white','border-gray-300');
+    if (span) { span.classList.add('text-white'); span.classList.remove('text-gray-700'); }
+  } else {
+    label.classList.remove('bg-farmRed','border-farmRed');
+    label.classList.add('bg-white','border-gray-300');
+    if (span) { span.classList.remove('text-white'); span.classList.add('text-gray-700'); }
+  }
+}
+
+function updateCustomPizzaPrice() {
+  const size = document.getElementById('custom-size').value;
+  const base = document.getElementById('custom-base').value;
+  const cbs = document.querySelectorAll('.custom-topping-checkbox:checked');
+  const cnt = cbs.length;
+  const names = Array.from(cbs).map(cb => cb.value);
+
+  let bp = BASE_PRICES[size];
+  if (base === 'BBQ') bp += 1.00;
+
+  const paid = Math.max(0, cnt - FREE_TOPPINGS);
+  const ec = paid * EXTRA_TOPPING_PRICE;
+  const total = round2(bp + ec);
+
+  document.getElementById('custom-size-label').innerText = size;
+  document.getElementById('custom-base-price').innerText = money(bp);
+  document.getElementById('custom-extra-count').innerText = paid;
+  document.getElementById('custom-extra-cost').innerText = money(ec);
+  document.getElementById('custom-total').innerText = money(total);
+
+  const se = document.getElementById('custom-topping-summary');
+  const tq = document.getElementById('custom-topping-total-qty');
+  if (cnt === 0) { se.innerText = 'No toppings selected'; tq.innerText = ''; }
+  else {
+    se.innerText = cnt + ' topping' + (cnt > 1 ? 's' : '') + ': ' + names.join(', ');
+    const freeLeft = Math.max(0, FREE_TOPPINGS - cnt);
+    tq.innerText = freeLeft > 0 ? freeLeft + ' free left' : 'All extra';
+  }
+}
+
+function addCustomPizza() {
+  const size = document.getElementById('custom-size').value;
+  const crust = document.getElementById('custom-crust').value;
+  const base = document.getElementById('custom-base').value;
+  const cbs = document.querySelectorAll('.custom-topping-checkbox:checked');
+  const extras = Array.from(cbs).map(cb => cb.value);
+
+  let bp = BASE_PRICES[size];
+  if (base === 'BBQ') bp += 1.00;
+  const paid = Math.max(0, extras.length - FREE_TOPPINGS);
+  const price = round2(bp + paid * EXTRA_TOPPING_PRICE);
+
+  addToCart({
+    id: 'cyo_' + Date.now(),
+    name: 'Create Your Own',
+    size, crust, base, extras, price, quantity: 1,
+    isHalfAndHalf: false
+  });
+
+  document.querySelectorAll('.custom-topping-checkbox').forEach(cb => {
+    cb.checked = false;
+    updateToppingHighlight(cb);
+  });
   updateCustomPizzaPrice();
 }
 
-function getRecommendations(){
-  const recs=[];if(cart.length===0)return recs;
-  const cSize=s=>cart.filter(i=>i.size===s).reduce((a,i)=>a+i.quantity,0);
-  const cName=n=>cart.filter(i=>i.name===n).reduce((a,i)=>a+i.quantity,0);
-  const SIDES=['Garlic Bread (4 pcs)','Garlic Bread with Cheese (4 pcs)','Potato Wedges','BBQ Chicken Wings'];
-  const totalSides=cart.filter(i=>SIDES.includes(i.name)).reduce((a,i)=>a+i.quantity,0);
-  const hasPizza=cart.some(i=>i.size);
-  const hasGB=cName('Garlic Bread (4 pcs)')>0||cName('Garlic Bread with Cheese (4 pcs)')>0;
-  const hasGD=cName('Garlic & Herb Dip')>0;
-  const sideOpts=[{id:101,name:'Garlic Bread (4 pcs)',price:1.99},{id:102,name:'Garlic Bread with Cheese (4 pcs)',price:2.49},{id:103,name:'Potato Wedges',price:2.49},{id:104,name:'BBQ Chicken Wings',price:3.99}];
-  if(cSize('Medium')>=2&&totalSides<1)recs.push({type:'deal',title:'Farm Deal',desc:'2 Medium Pizzas & 1 side of your choice',dealPrice:23.99,qtyNeeded:1-totalSides,sideOptions:sideOpts});
-  ['Medium','Large','XL'].forEach(s=>{const p=cSize(s);if(p>=3&&totalSides<2)recs.push({type:'deal',title:`Mega Deal (${s})`,desc:`3 ${s} Pizzas & 2 sides of your choice`,dealPrice:s==='Medium'?29.99:s==='Large'?30.99:31.99,qtyNeeded:2-totalSides,sideOptions:sideOpts});});
-  ['Medium','Large','XL'].forEach(s=>{const p=cSize(s);if(p>=2&&totalSides<2)recs.push({type:'deal',title:`Crazy Deal (${s})`,desc:`2 ${s} Pizzas & 2 sides of your choice`,dealPrice:s==='Medium'?24.99:s==='Large'?25.99:26.99,qtyNeeded:2-totalSides,sideOptions:sideOpts});});
-  if(!hasGD&&(hasPizza||hasGB))recs.push({type:'dip',title:hasGB?'Goes great with Garlic Bread':'Perfect pairing',desc:hasGB?'Add Garlic & Herb Dip for dipping your bread':'Customers love Garlic & Herb Dip with their pizza',price:0.30,missingItem:{name:'Garlic & Herb Dip',id:301,type:'dip'}});
-  return recs;
+/* ============================================================
+   CART
+   ============================================================ */
+function addToCart(item) {
+  item.price = parseFloat(item.price);
+  if (isNaN(item.price)) item.price = 0;
+  item.quantity = item.quantity || 1;
+
+  const existing = cart.find(c =>
+    c.name === item.name &&
+    c.size === item.size &&
+    c.crust === item.crust &&
+    c.base === item.base &&
+    !!c.isHalfAndHalf === !!item.isHalfAndHalf &&
+    String(c.secondHalfId || '') === String(item.secondHalfId || '') &&
+    JSON.stringify(c.extras || []) === JSON.stringify(item.extras || [])
+  );
+
+  if (existing) existing.quantity += item.quantity;
+  else cart.push(item);
+
+  updateCartUI();
+  showToast(existing ? { ...existing, quantity: item.quantity } : item);
 }
 
-function addToCart(item){
-  item.price=parseFloat(item.price);
-  const ex=cart.find(c=>c.name===item.name&&c.size===item.size&&c.crust===item.crust&&c.base===item.base&&JSON.stringify(c.extras)===JSON.stringify(item.extras)&&!!c.isHalfAndHalf===!!item.isHalfAndHalf&&c.secondHalfId===item.secondHalfId);
-  if(ex){ex.quantity+=1;item=ex;}else cart.push(item);
-  updateCartUI(); showToast(item);
+function removeFromCart(i) { cart.splice(i, 1); updateCartUI(); }
+function updateQuantity(i, d) {
+  if (!cart[i]) return;
+  cart[i].quantity += d;
+  if (cart[i].quantity <= 0) removeFromCart(i);
+  else updateCartUI();
 }
-function removeFromCart(i){cart.splice(i,1);updateCartUI();}
-function updateQuantity(i,d){cart[i].quantity+=d;if(cart[i].quantity<=0)removeFromCart(i);else updateCartUI();}
-function addRecommendedItem(mi){if(!mi)return;addToCartFromId(mi.id,mi.type);}
-function addRecSide(i,qty){const s=document.getElementById('rec-side-'+i);if(!s)return;const id=parseInt(s.value);const si=menuData.sides.find(x=>x.id===id);if(!si)return;const ex=cart.find(c=>c.name===si.name&&!c.size&&!c.crust&&!c.base);if(ex)ex.quantity+=qty;else cart.push({id:si.id,name:si.name,price:parseFloat(si.price),quantity:qty});updateCartUI();showToast({name:si.name,price:si.price,quantity:qty});}
 
-function updateCartUI(){
-  const cc=document.getElementById('cart-items'),ct=document.getElementById('cart-total'),cce=document.getElementById('cart-count'),ccm=document.getElementById('cart-count-mobile'),dmi=document.getElementById('delivery-min-info');
-  let total=0,count=0;
-  if(cart.length===0){cc.innerHTML='<p class="text-gray-500 text-center mt-10">Your cart is empty.</p>';if(dmi)dmi.innerHTML='';}
-  else{
-    let html='';
-    cart.forEach((item,i)=>{
-      const it=parseFloat((item.price*item.quantity).toFixed(2));total+=it;count+=item.quantity;
-      let titleHtml='',details='';
-      if(item.isHalfAndHalf){
-        titleHtml=`<div class="flex items-center gap-1 flex-wrap"><span class="inline-flex items-center bg-farmYellow text-farmDark text-[10px] font-bold px-2 py-0.5 rounded-full"><i class="fas fa-adjust mr-1"></i> HALF & HALF</span></div><div class="mt-1 bg-farmCream rounded-md px-2 py-1.5"><p class="text-sm font-bold text-farmDark">½ ${item.name}</p><div class="hh-divider my-1"></div><p class="text-sm font-bold text-farmDark">½ ${item.secondHalfName||'—'}</p></div>`;
-        details=`${item.size||''} ${item.crust||''} ${item.base||''}`.trim();if(item.extras&&item.extras.length)details+=' | Extras: '+item.extras.join(', ');
-      }else{
-        titleHtml=`<h4 class="font-bold text-farmDark">${item.name}</h4>`;
-        details=`${item.size||''} ${item.crust||''} ${item.base||''}`.trim();if(item.extras&&item.extras.length)details+=' | Extras: '+item.extras.join(', ');
+function updateCartUI() {
+  const cc = document.getElementById('cart-items');
+  const ct = document.getElementById('cart-total');
+  const cce = document.getElementById('cart-count');
+  const ccm = document.getElementById('cart-count-mobile');
+  const dmi = document.getElementById('delivery-min-info');
+
+  let total = 0, count = 0;
+
+  if (cart.length === 0) {
+    cc.innerHTML = '<p class="text-gray-500 text-center mt-10">Your cart is empty.</p>';
+    if (dmi) dmi.innerHTML = '';
+  } else {
+    let html = '';
+    cart.forEach((item, i) => {
+      const line = round2(item.price * item.quantity);
+      total += line;
+      count += item.quantity;
+
+      let titleHtml = '', details = '';
+      if (item.isHalfAndHalf) {
+        titleHtml = `<div class="flex items-center gap-1 flex-wrap"><span class="inline-flex items-center bg-farmYellow text-farmDark text-[10px] font-bold px-2 py-0.5 rounded-full"><i class="fas fa-adjust mr-1"></i> HALF &amp; HALF</span></div>
+          <div class="mt-1 bg-farmCream rounded-md px-2 py-1.5">
+            <p class="text-sm font-bold text-farmDark">½ ${esc(item.name)}</p>
+            <div class="hh-divider my-1"></div>
+            <p class="text-sm font-bold text-farmDark">½ ${esc(item.secondHalfName || '—')}</p>
+          </div>`;
+        details = [item.size, item.crust, item.base].filter(Boolean).join(' ');
+        if (item.extras && item.extras.length) details += ' | Extras: ' + item.extras.map(esc).join(', ');
+      } else {
+        titleHtml = `<h4 class="font-bold text-farmDark">${esc(item.name)}</h4>`;
+        details = [item.size, item.crust, item.base].filter(Boolean).join(' ');
+        if (item.extras && item.extras.length) details += ' | Extras: ' + item.extras.map(esc).join(', ');
       }
-      html+=`<div class="flex justify-between items-start mb-4 pb-4 border-b border-gray-100"><div class="flex-1">${titleHtml}<p class="text-xs text-gray-500 mt-1">${details}</p><p class="text-farmRed font-semibold mt-1">£${item.price.toFixed(2)}</p></div><div class="flex items-center space-x-2 ml-4"><button type="button" aria-label="Decrease" onclick="updateQuantity(${i},-1)" class="bg-gray-200 text-gray-700 h-6 w-6 rounded-full flex items-center justify-center hover:bg-gray-300">-</button><span class="font-semibold w-4 text-center">${item.quantity}</span><button type="button" aria-label="Increase" onclick="updateQuantity(${i},1)" class="bg-gray-200 text-gray-700 h-6 w-6 rounded-full flex items-center justify-center hover:bg-gray-300">+</button><button type="button" aria-label="Remove" onclick="removeFromCart(${i})" class="text-red-500 hover:text-red-700 ml-2"><i class="fas fa-trash-alt"></i></button></div></div>`;
+
+      html += `<div class="flex justify-between items-start mb-4 pb-4 border-b border-gray-100">
+        <div class="flex-1 min-w-0">${titleHtml}
+          ${details ? `<p class="text-xs text-gray-500 mt-1 break-words">${details}</p>` : ''}
+          <p class="text-farmRed font-semibold mt-1">${money(item.price)}</p>
+        </div>
+        <div class="flex items-center space-x-2 ml-4">
+          <button type="button" aria-label="Decrease" onclick="updateQuantity(${i},-1)" class="bg-gray-200 text-gray-700 h-6 w-6 rounded-full flex items-center justify-center hover:bg-gray-300">-</button>
+          <span class="font-semibold w-4 text-center">${item.quantity}</span>
+          <button type="button" aria-label="Increase" onclick="updateQuantity(${i},1)" class="bg-gray-200 text-gray-700 h-6 w-6 rounded-full flex items-center justify-center hover:bg-gray-300">+</button>
+          <button type="button" aria-label="Remove" onclick="removeFromCart(${i})" class="text-red-500 hover:text-red-700 ml-2"><i class="fas fa-trash-alt"></i></button>
+        </div>
+      </div>`;
     });
-    const recs=getRecommendations();
-    if(recs.length>0){
-      html+=`<div class="mt-2 mb-4"><div class="flex items-center gap-2 mb-3"><i class="fas fa-lightbulb text-farmYellow text-lg"></i><h4 class="font-bold text-farmDark text-sm uppercase tracking-wide">Recommended for you</h4></div>`;
-      recs.forEach((rec,i)=>{
-        if(rec.type==='deal'){
-          const opts=rec.sideOptions.map(o=>`<option value="${o.id}">${o.name} — £${o.price.toFixed(2)}</option>`).join('');
-          const lbl=rec.qtyNeeded>1?`Add ${rec.qtyNeeded}`:'Add';
-          html+=`<div class="border-farmYellow bg-yellow-50 border rounded-lg p-3 mb-2 recommendation-pulse"><div class="flex items-start gap-2 mb-2"><i class="fas fa-tags text-farmRed mt-1"></i><div class="flex-1"><p class="font-bold text-farmDark text-sm">${rec.title}</p><p class="text-xs text-gray-600">${rec.desc}</p><p class="text-xs text-farmRed font-semibold mt-1">Deal price: £${rec.dealPrice.toFixed(2)}</p></div></div><div class="bg-white rounded-md p-2 border border-yellow-200"><label for="rec-side-${i}" class="text-xs text-gray-700 mb-2 block"><i class="fas fa-utensils text-farmRed mr-1"></i> Choose your side${rec.qtyNeeded>1?'s':''}:</label><div class="flex items-center gap-2"><select id="rec-side-${i}" name="rec-side-${i}" class="flex-1 text-xs p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-farmRed bg-white min-w-0">${opts}</select><button type="button" onclick="addRecSide(${i},${rec.qtyNeeded})" class="bg-farmRed text-white text-xs font-bold px-3 py-2 rounded-full hover:bg-red-700 transition whitespace-nowrap">${lbl}</button></div></div></div>`;
-        }else{
-          html+=`<div class="border-green-300 bg-green-50 border rounded-lg p-3 mb-2 recommendation-pulse"><div class="flex items-start gap-2 mb-2"><i class="fas fa-utensils text-green-600 mt-1"></i><div class="flex-1"><p class="font-bold text-farmDark text-sm">${rec.title}</p><p class="text-xs text-gray-600">${rec.desc}</p><p class="text-xs text-green-700 font-semibold mt-1">£${rec.price.toFixed(2)} each</p></div></div><div class="flex items-center justify-between bg-white rounded-md p-2 border border-gray-200"><p class="text-xs text-gray-700 flex-1"><i class="fas fa-plus-circle text-farmRed mr-1"></i> Add <span class="font-semibold">${rec.missingItem.name}</span></p><button type="button" onclick="addRecommendedItem(${JSON.stringify(rec.missingItem).replace(/"/g,'&quot;')})" class="bg-farmRed text-white text-xs font-bold px-3 py-1.5 rounded-full hover:bg-red-700 transition ml-2 whitespace-nowrap">Add</button></div></div>`;
-        }
+
+    /* Cross-sell recommendations */
+    const recs = getRecommendations();
+    if (recs.length) {
+      html += `<div class="mt-2 mb-4">
+        <div class="flex items-center gap-2 mb-3"><i class="fas fa-lightbulb text-farmYellow text-lg"></i>
+        <h4 class="font-bold text-farmDark text-sm uppercase tracking-wide">Recommended for you</h4></div>`;
+      recs.forEach(rec => {
+        html += `<div class="border-green-300 bg-green-50 border rounded-lg p-3 mb-2 recommendation-pulse">
+          <div class="flex items-start gap-2 mb-2">
+            <i class="fas fa-utensils text-green-600 mt-1"></i>
+            <div class="flex-1">
+              <p class="font-bold text-farmDark text-sm">${esc(rec.title)}</p>
+              <p class="text-xs text-gray-600">${esc(rec.desc)}</p>
+              <p class="text-xs text-green-700 font-semibold mt-1">${money(rec.price)} each</p>
+            </div>
+          </div>
+          <div class="flex items-center justify-between bg-white rounded-md p-2 border border-gray-200">
+            <p class="text-xs text-gray-700 flex-1"><i class="fas fa-plus-circle text-farmRed mr-1"></i> Add <span class="font-semibold">${esc(rec.name)}</span></p>
+            <button type="button" onclick="addToCartFromId('${rec.id}','${rec.type}')" class="bg-farmRed text-white text-xs font-bold px-3 py-1.5 rounded-full hover:bg-red-700 transition ml-2 whitespace-nowrap">Add</button>
+          </div></div>`;
       });
-      html+='</div>';
+      html += '</div>';
     }
-    cc.innerHTML=html;
+
+    cc.innerHTML = html;
   }
-  ct.innerText='£'+total.toFixed(2);cce.innerText=count;if(ccm)ccm.innerText=count;
-  if(dmi){
-    if(cart.length===0)dmi.innerHTML=`<span class="text-gray-500">Collection ready in &lt;15 mins. Delivery 10–30 mins. Minimum for delivery £${DELIVERY_MINIMUM.toFixed(2)}.</span>`;
-    else if(total<DELIVERY_MINIMUM){const r=DELIVERY_MINIMUM-total;dmi.innerHTML=`<div class="bg-orange-50 border border-orange-200 rounded-lg p-2"><p class="text-orange-700 font-semibold"><i class="fas fa-motorcycle mr-1"></i> Add <span class="font-bold">£${r.toFixed(2)}</span> more for delivery</p><p class="text-gray-500 mt-1">Or choose <span class="font-semibold text-farmRed">Collection</span> — no minimum, ready in &lt;15 mins.</p></div>`;}
-    else{dmi.innerHTML=`<div class="bg-green-50 border border-green-200 rounded-lg p-2"><p class="text-green-700 font-semibold"><i class="fas fa-check-circle mr-1"></i> Delivery minimum reached!</p><p class="text-gray-500 mt-1">Collection in &lt;15 mins. Delivery 10–30 mins.</p></div>`;}
+
+  ct.innerText = money(total);
+  cce.innerText = count;
+  if (ccm) ccm.innerText = count;
+
+  if (dmi) {
+    if (cart.length === 0) {
+      dmi.innerHTML = `<span class="text-gray-500">Collection ready in &lt;15 mins. Delivery 10–30 mins. Minimum for delivery ${money(DELIVERY_MINIMUM)}.</span>`;
+    } else if (total < DELIVERY_MINIMUM) {
+      const r = DELIVERY_MINIMUM - total;
+      dmi.innerHTML = `<div class="bg-orange-50 border border-orange-200 rounded-lg p-2">
+        <p class="text-orange-700 font-semibold"><i class="fas fa-motorcycle mr-1"></i> Add <span class="font-bold">${money(r)}</span> more for delivery</p>
+        <p class="text-gray-500 mt-1">Or choose <span class="font-semibold text-farmRed">Collection</span> — no minimum, ready in &lt;15 mins.</p></div>`;
+    } else {
+      dmi.innerHTML = `<div class="bg-green-50 border border-green-200 rounded-lg p-2">
+        <p class="text-green-700 font-semibold"><i class="fas fa-check-circle mr-1"></i> Delivery minimum reached!</p>
+        <p class="text-gray-500 mt-1">Collection in &lt;15 mins. Delivery 10–30 mins.</p></div>`;
+    }
   }
+
   updatePizzaButtonStates();
-  const changed=count!==previousCartCount;
-  updateFloatingCart(count,changed&&count>0);
-  previousCartCount=count;
+
+  const changed = count !== previousCartCount;
+  updateFloatingCart(count, changed && count > 0);
+  previousCartCount = count;
 }
 
-function updateFloatingCart(count,animate){
-  const fab=document.getElementById('floating-cart'),fc=document.getElementById('floating-cart-count');
-  if(!fab||!fc)return;
-  if(count>0){
-    if(fab.classList.contains('hidden')){fab.classList.remove('hidden');fab.classList.remove('cart-pop','cart-bounce');void fab.offsetWidth;fab.classList.add('cart-pop');}
-    else if(animate){fab.classList.remove('cart-pop','cart-bounce');void fab.offsetWidth;fab.classList.add('cart-bounce');}
-    fc.innerText=count;
-    if(animate&&count!==previousCartCount){fc.classList.remove('count-pulse');void fc.offsetWidth;fc.classList.add('count-pulse');}
-  }else{fab.classList.add('hidden');fab.classList.remove('cart-pop','cart-bounce');}
-}
+function getRecommendations() {
+  const recs = [];
+  if (!cart.length) return recs;
 
-function toggleCart(){const d=document.getElementById('cart-drawer'),o=document.getElementById('cart-overlay');if(d.classList.contains('cart-closed')){d.classList.remove('cart-closed');d.classList.add('cart-open');o.classList.remove('hidden');}else{d.classList.remove('cart-open');d.classList.add('cart-closed');o.classList.add('hidden');}}
+  const hasPizza = cart.some(i => !!i.size);
+  const hasSide  = cart.some(i => menuData.sides.some(s => s.name === i.name));
+  const hasDip   = cart.some(i => menuData.dips.some(d => d.name === i.name));
+  const hasDrink = cart.some(i => menuData.drinks.some(d => d.name === i.name));
 
-function checkout(){if(cart.length===0){alert("Your cart is empty.");return;}document.getElementById('fulfillment-collection').checked=true;toggleDeliveryAddress();document.getElementById('checkout-modal').classList.remove('hidden');}
-function closeCheckoutModal(){document.getElementById('checkout-modal').classList.add('hidden');}
-function toggleDeliveryAddress(){
-  const f=document.querySelector('input[name="fulfillment"]:checked').value;
-  const ci=document.getElementById('collection-info'),di=document.getElementById('delivery-info'),mw=document.getElementById('checkout-min-warning'),mwt=document.getElementById('checkout-min-warning-text'),cte=document.getElementById('checkout-total');
-  const ct=cart.reduce((s,i)=>s+i.price*i.quantity,0);
-  if(f==='collection'){ci.classList.remove('hidden');di.classList.add('hidden');mw.classList.add('hidden');cte.innerText='£'+ct.toFixed(2);}
-  else{ci.classList.add('hidden');di.classList.remove('hidden');if(ct<DELIVERY_MINIMUM){cte.innerText='£'+DELIVERY_MINIMUM.toFixed(2);const r=DELIVERY_MINIMUM-ct;mwt.innerText=`Delivery minimum is £${DELIVERY_MINIMUM.toFixed(2)}. £${r.toFixed(2)} has been added to meet the minimum. Or switch to Collection (no minimum).`;mw.classList.remove('hidden');}else{cte.innerText='£'+ct.toFixed(2);mw.classList.add('hidden');}}
-}
+  const pick = (arr) => arr.find(x => x.available !== false);
 
-async function placeOrder(){
-  const btn=document.getElementById('confirm-order-btn');
-  const f=document.querySelector('input[name="fulfillment"]:checked').value;
-  const name=document.getElementById('customer-name').value.trim();
-  const phone=document.getElementById('customer-phone').value.trim();
-  if(!name){alert("Please enter your name.");return;}
-  if(!phone){alert("Phone number is mandatory.");return;}
-  if(!/^[0-9+\s()-]{7,}$/.test(phone)){alert("Please enter a valid phone number.");return;}
-  let address='',postcode='',note='';
-  if(f==='delivery'){
-    const house=document.getElementById('delivery-house').value.trim();
-    const street=document.getElementById('delivery-street').value.trim();
-    postcode=document.getElementById('delivery-postcode').value.trim();
-    note=document.getElementById('delivery-note').value.trim();
-    if(!house||!postcode){alert("Please enter your house number and postcode.");return;}
-    address=`${house}, ${street?street+', ':''}${postcode}`;
+  if (hasPizza && !hasSide) {
+    const s = pick(menuData.sides);
+    if (s) recs.push({ id:s.id, type:'side', name:s.name, price:s.price, title:'Complete your meal', desc:'A side goes perfectly with your pizza.' });
   }
-  const cartTotal=cart.reduce((s,i)=>s+i.price*i.quantity,0);
-  let payable=cartTotal;
-  if(f==='delivery'&&cartTotal<DELIVERY_MINIMUM)payable=DELIVERY_MINIMUM;
-
-  if(!db){
-    alert(`Thank you ${name}!\n\nTotal: £${payable.toFixed(2)}\n${f==='delivery'?'Delivery in 10–30 mins':'Collection in <15 mins'}\n\nPlease call us on 0208 737 5731.`);
-    cart=[];updateCartUI();closeCheckoutModal();toggleCart();return;
+  if ((hasPizza || hasSide) && !hasDip) {
+    const d = pick(menuData.dips);
+    if (d) recs.push({ id:d.id, type:'dip', name:d.name, price:d.price, title:'Don\'t forget a dip', desc:'Customers love a dip with their order.' });
   }
-  btn.disabled=true;btn.innerText='Placing order…';
-  try{
-    const today=new Date().toISOString().slice(0,10);
-    const orderRef=db.collection('orders').doc();
-    await orderRef.set({orderNumber:null,customerName:name,customerPhone:phone,address,postcode,note,items:cart.map(i=>({name:i.isHalfAndHalf?`½ ${i.name} / ½ ${i.secondHalfName}`:i.name,qty:i.quantity,price:i.price,options:{size:i.size,crust:i.crust,base:i.base,extras:i.extras||[],isHalfAndHalf:!!i.isHalfAndHalf}})),subtotal:cartTotal,total:payable,fulfillment:f,status:'pending',date:today,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
-    const statsRef=db.collection('dailyStats').doc(today);
-    await db.runTransaction(async t=>{const doc=await t.get(statsRef);const nextNum=(doc.exists?doc.data().orderCount:0)+1;if(!doc.exists){t.set(statsRef,{date:today,orderCount:1,revenue:payable});}else{t.update(statsRef,{orderCount:firebase.firestore.FieldValue.increment(1),revenue:firebase.firestore.FieldValue.increment(payable)});}t.update(orderRef,{orderNumber:nextNum});});
-    const custRef=db.collection('customers').doc(phone.replace(/\s+/g,''));
-    const custDoc=await custRef.get();
-    if(custDoc.exists){await custRef.update({name,lastAddress:address||custDoc.data().lastAddress||'',postcode:postcode||custDoc.data().postcode||'',lastOrderAt:firebase.firestore.FieldValue.serverTimestamp(),orderCount:firebase.firestore.FieldValue.increment(1),totalSpent:firebase.firestore.FieldValue.increment(payable)});}
-    else{await custRef.set({phone,name,lastAddress:address,postcode,createdAt:firebase.firestore.FieldValue.serverTimestamp(),lastOrderAt:firebase.firestore.FieldValue.serverTimestamp(),orderCount:1,totalSpent:payable});}
-    alert(`Thank you ${name}! Order placed.\n\nTotal: £${payable.toFixed(2)}\n${f==='delivery'?'Delivery in 10–30 mins':'Collection in <15 mins'}\n\nWe'll call you on ${phone} to confirm.`);
-    cart=[];updateCartUI();closeCheckoutModal();toggleCart();
-  }catch(e){
+  if (hasPizza && !hasDrink) {
+    const dr = pick(menuData.drinks);
+    if (dr) recs.push({ id:dr.id, type:'drink', name:dr.name, price:dr.price, title:'Thirsty?', desc:'Add a cold drink to your order.' });
+  }
+  return recs.slice(0, 2);
+}
+
+function updateFloatingCart(count, animate) {
+  const fab = document.getElementById('floating-cart');
+  const fc = document.getElementById('floating-cart-count');
+  if (!fab || !fc) return;
+
+  if (count > 0) {
+    if (fab.classList.contains('hidden')) {
+      fab.classList.remove('hidden');
+      fab.classList.remove('cart-pop','cart-bounce');
+      void fab.offsetWidth;
+      fab.classList.add('cart-pop');
+    } else if (animate) {
+      fab.classList.remove('cart-pop','cart-bounce');
+      void fab.offsetWidth;
+      fab.classList.add('cart-bounce');
+    }
+    fc.innerText = count;
+    if (animate) {
+      fc.classList.remove('count-pulse');
+      void fc.offsetWidth;
+      fc.classList.add('count-pulse');
+    }
+  } else {
+    fab.classList.add('hidden');
+    fab.classList.remove('cart-pop','cart-bounce');
+  }
+}
+
+function showToast(item) {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = 'bg-white border-l-4 border-green-500 shadow-2xl rounded-lg p-3 flex items-start gap-3 max-w-xs pointer-events-auto transition-all duration-300 toast-enter';
+
+  let details = [];
+  if (item.isHalfAndHalf) {
+    details.push(`Half ${item.name} / Half ${item.secondHalfName || ''}`);
+  } else {
+    if (item.size) details.push(item.size);
+    if (item.crust) details.push(item.crust);
+    if (item.base && item.base !== 'Tomato') details.push(item.base + ' Base');
+    if (item.extras && item.extras.length) details.push('+ ' + item.extras.join(', '));
+  }
+  const ds = details.join(' • ');
+  const price = (typeof item.price === 'number') ? item.price : 0;
+  const qty = item.quantity || 1;
+
+  toast.innerHTML = `
+    <div class="text-green-500 text-lg mt-0.5"><i class="fas fa-check-circle"></i></div>
+    <div class="flex-1 min-w-0">
+      <p class="font-bold text-farmDark text-xs">Added to Cart</p>
+      <p class="text-sm text-gray-800 font-semibold truncate">${esc(item.isHalfAndHalf ? 'Half & Half Pizza' : item.name)}</p>
+      ${ds ? `<p class="text-[11px] text-gray-500 mt-0.5 leading-snug">${esc(ds)}</p>` : ''}
+      <p class="text-xs text-farmRed font-bold mt-1">${money(price)} × ${qty}</p>
+    </div>
+    <button type="button" aria-label="Dismiss" onclick="this.parentElement.remove()" class="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>`;
+
+  container.appendChild(toast);
+  requestAnimationFrame(() => {
+    toast.classList.remove('toast-enter');
+    toast.classList.add('toast-show');
+  });
+  setTimeout(() => {
+    toast.classList.remove('toast-show');
+    toast.classList.add('toast-enter');
+    setTimeout(() => toast.remove(), 300);
+  }, 2800);
+}
+
+function toggleCart() {
+  const d = document.getElementById('cart-drawer');
+  const o = document.getElementById('cart-overlay');
+  if (d.classList.contains('cart-closed')) {
+    d.classList.remove('cart-closed');
+    d.classList.add('cart-open');
+    o.classList.remove('hidden');
+  } else {
+    d.classList.remove('cart-open');
+    d.classList.add('cart-closed');
+    o.classList.add('hidden');
+  }
+}
+
+/* ============================================================
+   WELCOME MODAL
+   ============================================================ */
+function showAllergyInfo() {
+  document.getElementById('welcome-step-1').classList.add('hidden');
+  document.getElementById('welcome-step-2').classList.remove('hidden');
+}
+function closeWelcomeModal() {
+  localStorage.setItem('customerType', 'acknowledged');
+  document.getElementById('welcome-modal').classList.add('hidden');
+}
+
+/* ============================================================
+   CHECKOUT
+   ============================================================ */
+function checkout() {
+  if (cart.length === 0) { alert('Your cart is empty.'); return; }
+  if (!storeSettings.acceptingOrders) {
+    alert(storeSettings.closedMessage || 'We are not accepting online orders right now. Please call 0208 737 5731.');
+    return;
+  }
+  document.getElementById('fulfillment-collection').checked = true;
+  toggleDeliveryAddress();
+  document.getElementById('checkout-modal').classList.remove('hidden');
+}
+
+function closeCheckoutModal() {
+  document.getElementById('checkout-modal').classList.add('hidden');
+}
+
+function toggleDeliveryAddress() {
+  const f = document.querySelector('input[name="fulfillment"]:checked').value;
+  const ci = document.getElementById('collection-info');
+  const di = document.getElementById('delivery-info');
+  const mw = document.getElementById('checkout-min-warning');
+  const mwt = document.getElementById('checkout-min-warning-text');
+  const cte = document.getElementById('checkout-total');
+
+  const ct = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+
+  if (f === 'collection') {
+    ci.classList.remove('hidden');
+    di.classList.add('hidden');
+    mw.classList.add('hidden');
+    cte.innerText = money(ct);
+  } else {
+    ci.classList.add('hidden');
+    di.classList.remove('hidden');
+    if (ct < DELIVERY_MINIMUM) {
+      const r = DELIVERY_MINIMUM - ct;
+      cte.innerText = money(DELIVERY_MINIMUM);
+      mwt.innerText = `Delivery minimum is ${money(DELIVERY_MINIMUM)}. ${money(r)} has been added to meet the minimum. Or switch to Collection (no minimum).`;
+      mw.classList.remove('hidden');
+    } else {
+      cte.innerText = money(ct);
+      mw.classList.add('hidden');
+    }
+  }
+}
+
+async function placeOrder() {
+  const btn = document.getElementById('confirm-order-btn');
+  const f = document.querySelector('input[name="fulfillment"]:checked').value;
+  const name = document.getElementById('customer-name').value.trim();
+  const phone = document.getElementById('customer-phone').value.trim();
+
+  if (!name) { alert('Please enter your name.'); return; }
+  if (!phone) { alert('Phone number is mandatory.'); return; }
+  if (!/^[0-9+\s()-]{7,}$/.test(phone)) { alert('Please enter a valid phone number.'); return; }
+
+  let address = '', postcode = '', note = '';
+  if (f === 'delivery') {
+    const house = document.getElementById('delivery-house').value.trim();
+    const street = document.getElementById('delivery-street').value.trim();
+    postcode = document.getElementById('delivery-postcode').value.trim();
+    note = document.getElementById('delivery-note').value.trim();
+    if (!house || !postcode) { alert('Please enter your house number and postcode.'); return; }
+    address = `${house}, ${street ? street + ', ' : ''}${postcode}`;
+  }
+
+  const cartTotal = round2(cart.reduce((s, i) => s + i.price * i.quantity, 0));
+  let payable = cartTotal;
+  if (f === 'delivery' && cartTotal < DELIVERY_MINIMUM) payable = DELIVERY_MINIMUM;
+
+  /* Offline fallback */
+  if (!db) {
+    alert(`Thank you ${name}!\n\nTotal: ${money(payable)}\n${f === 'delivery' ? 'Delivery in 10–30 mins' : 'Collection in under 15 mins'}\n\nPlease call us on 0208 737 5731 to confirm.`);
+    cart = [];
+    updateCartUI();
+    closeCheckoutModal();
+    toggleCart();
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerText = 'Placing order…';
+
+  try {
+    const dateStr = localDateStr();
+    const orderRef = db.collection('orders').doc();
+    const orderId = orderRef.id;
+
+    const items = cart.map(i => ({
+      name: i.isHalfAndHalf ? `½ ${i.name} / ½ ${i.secondHalfName || ''}` : i.name,
+      qty: i.quantity,
+      price: i.price,
+      options: {
+        size: i.size || null,
+        crust: i.crust || null,
+        base: i.base || null,
+        extras: i.extras || [],
+        isHalfAndHalf: !!i.isHalfAndHalf
+      }
+    }));
+
+    await orderRef.set({
+      orderNumber: null,
+      customerName: name,
+      customerPhone: phone,
+      address,
+      postcode,
+      note,
+      items,
+      subtotal: cartTotal,
+      total: payable,
+      fulfillment: f,
+      status: 'pending',
+      date: dateStr,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      createdAtMs: Date.now()
+    });
+
+    /* Daily stats + order number in one atomic transaction */
+    const statsRef = db.collection('dailyStats').doc(dateStr);
+    let assignedNumber = 1;
+    await db.runTransaction(async t => {
+      const doc = await t.get(statsRef);
+      const next = (doc.exists ? (doc.data().orderCount || 0) : 0) + 1;
+      assignedNumber = next;
+      if (!doc.exists) {
+        t.set(statsRef, { date: dateStr, orderCount: 1, revenue: payable });
+      } else {
+        t.update(statsRef, {
+          orderCount: firebase.firestore.FieldValue.increment(1),
+          revenue: firebase.firestore.FieldValue.increment(payable)
+        });
+      }
+      t.update(orderRef, { orderNumber: next });
+    });
+
+    /* Customer record */
+    const phoneKey = phone.replace(/\s+/g, '');
+    const custRef = db.collection('customers').doc(phoneKey);
+    try {
+      const custSnap = await custRef.get();
+      if (custSnap.exists) {
+        const prev = custSnap.data();
+        await custRef.set({
+          phone,
+          name,
+          lastAddress: address || prev.lastAddress || '',
+          postcode: postcode || prev.postcode || '',
+          lastOrderAt: firebase.firestore.FieldValue.serverTimestamp(),
+          lastOrderAtMs: Date.now(),
+          orderCount: firebase.firestore.FieldValue.increment(1),
+          totalSpent: firebase.firestore.FieldValue.increment(payable)
+        }, { merge: true });
+      } else {
+        await custRef.set({
+          phone,
+          name,
+          lastAddress: address,
+          postcode,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          lastOrderAt: firebase.firestore.FieldValue.serverTimestamp(),
+          lastOrderAtMs: Date.now(),
+          orderCount: 1,
+          totalSpent: payable
+        });
+      }
+    } catch (custErr) {
+      console.warn('[FarmPizza] customer record failed:', custErr.message);
+    }
+
+    /* Success */
+    lastOrderId = orderId;
+    localStorage.setItem('fp_lastOrderId', orderId);
+    showTrackButtons(true);
+
+    document.getElementById('success-name').innerText = name;
+    document.getElementById('success-order-number').innerText = '#' + assignedNumber;
+    document.getElementById('success-total').innerText = 'Total: ' + money(payable);
+    document.getElementById('success-eta').innerText = f === 'delivery'
+      ? 'Estimated delivery: 10–30 minutes'
+      : 'Ready for collection in under 15 minutes';
+    document.getElementById('success-modal').classList.remove('hidden');
+
+    cart = [];
+    updateCartUI();
+    closeCheckoutModal();
+    const drawer = document.getElementById('cart-drawer');
+    if (drawer.classList.contains('cart-open')) toggleCart();
+
+    /* reset the form for next time */
+    document.getElementById('checkout-form').reset();
+  } catch (e) {
     console.error('[FarmPizza] Order failed:', e);
-    alert(`We couldn't save your order online. Please call 0208 737 5731.\nYour total: £${payable.toFixed(2)}`);
-  }finally{btn.disabled=false;btn.innerText='Confirm Order';}
+    alert(`We couldn't save your order online.\nPlease call 0208 737 5731.\nYour total: ${money(payable)}`);
+  } finally {
+    btn.disabled = false;
+    btn.innerText = 'Confirm Order';
+  }
+}
+
+function closeSuccessModal() {
+  document.getElementById('success-modal').classList.add('hidden');
+}
+
+/* ============================================================
+   TRACK ORDER (live status from admin)
+   ============================================================ */
+function showTrackButtons(show) {
+  const a = document.getElementById('track-nav-btn');
+  const b = document.getElementById('track-nav-btn-mobile');
+  if (a) a.classList.toggle('hidden', !show);
+  if (b) b.classList.toggle('hidden', !show);
+}
+
+function openTrackModal() {
+  if (!lastOrderId) {
+    alert('No recent order found on this device.');
+    return;
+  }
+  document.getElementById('track-modal').classList.remove('hidden');
+  const content = document.getElementById('track-content');
+
+  if (!db) {
+    content.innerHTML = '<p class="text-gray-500 text-center py-6">Live tracking is unavailable offline. Please call 0208 737 5731.</p>';
+    return;
+  }
+
+  content.innerHTML = '<p class="text-gray-500 text-center py-6">Loading…</p>';
+
+  if (trackUnsub) { trackUnsub(); trackUnsub = null; }
+
+  trackUnsub = db.collection('orders').doc(lastOrderId).onSnapshot(doc => {
+    if (!doc.exists) {
+      content.innerHTML = '<p class="text-red-600 text-center py-6">Order not found. Please call 0208 737 5731.</p>';
+      return;
+    }
+    renderTrackContent(doc.data());
+  }, err => {
+    content.innerHTML = `<p class="text-red-600 text-center py-6">Could not load order (${esc(err.code || 'error')}).</p>`;
+  });
+}
+
+function closeTrackModal() {
+  document.getElementById('track-modal').classList.add('hidden');
+  if (trackUnsub) { trackUnsub(); trackUnsub = null; }
+}
+
+function renderTrackContent(o) {
+  const content = document.getElementById('track-content');
+
+  if (o.status === 'cancelled') {
+    content.innerHTML = `
+      <div class="text-center py-4">
+        <div class="text-red-500 text-5xl mb-3"><i class="fas fa-times-circle"></i></div>
+        <p class="font-bold text-lg text-red-600">Order Cancelled</p>
+        <p class="text-sm text-gray-600 mt-1">Please call 0208 737 5731 if you have any questions.</p>
+      </div>`;
+    return;
+  }
+
+  const steps = [
+    { key:'pending',   label:'Order Received',  icon:'fa-receipt',        desc:'We have your order and will confirm shortly.' },
+    { key:'preparing', label:'Preparing',       icon:'fa-pizza-slice',    desc:'Our kitchen is making your food.' },
+    { key:'ready',     label:'Ready',           icon:'fa-check',          desc:'Ready for collection / out for delivery.' },
+    { key:'completed', label:'Completed',       icon:'fa-flag-checkered', desc:'Enjoy your meal!' }
+  ];
+  const idx = Math.max(0, steps.findIndex(s => s.key === o.status));
+
+  const timeline = steps.map((s, i) => {
+    const done = i <= idx;
+    const current = i === idx;
+    return `<div class="flex items-start gap-3">
+      <div class="flex flex-col items-center">
+        <div class="h-9 w-9 rounded-full flex items-center justify-center ${done ? 'bg-farmRed text-white' : 'bg-gray-200 text-gray-400'} ${current ? 'ring-4 ring-farmYellow' : ''}">
+          <i class="fas ${s.icon} text-sm"></i>
+        </div>
+        ${i < steps.length - 1 ? `<div class="w-1 h-8 ${i < idx ? 'bg-farmRed' : 'bg-gray-200'}"></div>` : ''}
+      </div>
+      <div class="pt-1 ${done ? '' : 'opacity-50'}">
+        <p class="font-bold text-sm ${done ? 'text-farmDark' : 'text-gray-500'}">${s.label}</p>
+        <p class="text-xs text-gray-500">${s.desc}</p>
+      </div>
+    </div>`;
+  }).join('');
+
+  const items = (o.items || []).map(i =>
+    `<li class="flex justify-between text-sm"><span>${i.qty}× ${esc(i.name)}</span><span class="font-semibold">${money((i.price || 0) * i.qty)}</span></li>`
+  ).join('');
+
+  content.innerHTML = `
+    <div class="bg-farmCream rounded-xl p-4 mb-4 text-center">
+      <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Order Number</p>
+      <p class="text-3xl font-bold text-farmRed">#${esc(o.orderNumber || '—')}</p>
+      <p class="text-xs text-gray-600 mt-1">${esc(o.fulfillment === 'delivery' ? 'Delivery' : 'Collection')} · ${money(o.total || 0)}</p>
+    </div>
+    <div class="space-y-0 mb-4">${timeline}</div>
+    <div class="border-t pt-3">
+      <p class="font-bold text-sm mb-2 text-farmDark">Your Items</p>
+      <ul class="space-y-1 bg-gray-50 rounded-lg p-3">${items}</ul>
+    </div>
+    <p class="text-xs text-gray-500 mt-4 text-center">Questions? Call <a href="tel:02087375731" class="text-farmRed font-semibold hover:underline">0208 737 5731</a></p>`;
 }
 </script>
 </body>
