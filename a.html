@@ -11,37 +11,65 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script>tailwind.config={theme:{extend:{colors:{farmRed:'#D32F2F',farmYellow:'#FBC02D',farmDark:'#1F2937',farmCream:'#FEF3C7'},fontFamily:{pacifico:['Pacifico','cursive'],poppins:['Poppins','sans-serif']}}}}</script>
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { farmRed:'#D32F2F', farmYellow:'#FBC02D', farmDark:'#1F2937', farmCream:'#FEF3C7' },
+    fontFamily: { pacifico:['Pacifico','cursive'], poppins:['Poppins','sans-serif'] }
+  }}}
+</script>
 <style>
-body{font-family:'Poppins',sans-serif}
-.sidebar-item.active{background:#D32F2F;color:white}
-.sidebar-item.active i{color:#FBC02D}
-.spinner{width:36px;height:36px;border:4px solid #FBC02D;border-top-color:#D32F2F;border-radius:50%;animation:spin 1s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.order-card{border-left:4px solid #FBC02D}
-.order-card.status-preparing{border-left-color:#F59E0B}
-.order-card.status-ready{border-left-color:#10B981}
-.order-card.status-completed{border-left-color:#6B7280;opacity:.7}
-.order-card.status-cancelled{border-left-color:#EF4444;opacity:.6}
+  body{font-family:'Poppins',sans-serif}
+  .sidebar-item.active{background:#D32F2F;color:white}
+  .sidebar-item.active i{color:#FBC02D}
+  .spinner{width:36px;height:36px;border:4px solid #FBC02D;border-top-color:#D32F2F;border-radius:50%;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .order-card{border-left:4px solid #FBC02D}
+  .order-card.status-preparing{border-left-color:#F59E0B}
+  .order-card.status-ready{border-left-color:#10B981}
+  .order-card.status-completed{border-left-color:#6B7280;opacity:.75}
+  .order-card.status-cancelled{border-left-color:#EF4444;opacity:.6}
+  .order-card.new-order{animation:newOrderGlow 2.5s ease-out}
+  @keyframes newOrderGlow{0%{box-shadow:0 0 0 0 rgba(251,192,45,.8)}100%{box-shadow:0 0 0 16px rgba(251,192,45,0)}}
+  .price-input::-webkit-outer-spin-button,.price-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .price-input{-moz-appearance:textfield}
+  .soldout-badge{background:#374151;color:#fff}
 </style>
 </head>
 <body class="bg-gray-100 text-farmDark">
 
+<!-- Firestore status pill -->
 <div id="firestore-status" class="fixed bottom-4 right-4 z-[300] bg-yellow-500 text-white text-xs font-bold px-3 py-2 rounded-full shadow-lg flex items-center gap-2">
-  <i class="fas fa-spinner fa-spin"></i> Firestore: Connecting…
+  <i class="fas fa-spinner fa-spin"></i> Connecting…
 </div>
 
+<!-- ============ LOGIN SCREEN ============ -->
 <div id="login-screen" class="fixed inset-0 bg-farmDark z-[999] flex items-center justify-center p-4">
   <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8">
-    <div class="text-center mb-6"><h1 class="font-pacifico text-4xl text-farmRed mb-2">Farm Pizza</h1><p class="text-gray-600 font-semibold">Admin Dashboard</p></div>
+    <div class="text-center mb-6">
+      <h1 class="font-pacifico text-4xl text-farmRed mb-2">Farm Pizza</h1>
+      <p class="text-gray-600 font-semibold">Admin Dashboard</p>
+    </div>
     <form onsubmit="event.preventDefault();login();" class="space-y-4">
-      <div><label for="login-email" class="block font-semibold text-sm mb-1">Email</label><input type="email" id="login-email" name="login-email" autocomplete="username" required class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="admin@farmpizza.co.uk"></div>
-      <div><label for="login-password" class="block font-semibold text-sm mb-1">Password</label><input type="password" id="login-password" name="login-password" autocomplete="current-password" required class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-farmRed" placeholder="••••••••"></div>
+      <div>
+        <label for="login-email" class="block font-semibold text-sm mb-1">Email</label>
+        <input type="email" id="login-email" name="login-email" autocomplete="username" required
+          class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-farmRed"
+          placeholder="admin@farmpizza.co.uk">
+      </div>
+      <div>
+        <label for="login-password" class="block font-semibold text-sm mb-1">Password</label>
+        <input type="password" id="login-password" name="login-password" autocomplete="current-password" required
+          class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-farmRed"
+          placeholder="••••••••">
+      </div>
       <div id="login-error" class="hidden bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3"></div>
-      <button type="submit" id="login-btn" class="w-full bg-farmRed text-white font-bold py-3 rounded-lg hover:bg-red-700 transition">Sign In</button>
+      <button type="submit" id="login-btn"
+        class="w-full bg-farmRed text-white font-bold py-3 rounded-lg hover:bg-red-700 transition disabled:opacity-50">
+        Sign In
+      </button>
     </form>
     <div class="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs text-gray-600 leading-relaxed">
-      <p class="font-semibold text-farmDark mb-1"><i class="fas fa-info-circle text-farmRed mr-1"></i> First time?</p>
+      <p class="font-semibold text-farmDark mb-1"><i class="fas fa-info-circle text-farmRed mr-1"></i> First time setup?</p>
       <ol class="list-decimal list-inside space-y-1">
         <li>Firebase Console → <strong>Authentication</strong> → Sign-in method → enable <strong>Email/Password</strong>.</li>
         <li>Go to the <strong>Users</strong> tab → <strong>Add user</strong> → enter an email and password.</li>
@@ -51,40 +79,134 @@ body{font-family:'Poppins',sans-serif}
   </div>
 </div>
 
+<!-- ============ DASHBOARD ============ -->
 <div id="dashboard" class="hidden min-h-screen flex">
-  <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-40 w-64 bg-farmDark text-white transform -translate-x-full md:translate-x-0 transition-transform duration-300 flex flex-col">
-    <div class="p-6 border-b border-gray-700"><h1 class="font-pacifico text-2xl text-farmYellow">Farm Pizza</h1><p class="text-xs text-gray-400 mt-1">Admin Dashboard</p></div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar"
+    class="fixed md:static inset-y-0 left-0 z-40 w-64 bg-farmDark text-white transform -translate-x-full md:translate-x-0 transition-transform duration-300 flex flex-col">
+    <div class="p-6 border-b border-gray-700">
+      <h1 class="font-pacifico text-2xl text-farmYellow">Farm Pizza</h1>
+      <p class="text-xs text-gray-400 mt-1">Admin Dashboard</p>
+    </div>
     <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
-      <button type="button" onclick="showPanel('dashboard')" data-panel="dashboard" class="sidebar-item active w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-700 transition text-left"><i class="fas fa-chart-line w-5"></i><span>Dashboard</span></button>
-      <button type="button" onclick="showPanel('orders')" data-panel="orders" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-700 transition text-left"><i class="fas fa-receipt w-5"></i><span>Orders</span><span id="pending-count" class="ml-auto bg-farmYellow text-farmDark text-xs font-bold px-2 py-0.5 rounded-full hidden">0</span></button>
-      <button type="button" onclick="showPanel('products')" data-panel="products" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-700 transition text-left"><i class="fas fa-pizza-slice w-5"></i><span>Products & Prices</span></button>
-      <button type="button" onclick="showPanel('customers')" data-panel="customers" class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-700 transition text-left"><i class="fas fa-users w-5"></i><span>Customers</span></button>
+      <button type="button" onclick="showPanel('dashboard')" data-panel="dashboard"
+        class="sidebar-item active w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-700 transition text-left">
+        <i class="fas fa-chart-line w-5"></i><span>Dashboard</span>
+      </button>
+      <button type="button" onclick="showPanel('orders')" data-panel="orders"
+        class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-700 transition text-left">
+        <i class="fas fa-receipt w-5"></i><span>Orders</span>
+        <span id="pending-count" class="ml-auto bg-farmYellow text-farmDark text-xs font-bold px-2 py-0.5 rounded-full hidden">0</span>
+      </button>
+      <button type="button" onclick="showPanel('products')" data-panel="products"
+        class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-700 transition text-left">
+        <i class="fas fa-pizza-slice w-5"></i><span>Products &amp; Prices</span>
+      </button>
+      <button type="button" onclick="showPanel('customers')" data-panel="customers"
+        class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-700 transition text-left">
+        <i class="fas fa-users w-5"></i><span>Customers</span>
+      </button>
+      <button type="button" onclick="showPanel('settings')" data-panel="settings"
+        class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-700 transition text-left">
+        <i class="fas fa-cog w-5"></i><span>Store Settings</span>
+      </button>
     </nav>
-    <div class="p-4 border-t border-gray-700"><p id="admin-email" class="text-xs text-gray-400 truncate mb-3"></p><button type="button" onclick="logout()" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg transition text-sm"><i class="fas fa-sign-out-alt mr-1"></i> Sign Out</button></div>
+    <div class="p-4 border-t border-gray-700">
+      <p id="admin-email" class="text-xs text-gray-400 truncate mb-3"></p>
+      <button type="button" onclick="logout()"
+        class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg transition text-sm">
+        <i class="fas fa-sign-out-alt mr-1"></i> Sign Out
+      </button>
+    </div>
   </aside>
   <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
 
+  <!-- Main -->
   <main class="flex-1 min-w-0">
     <header class="bg-white shadow-sm sticky top-0 z-20">
       <div class="flex items-center justify-between px-4 sm:px-6 py-4">
-        <div class="flex items-center gap-3"><button type="button" aria-label="Toggle sidebar" onclick="toggleSidebar()" class="md:hidden text-2xl text-farmDark"><i class="fas fa-bars"></i></button><h2 id="panel-title" class="text-xl font-bold">Dashboard</h2></div>
-        <div class="flex items-center gap-3"><span id="live-indicator" class="flex items-center gap-1 text-xs font-semibold text-yellow-600"><i class="fas fa-circle text-[8px]"></i> Connecting…</span><span id="clock" class="text-sm text-gray-600 font-semibold"></span></div>
+        <div class="flex items-center gap-3">
+          <button type="button" aria-label="Toggle sidebar" onclick="toggleSidebar()" class="md:hidden text-2xl text-farmDark">
+            <i class="fas fa-bars"></i>
+          </button>
+          <h2 id="panel-title" class="text-xl font-bold">Dashboard</h2>
+        </div>
+        <div class="flex items-center gap-3">
+          <button type="button" onclick="toggleSound()" id="sound-toggle" title="Toggle new-order chime"
+            class="text-gray-500 hover:text-farmRed text-lg"><i class="fas fa-volume-up"></i></button>
+          <span id="live-indicator" class="hidden sm:flex items-center gap-1 text-xs font-semibold text-yellow-600">
+            <i class="fas fa-circle text-[8px]"></i> Connecting…
+          </span>
+          <span id="clock" class="text-sm text-gray-600 font-semibold"></span>
+        </div>
       </div>
     </header>
 
     <div class="p-4 sm:p-6">
+
+      <!-- ============ DASHBOARD PANEL ============ -->
       <div id="panel-dashboard" class="panel">
-        <div id="connection-hint" class="hidden bg-yellow-50 border border-yellow-300 text-yellow-800 text-sm rounded-xl p-4 mb-4"><p class="font-bold mb-1"><i class="fas fa-exclamation-triangle mr-1"></i> No data from Firestore yet</p><p>If this message persists, check your Firestore security rules and that Firestore is enabled in the Firebase Console.</p></div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div class="bg-white rounded-xl shadow p-5"><div class="flex items-center justify-between"><div><p class="text-sm text-gray-500 font-semibold">Today's Orders</p><p id="stat-today-orders" class="text-3xl font-bold text-farmRed mt-1">0</p></div><div class="bg-red-100 text-farmRed rounded-full h-12 w-12 flex items-center justify-center"><i class="fas fa-receipt text-xl"></i></div></div></div>
-          <div class="bg-white rounded-xl shadow p-5"><div class="flex items-center justify-between"><div><p class="text-sm text-gray-500 font-semibold">Today's Revenue</p><p id="stat-today-revenue" class="text-3xl font-bold text-green-600 mt-1">£0.00</p></div><div class="bg-green-100 text-green-600 rounded-full h-12 w-12 flex items-center justify-center"><i class="fas fa-pound-sign text-xl"></i></div></div></div>
-          <div class="bg-white rounded-xl shadow p-5"><div class="flex items-center justify-between"><div><p class="text-sm text-gray-500 font-semibold">Pending</p><p id="stat-pending" class="text-3xl font-bold text-yellow-500 mt-1">0</p></div><div class="bg-yellow-100 text-yellow-600 rounded-full h-12 w-12 flex items-center justify-center"><i class="fas fa-clock text-xl"></i></div></div></div>
-          <div class="bg-white rounded-xl shadow p-5"><div class="flex items-center justify-between"><div><p class="text-sm text-gray-500 font-semibold">Total Customers</p><p id="stat-customers" class="text-3xl font-bold text-blue-600 mt-1">0</p></div><div class="bg-blue-100 text-blue-600 rounded-full h-12 w-12 flex items-center justify-center"><i class="fas fa-users text-xl"></i></div></div></div>
+        <div id="connection-hint" class="hidden bg-yellow-50 border border-yellow-300 text-yellow-800 text-sm rounded-xl p-4 mb-4">
+          <p class="font-bold mb-1"><i class="fas fa-exclamation-triangle mr-1"></i> No data from Firestore yet</p>
+          <p>If this message persists, check that Firestore is enabled and your security rules allow reads/writes for authenticated admins.</p>
         </div>
-        <div class="bg-white rounded-xl shadow p-5 mb-6"><div class="flex items-center justify-between mb-4"><h3 class="font-bold text-lg">Latest Orders</h3><button type="button" onclick="showPanel('orders')" class="text-farmRed text-sm font-semibold hover:underline">View all →</button></div><div id="latest-orders" class="space-y-2"><p class="text-gray-500 text-sm">No orders yet.</p></div></div>
-        <div class="bg-white rounded-xl shadow p-5"><h3 class="font-bold text-lg mb-3">Daily Reset</h3><p class="text-sm text-gray-600">Stats automatically reset at <strong>12:00 AM</strong>. The dashboard reads only today's orders for live figures.</p><p id="next-reset" class="text-xs text-gray-500 mt-2"></p></div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div class="bg-white rounded-xl shadow p-5">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-500 font-semibold">Today's Orders</p>
+                <p id="stat-today-orders" class="text-3xl font-bold text-farmRed mt-1">0</p>
+              </div>
+              <div class="bg-red-100 text-farmRed rounded-full h-12 w-12 flex items-center justify-center"><i class="fas fa-receipt text-xl"></i></div>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl shadow p-5">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-500 font-semibold">Today's Revenue</p>
+                <p id="stat-today-revenue" class="text-3xl font-bold text-green-600 mt-1">£0.00</p>
+              </div>
+              <div class="bg-green-100 text-green-600 rounded-full h-12 w-12 flex items-center justify-center"><i class="fas fa-pound-sign text-xl"></i></div>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl shadow p-5">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-500 font-semibold">Pending</p>
+                <p id="stat-pending" class="text-3xl font-bold text-yellow-500 mt-1">0</p>
+              </div>
+              <div class="bg-yellow-100 text-yellow-600 rounded-full h-12 w-12 flex items-center justify-center"><i class="fas fa-clock text-xl"></i></div>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl shadow p-5">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-500 font-semibold">Total Customers</p>
+                <p id="stat-customers" class="text-3xl font-bold text-blue-600 mt-1">0</p>
+              </div>
+              <div class="bg-blue-100 text-blue-600 rounded-full h-12 w-12 flex items-center justify-center"><i class="fas fa-users text-xl"></i></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow p-5 mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-lg">Latest Orders</h3>
+            <button type="button" onclick="showPanel('orders')" class="text-farmRed text-sm font-semibold hover:underline">View all →</button>
+          </div>
+          <div id="latest-orders" class="space-y-2"><p class="text-gray-500 text-sm">No orders yet.</p></div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow p-5">
+          <h3 class="font-bold text-lg mb-3">Daily Reset</h3>
+          <p class="text-sm text-gray-600">Stats automatically reset at <strong>12:00 AM</strong>. The dashboard reads only today's orders for live figures.</p>
+          <p id="next-reset" class="text-xs text-gray-500 mt-2"></p>
+        </div>
       </div>
 
+      <!-- ============ ORDERS PANEL ============ -->
       <div id="panel-orders" class="panel hidden">
         <form onsubmit="event.preventDefault();" class="flex flex-wrap items-center gap-2 mb-4">
           <button type="button" onclick="filterOrders('all')" id="of-all" class="px-4 py-2 rounded-full text-sm font-semibold bg-farmRed text-white">All</button>
@@ -92,28 +214,102 @@ body{font-family:'Poppins',sans-serif}
           <button type="button" onclick="filterOrders('preparing')" id="of-preparing" class="px-4 py-2 rounded-full text-sm font-semibold bg-gray-200 text-gray-700">Preparing</button>
           <button type="button" onclick="filterOrders('ready')" id="of-ready" class="px-4 py-2 rounded-full text-sm font-semibold bg-gray-200 text-gray-700">Ready</button>
           <button type="button" onclick="filterOrders('completed')" id="of-completed" class="px-4 py-2 rounded-full text-sm font-semibold bg-gray-200 text-gray-700">Completed</button>
-          <div class="ml-auto w-full sm:w-64"><label for="order-search" class="sr-only">Search orders</label><input type="text" id="order-search" name="order-search" oninput="renderOrders()" placeholder="Search phone / name…" class="p-2 border rounded-lg text-sm w-full"></div>
+          <button type="button" onclick="filterOrders('cancelled')" id="of-cancelled" class="px-4 py-2 rounded-full text-sm font-semibold bg-gray-200 text-gray-700">Cancelled</button>
+          <div class="ml-auto w-full sm:w-64">
+            <label for="order-search" class="sr-only">Search orders</label>
+            <input type="text" id="order-search" name="order-search" oninput="renderOrders()" placeholder="Search phone / name…"
+              class="p-2 border rounded-lg text-sm w-full">
+          </div>
         </form>
         <div id="orders-list" class="space-y-3"><p class="text-gray-500 text-center py-8">Loading orders…</p></div>
       </div>
 
+      <!-- ============ PRODUCTS PANEL ============ -->
       <div id="panel-products" class="panel hidden">
-        <div class="bg-white rounded-xl shadow p-5 mb-4"><p class="text-sm text-gray-600"><i class="fas fa-info-circle text-farmRed mr-1"></i> Change any price below and click <strong>Save</strong>. Updates appear instantly on the customer site.</p></div>
+        <div class="bg-white rounded-xl shadow p-5 mb-4">
+          <p class="text-sm text-gray-600">
+            <i class="fas fa-info-circle text-farmRed mr-1"></i>
+            Change any price or tap <strong>Sold out</strong> to hide an item from the customer site. Updates appear instantly.
+          </p>
+        </div>
         <div id="products-list" class="space-y-4"><p class="text-gray-500 text-center py-8">Loading products…</p></div>
       </div>
 
+      <!-- ============ CUSTOMERS PANEL ============ -->
       <div id="panel-customers" class="panel hidden">
-        <form onsubmit="event.preventDefault();" class="flex items-center gap-2 mb-4"><div class="w-full sm:w-72"><label for="customer-search" class="sr-only">Search customers</label><input type="text" id="customer-search" name="customer-search" oninput="renderCustomers()" placeholder="Search phone / name…" class="p-2 border rounded-lg text-sm w-full"></div><span id="customer-total" class="text-sm text-gray-600 ml-auto"></span></form>
-        <div class="bg-white rounded-xl shadow overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-sm">
-          <thead class="bg-gray-50 text-gray-600 uppercase text-xs"><tr><th class="text-left px-4 py-3">Name</th><th class="text-left px-4 py-3">Phone</th><th class="text-left px-4 py-3">Address</th><th class="text-right px-4 py-3">Orders</th><th class="text-right px-4 py-3">Total Spent</th><th class="text-left px-4 py-3">Last Order</th></tr></thead>
-          <tbody id="customers-tbody"></tbody>
-        </table></div></div>
+        <form onsubmit="event.preventDefault();" class="flex items-center gap-2 mb-4">
+          <div class="w-full sm:w-72">
+            <label for="customer-search" class="sr-only">Search customers</label>
+            <input type="text" id="customer-search" name="customer-search" oninput="renderCustomers()"
+              placeholder="Search phone / name…" class="p-2 border rounded-lg text-sm w-full">
+          </div>
+          <span id="customer-total" class="text-sm text-gray-600 ml-auto"></span>
+        </form>
+        <div class="bg-white rounded-xl shadow overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+                <tr>
+                  <th class="text-left px-4 py-3">Name</th>
+                  <th class="text-left px-4 py-3">Phone</th>
+                  <th class="text-left px-4 py-3">Address</th>
+                  <th class="text-right px-4 py-3">Orders</th>
+                  <th class="text-right px-4 py-3">Total Spent</th>
+                  <th class="text-left px-4 py-3">Last Order</th>
+                </tr>
+              </thead>
+              <tbody id="customers-tbody"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
+
+      <!-- ============ SETTINGS PANEL ============ -->
+      <div id="panel-settings" class="panel hidden">
+        <div class="bg-white rounded-xl shadow p-6 max-w-2xl">
+          <h3 class="font-bold text-lg mb-1"><i class="fas fa-store text-farmRed mr-2"></i> Store Settings</h3>
+          <p class="text-sm text-gray-500 mb-6">These settings apply instantly to the customer site.</p>
+
+          <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="font-bold text-farmDark">Accepting Online Orders</p>
+                <p id="accept-status-text" class="text-sm text-gray-600 mt-0.5">—</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="accept-orders-toggle" onchange="saveStoreSettings()" class="sr-only peer">
+                <div class="w-14 h-7 bg-gray-300 rounded-full peer-checked:bg-green-500 transition
+                  after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full
+                  after:h-6 after:w-6 after:transition-all peer-checked:after:translate-x-7"></div>
+              </label>
+            </div>
+          </div>
+
+          <div class="mb-6">
+            <label for="closed-message" class="block font-semibold text-sm mb-1">Closed Message (shown when paused)</label>
+            <textarea id="closed-message" rows="3"
+              class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-farmRed"
+              placeholder="e.g. We are closed for maintenance. Please call 0208 737 5731."></textarea>
+          </div>
+
+          <button type="button" onclick="saveStoreSettings(true)"
+            class="bg-farmRed text-white font-bold py-3 px-6 rounded-lg hover:bg-red-700 transition">
+            <i class="fas fa-save mr-1"></i> Save Settings
+          </button>
+          <span id="settings-saved" class="ml-3 text-green-600 font-semibold text-sm hidden">
+            <i class="fas fa-check-circle"></i> Saved
+          </span>
+        </div>
+      </div>
+
     </div>
   </main>
 </div>
 
 <script>
+/* ============================================================
+   FARM PIZZA — ADMIN DASHBOARD
+   ============================================================ */
 const firebaseConfig = {
   apiKey: "AIzaSyDPtj4qRDowQAdyF_oFX8Jqbxw1agB_Vv8",
   authDomain: "pizza-9363e.firebaseapp.com",
@@ -123,116 +319,594 @@ const firebaseConfig = {
   appId: "1:21639403716:web:f0644243df9cca3a92d191",
   measurementId: "G-99HJBP9SE0"
 };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const auth = firebase.auth();
 
+let db, auth;
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+  auth = firebase.auth();
+} catch (e) {
+  console.error('[Admin] Firebase init failed:', e);
+}
+
+/* ---------- Status pill ---------- */
 function setFirestoreStatus(status, detail) {
-  const el = document.getElementById('firestore-status'); if (!el) return;
-  const map = {connecting:{cls:'bg-yellow-500',icon:'fa-spinner fa-spin',text:'Firestore: Connecting…'},connected:{cls:'bg-green-600',icon:'fa-circle',text:'Firestore: Connected'},empty:{cls:'bg-blue-500',icon:'fa-inbox',text:'Firestore: No data yet'},error:{cls:'bg-red-600',icon:'fa-exclamation-triangle',text:'Firestore: Error'}};
+  const el = document.getElementById('firestore-status');
+  if (!el) return;
+  const map = {
+    connecting:{cls:'bg-yellow-500', icon:'fa-spinner fa-spin', text:'Connecting…'},
+    connected: {cls:'bg-green-600',  icon:'fa-circle', text:'Live'},
+    empty:     {cls:'bg-blue-500',   icon:'fa-inbox', text:'No data yet'},
+    error:     {cls:'bg-red-600',    icon:'fa-exclamation-triangle', text:'Error'}
+  };
   const m = map[status] || map.error;
   el.className = `fixed bottom-4 right-4 z-[300] ${m.cls} text-white text-xs font-bold px-3 py-2 rounded-full shadow-lg flex items-center gap-2`;
   el.innerHTML = `<i class="fas ${m.icon}"></i> ${m.text}${detail ? ' — ' + detail : ''}`;
 }
 
-let allOrders=[], allProducts=[], allCustomers=[];
-let currentOrderFilter='all', currentPanel='dashboard';
-let unsubOrders=null, unsubProducts=null, unsubCustomers=null;
+/* ---------- State ---------- */
+let allOrders = [];
+let allProducts = [];
+let allCustomers = [];
+let storeSettings = { acceptingOrders:true, closedMessage:'' };
+let currentOrderFilter = 'all';
+let currentPanel = 'dashboard';
+let unsubOrders = null, unsubProducts = null, unsubCustomers = null, unsubSettings = null;
+let knownOrderIds = new Set();
+let firstOrderLoad = true;
+let soundEnabled = localStorage.getItem('adminSound') !== 'off';
+let audioCtx = null;
 
-auth.onAuthStateChanged(user=>{
-  if(user){document.getElementById('login-screen').classList.add('hidden');document.getElementById('dashboard').classList.remove('hidden');document.getElementById('admin-email').innerText=user.email;startListeners();}
-  else{document.getElementById('login-screen').classList.remove('hidden');document.getElementById('dashboard').classList.add('hidden');stopListeners();}
+/* ---------- Helpers ---------- */
+function money(n){ return '£' + (Math.round((n || 0) * 100) / 100).toFixed(2); }
+function todayStr(){ return new Date().toISOString().slice(0, 10); }
+function fmtTime(ts){
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+}
+function fmtDate(ts){
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+}
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ---------- Sound ---------- */
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  localStorage.setItem('adminSound', soundEnabled ? 'on' : 'off');
+  updateSoundIcon();
+}
+function updateSoundIcon() {
+  const el = document.querySelector('#sound-toggle i');
+  if (!el) return;
+  el.className = soundEnabled ? 'fas fa-volume-up' : 'fas fa-volume-mute';
+  document.getElementById('sound-toggle').className =
+    soundEnabled ? 'text-farmRed text-lg' : 'text-gray-400 text-lg';
+}
+function playChime() {
+  if (!soundEnabled) return;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const now = audioCtx.currentTime;
+    [880, 1175].forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, now + i * 0.18);
+      gain.gain.exponentialRampToValueAtTime(0.3, now + i * 0.18 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.18 + 0.35);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(now + i * 0.18);
+      osc.stop(now + i * 0.18 + 0.4);
+    });
+  } catch (e) { /* silent */ }
+}
+
+/* ---------- Auth ---------- */
+auth.onAuthStateChanged(user => {
+  const ls = document.getElementById('login-screen');
+  const dash = document.getElementById('dashboard');
+  if (user) {
+    ls.classList.add('hidden');
+    dash.classList.remove('hidden');
+    document.getElementById('admin-email').innerText = user.email;
+    updateSoundIcon();
+    startListeners();
+  } else {
+    ls.classList.remove('hidden');
+    dash.classList.add('hidden');
+    stopListeners();
+  }
 });
 
-async function login(){
-  const email=document.getElementById('login-email').value.trim();
-  const pw=document.getElementById('login-password').value;
-  const err=document.getElementById('login-error'), btn=document.getElementById('login-btn');
-  err.classList.add('hidden'); btn.disabled=true; btn.innerText='Signing in…';
-  try{await auth.signInWithEmailAndPassword(email,pw);}
-  catch(e){
-    let msg=e.message;
-    if(e.code==='auth/wrong-password'||e.code==='auth/user-not-found'||e.code==='auth/invalid-credential') msg='Invalid email or password.';
-    else if(e.code==='auth/operation-not-allowed') msg='Email/Password sign-in is not enabled. Enable it in Firebase Console → Authentication → Sign-in method.';
-    err.innerHTML=`<i class="fas fa-exclamation-triangle mr-1"></i> ${msg}`;
+async function login() {
+  const email = document.getElementById('login-email').value.trim();
+  const pw = document.getElementById('login-password').value;
+  const err = document.getElementById('login-error');
+  const btn = document.getElementById('login-btn');
+  err.classList.add('hidden');
+  btn.disabled = true;
+  btn.innerText = 'Signing in…';
+  try {
+    await auth.signInWithEmailAndPassword(email, pw);
+  } catch (e) {
+    let msg = e.message;
+    if (['auth/wrong-password','auth/user-not-found','auth/invalid-credential','auth/invalid-login-credentials'].includes(e.code))
+      msg = 'Invalid email or password.';
+    else if (e.code === 'auth/operation-not-allowed')
+      msg = 'Email/Password sign-in is not enabled. Enable it in Firebase Console → Authentication → Sign-in method.';
+    else if (e.code === 'auth/too-many-requests')
+      msg = 'Too many failed attempts. Try again later.';
+    err.innerHTML = `<i class="fas fa-exclamation-triangle mr-1"></i> ${esc(msg)}`;
     err.classList.remove('hidden');
-  }finally{btn.disabled=false;btn.innerText='Sign In';}
+  } finally {
+    btn.disabled = false;
+    btn.innerText = 'Sign In';
+  }
 }
-function logout(){auth.signOut();}
+function logout(){ auth.signOut(); }
 
-function startListeners(){
+/* ---------- Listeners ---------- */
+function startListeners() {
   stopListeners();
   setFirestoreStatus('connecting');
-  let ok=false;
-  const setConnected=()=>{if(!ok){ok=true;setFirestoreStatus('connected');document.getElementById('live-indicator').innerHTML='<i class="fas fa-circle text-[8px]"></i> Live';document.getElementById('live-indicator').className='flex items-center gap-1 text-xs font-semibold text-green-600';}};
+  firstOrderLoad = true;
+  let ok = false;
+  const markConnected = () => {
+    if (ok) return;
+    ok = true;
+    setFirestoreStatus('connected');
+    const li = document.getElementById('live-indicator');
+    li.innerHTML = '<i class="fas fa-circle text-[8px]"></i> Live';
+    li.className = 'hidden sm:flex items-center gap-1 text-xs font-semibold text-green-600';
+  };
 
-  unsubOrders = db.collection('orders').orderBy('createdAt','desc').limit(500).onSnapshot(snap=>{allOrders=snap.docs.map(d=>({id:d.id,...d.data()}));setConnected();renderDashboardStats();renderLatestOrders();renderOrders();updatePendingBadge();},err=>{setFirestoreStatus('error',err.code||'orders');document.getElementById('orders-list').innerHTML=`<p class="text-red-600 text-center py-8">Error: ${err.code||err.message}</p>`;});
-  unsubProducts = db.collection('products').onSnapshot(snap=>{allProducts=snap.docs.map(d=>({id:d.id,...d.data()}));setConnected();renderProducts();},err=>setFirestoreStatus('error',err.code||'products'));
-  unsubCustomers = db.collection('customers').orderBy('lastOrderAt','desc').onSnapshot(snap=>{allCustomers=snap.docs.map(d=>({id:d.id,...d.data()}));setConnected();document.getElementById('stat-customers').innerText=allCustomers.length;renderCustomers();},err=>setFirestoreStatus('error',err.code||'customers'));
+  unsubOrders = db.collection('orders').orderBy('createdAt', 'desc').limit(500).onSnapshot(snap => {
+    const incoming = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-  setTimeout(()=>{if(!ok){setFirestoreStatus('empty','check security rules');const h=document.getElementById('connection-hint');if(h)h.classList.remove('hidden');}},8000);
-}
-function stopListeners(){if(unsubOrders)unsubOrders();if(unsubProducts)unsubProducts();if(unsubCustomers)unsubCustomers();unsubOrders=unsubProducts=unsubCustomers=null;}
+    if (!firstOrderLoad) {
+      const newIds = incoming.filter(o => !knownOrderIds.has(o.id) && o.status === 'pending');
+      if (newIds.length) {
+        playChime();
+        newIds.forEach(o => flashOrderCard(o.id));
+        if (currentPanel !== 'orders' && currentPanel !== 'dashboard') {
+          showPanel('orders');
+        }
+      }
+    }
+    knownOrderIds = new Set(incoming.map(o => o.id));
+    firstOrderLoad = false;
 
-function showPanel(name){currentPanel=name;document.querySelectorAll('.panel').forEach(p=>p.classList.add('hidden'));document.getElementById('panel-'+name).classList.remove('hidden');document.querySelectorAll('.sidebar-item').forEach(b=>{if(b.dataset.panel===name)b.classList.add('active');else b.classList.remove('active');});const titles={dashboard:'Dashboard',orders:'Orders',products:'Products & Prices',customers:'Customers'};document.getElementById('panel-title').innerText=titles[name]||name;if(window.innerWidth<768)closeSidebar();}
-function toggleSidebar(){document.getElementById('sidebar').classList.toggle('-translate-x-full');document.getElementById('sidebar-overlay').classList.toggle('hidden');}
-function closeSidebar(){document.getElementById('sidebar').classList.add('-translate-x-full');document.getElementById('sidebar-overlay').classList.add('hidden');}
-function todayStr(){return new Date().toISOString().slice(0,10);}
-function fmtTime(ts){if(!ts)return'—';const d=ts.toDate?ts.toDate():new Date(ts);return d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});}
-function fmtDate(ts){if(!ts)return'—';const d=ts.toDate?ts.toDate():new Date(ts);return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});}
-function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-
-setInterval(()=>{const now=new Date();document.getElementById('clock').innerText=now.toLocaleTimeString('en-GB');const tomorrow=new Date(now);tomorrow.setHours(24,0,0,0);const ms=tomorrow-now;const h=Math.floor(ms/3600000),m=Math.floor(ms%3600000/60000);const el=document.getElementById('next-reset');if(el)el.innerText=`Next daily reset in ${h}h ${m}m (at 12:00 AM).`;},1000);
-
-function renderDashboardStats(){const today=todayStr();const todays=allOrders.filter(o=>o.date===today);const revenue=todays.reduce((s,o)=>s+(o.total||0),0);const pending=allOrders.filter(o=>o.status==='pending').length;document.getElementById('stat-today-orders').innerText=todays.length;document.getElementById('stat-today-revenue').innerText='£'+revenue.toFixed(2);document.getElementById('stat-pending').innerText=pending;}
-function renderLatestOrders(){const el=document.getElementById('latest-orders');const latest=allOrders.slice(0,5);if(latest.length===0){el.innerHTML='<p class="text-gray-500 text-sm">No orders yet.</p>';return;}el.innerHTML=latest.map(o=>`<div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg"><div class="min-w-0"><p class="font-semibold text-sm truncate">#${o.orderNumber||'—'} · ${esc(o.customerName)}</p><p class="text-xs text-gray-500">${fmtTime(o.createdAt)} · ${o.fulfillment} · ${esc(o.customerPhone)}</p></div><div class="text-right ml-2"><p class="font-bold text-farmRed text-sm">£${(o.total||0).toFixed(2)}</p><span class="text-xs px-2 py-0.5 rounded-full ${statusBadge(o.status)}">${o.status}</span></div></div>`).join('');}
-function statusBadge(s){return {pending:'bg-yellow-100 text-yellow-800',preparing:'bg-orange-100 text-orange-800',ready:'bg-green-100 text-green-800',completed:'bg-gray-200 text-gray-700',cancelled:'bg-red-100 text-red-700'}[s]||'bg-gray-100 text-gray-700';}
-function updatePendingBadge(){const p=allOrders.filter(o=>o.status==='pending').length;const b=document.getElementById('pending-count');b.innerText=p;if(p>0)b.classList.remove('hidden');else b.classList.add('hidden');}
-
-function filterOrders(f){currentOrderFilter=f;['all','pending','preparing','ready','completed'].forEach(x=>{const b=document.getElementById('of-'+x);if(x===f){b.classList.remove('bg-gray-200','text-gray-700');b.classList.add('bg-farmRed','text-white');}else{b.classList.remove('bg-farmRed','text-white');b.classList.add('bg-gray-200','text-gray-700');}});renderOrders();}
-function renderOrders(){const el=document.getElementById('orders-list');if(!el)return;const q=(document.getElementById('order-search')?.value||'').toLowerCase().trim();let list=allOrders;if(currentOrderFilter!=='all')list=list.filter(o=>o.status===currentOrderFilter);if(q)list=list.filter(o=>(o.customerPhone||'').toLowerCase().includes(q)||(o.customerName||'').toLowerCase().includes(q));if(list.length===0){el.innerHTML='<p class="text-gray-500 text-center py-8">No orders match.</p>';return;}el.innerHTML=list.map(o=>orderCard(o)).join('');}
-function orderCard(o){
-  const itemsHtml=(o.items||[]).map(i=>`<li class="flex justify-between text-sm"><span>${i.qty}× ${esc(i.name)}${i.options&&i.options.size?' <span class="text-gray-500 text-xs">('+i.options.size+')</span>':''}</span><span class="font-semibold">£${(i.price*i.qty).toFixed(2)}</span></li>`).join('');
-  const actions = o.status==='pending'?`<button type="button" onclick="setStatus('${o.id}','preparing')" class="bg-orange-500 text-white text-xs font-bold px-3 py-1.5 rounded-full hover:bg-orange-600">Start Preparing</button><button type="button" onclick="setStatus('${o.id}','cancelled')" class="bg-red-100 text-red-700 text-xs font-bold px-3 py-1.5 rounded-full hover:bg-red-200">Cancel</button>`:o.status==='preparing'?`<button type="button" onclick="setStatus('${o.id}','ready')" class="bg-green-600 text-white text-xs font-bold px-3 py-1.5 rounded-full hover:bg-green-700">Mark Ready</button>`:o.status==='ready'?`<button type="button" onclick="setStatus('${o.id}','completed')" class="bg-gray-700 text-white text-xs font-bold px-3 py-1.5 rounded-full hover:bg-gray-800">Complete</button>`:'';
-  return `<div class="order-card status-${o.status} bg-white rounded-xl shadow p-4"><div class="flex flex-wrap items-start justify-between gap-2 mb-3"><div><p class="font-bold text-lg">#${o.orderNumber||'—'} · ${esc(o.customerName)}</p><p class="text-sm text-gray-500"><i class="fas fa-phone mr-1"></i><a href="tel:${esc(o.customerPhone)}" class="hover:underline">${esc(o.customerPhone)}</a> · ${fmtTime(o.createdAt)} · ${fmtDate(o.createdAt)}</p>${o.fulfillment==='delivery'?`<p class="text-sm text-gray-600 mt-1"><i class="fas fa-motorcycle mr-1 text-farmRed"></i>${esc(o.address)} ${o.note?'<em class="text-gray-400">('+esc(o.note)+')</em>':''}</p>`:`<p class="text-sm text-gray-600 mt-1"><i class="fas fa-store mr-1 text-farmRed"></i>Collection</p>`}</div><div class="text-right"><span class="text-xs px-2 py-1 rounded-full font-bold ${statusBadge(o.status)}">${o.status.toUpperCase()}</span><p class="font-bold text-farmRed text-xl mt-1">£${(o.total||0).toFixed(2)}</p><p class="text-xs text-gray-400">${o.fulfillment}</p></div></div><ul class="space-y-1 bg-gray-50 rounded-lg p-3 mb-3">${itemsHtml}</ul><div class="flex flex-wrap gap-2">${actions}</div></div>`;
-}
-async function setStatus(id,status){try{await db.collection('orders').doc(id).update({status,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});}catch(e){alert('Failed to update: '+e.message);}}
-
-const CATEGORY_LABELS={pizza:'🍕 Pizzas',side:'🍟 Sides',dip:'🥣 Dips',drink:'🥤 Drinks'};
-function renderProducts(){
-  const el=document.getElementById('products-list');if(!el)return;
-  if(allProducts.length===0){el.innerHTML='<p class="text-gray-500 text-center py-8">No products yet. Visit the customer site once — it seeds the products collection automatically.</p>';return;}
-  const groups={pizza:[],side:[],dip:[],drink:[]};
-  allProducts.forEach(p=>{if(groups[p.category])groups[p.category].push(p);});
-  let html='';
-  Object.keys(groups).forEach(cat=>{
-    if(groups[cat].length===0)return;
-    html+=`<div class="bg-white rounded-xl shadow overflow-hidden"><div class="bg-gray-50 px-4 py-3 border-b"><h3 class="font-bold text-lg">${CATEGORY_LABELS[cat]}</h3></div><div class="divide-y">`;
-    groups[cat].forEach(p=>{
-      const priceField=cat==='pizza'?'basePrice':'price';
-      const currentPrice=p[priceField] ?? p.price ?? 0;
-      html+=`<div class="flex items-center gap-3 p-4"><img src="${esc(p.image)}" alt="" class="h-14 w-14 object-cover rounded-lg bg-gradient-to-br from-farmRed to-farmYellow"><div class="flex-1 min-w-0"><p class="font-semibold truncate">${esc(p.name)}</p><p class="text-xs text-gray-500 truncate">${esc(p.desc||'')}</p></div><div class="flex items-center gap-2"><span class="text-gray-500">£</span><label class="sr-only" for="price-${p.id}">Price for ${esc(p.name)}</label><input type="number" step="0.01" min="0" value="${Number(currentPrice).toFixed(2)}" id="price-${p.id}" name="price-${p.id}" data-id="${p.id}" data-field="${priceField}" class="price-input w-24 p-2 border rounded-lg text-right font-semibold focus:ring-2 focus:ring-farmRed"><button type="button" onclick="savePrice('${p.id}','${priceField}',this)" class="bg-farmRed text-white text-sm font-bold px-3 py-2 rounded-lg hover:bg-red-700 transition"><i class="fas fa-save"></i> Save</button></div></div>`;
-    });
-    html+=`</div></div>`;
+    allOrders = incoming;
+    markConnected();
+    renderDashboardStats();
+    renderLatestOrders();
+    renderOrders();
+    updatePendingBadge();
+  }, err => {
+    console.warn('[Admin] orders listener:', err.code);
+    setFirestoreStatus('error', err.code || 'orders');
+    const ol = document.getElementById('orders-list');
+    if (ol) ol.innerHTML = `<p class="text-red-600 text-center py-8">Could not load orders: ${esc(err.code || err.message)}</p>`;
   });
-  el.innerHTML=html;
-}
-async function savePrice(id,field,btn){
-  const input=document.querySelector(`.price-input[data-id="${id}"][data-field="${field}"]`);
-  const val=parseFloat(input.value);
-  if(isNaN(val)||val<0){alert('Enter a valid price.');return;}
-  btn.disabled=true;btn.innerHTML='Saving…';
-  try{await db.collection('products').doc(id).update({[field]:val,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});btn.innerHTML='<i class="fas fa-check"></i> Saved';btn.classList.remove('bg-farmRed');btn.classList.add('bg-green-600');setTimeout(()=>{btn.innerHTML='<i class="fas fa-save"></i> Save';btn.classList.remove('bg-green-600');btn.classList.add('bg-farmRed');btn.disabled=false;},1500);}
-  catch(e){alert('Failed: '+e.message);btn.disabled=false;btn.innerHTML='<i class="fas fa-save"></i> Save';}
+
+  unsubProducts = db.collection('products').onSnapshot(snap => {
+    allProducts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    markConnected();
+    renderProducts();
+  }, err => setFirestoreStatus('error', err.code || 'products'));
+
+  unsubCustomers = db.collection('customers').orderBy('lastOrderAt', 'desc').onSnapshot(snap => {
+    allCustomers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    markConnected();
+    document.getElementById('stat-customers').innerText = allCustomers.length;
+    renderCustomers();
+  }, err => setFirestoreStatus('error', err.code || 'customers'));
+
+  unsubSettings = db.collection('settings').doc('store').onSnapshot(doc => {
+    if (doc.exists) {
+      const d = doc.data();
+      storeSettings = {
+        acceptingOrders: d.acceptingOrders !== false,
+        closedMessage: d.closedMessage || ''
+      };
+    } else {
+      db.collection('settings').doc('store').set({
+        acceptingOrders: true,
+        closedMessage: '',
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).catch(() => {});
+    }
+    applySettingsUI();
+  }, err => console.warn('[Admin] settings listener:', err.code));
+
+  setTimeout(() => {
+    if (!ok) {
+      setFirestoreStatus('empty', 'check security rules');
+      const h = document.getElementById('connection-hint');
+      if (h) h.classList.remove('hidden');
+    }
+  }, 8000);
 }
 
-function renderCustomers(){
-  const tb=document.getElementById('customers-tbody');if(!tb)return;
-  const q=(document.getElementById('customer-search')?.value||'').toLowerCase().trim();
-  let list=allCustomers;if(q)list=list.filter(c=>(c.phone||'').toLowerCase().includes(q)||(c.name||'').toLowerCase().includes(q));
-  document.getElementById('customer-total').innerText=`${list.length} customer${list.length!==1?'s':''}`;
-  if(list.length===0){tb.innerHTML='<tr><td colspan="6" class="text-center text-gray-500 py-8">No customers yet.</td></tr>';return;}
-  tb.innerHTML=list.map(c=>`<tr class="border-t hover:bg-gray-50"><td class="px-4 py-3 font-semibold">${esc(c.name||'—')}</td><td class="px-4 py-3"><a href="tel:${esc(c.phone)}" class="text-farmRed hover:underline">${esc(c.phone||'—')}</a></td><td class="px-4 py-3 text-gray-600 max-w-xs truncate">${esc(c.lastAddress||'—')}</td><td class="px-4 py-3 text-right font-semibold">${c.orderCount||0}</td><td class="px-4 py-3 text-right font-bold text-farmRed">£${(c.totalSpent||0).toFixed(2)}</td><td class="px-4 py-3 text-gray-500 text-xs">${fmtDate(c.lastOrderAt)}</td></tr>`).join('');
+function stopListeners() {
+  [unsubOrders, unsubProducts, unsubCustomers, unsubSettings].forEach(u => { if (u) u(); });
+  unsubOrders = unsubProducts = unsubCustomers = unsubSettings = null;
+  knownOrderIds = new Set();
+  allOrders = [];
+  allProducts = [];
+  allCustomers = [];
+}
+
+function flashOrderCard(id) {
+  setTimeout(() => {
+    const el = document.querySelector(`[data-order-id="${id}"]`);
+    if (el) {
+      el.classList.add('new-order');
+      setTimeout(() => el.classList.remove('new-order'), 2500);
+    }
+  }, 100);
+}
+
+/* ---------- Panel switching ---------- */
+function showPanel(name) {
+  currentPanel = name;
+  document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
+  document.getElementById('panel-' + name).classList.remove('hidden');
+  document.querySelectorAll('.sidebar-item').forEach(b => {
+    if (b.dataset.panel === name) b.classList.add('active');
+    else b.classList.remove('active');
+  });
+  const titles = { dashboard:'Dashboard', orders:'Orders', products:'Products & Prices', customers:'Customers', settings:'Store Settings' };
+  document.getElementById('panel-title').innerText = titles[name] || name;
+  if (window.innerWidth < 768) closeSidebar();
+}
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('-translate-x-full');
+  document.getElementById('sidebar-overlay').classList.toggle('hidden');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.add('-translate-x-full');
+  document.getElementById('sidebar-overlay').classList.add('hidden');
+}
+
+/* ---------- Clock ---------- */
+setInterval(() => {
+  const now = new Date();
+  const clock = document.getElementById('clock');
+  if (clock) clock.innerText = now.toLocaleTimeString('en-GB');
+  const tomorrow = new Date(now);
+  tomorrow.setHours(24, 0, 0, 0);
+  const ms = tomorrow - now;
+  const h = Math.floor(ms / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  const el = document.getElementById('next-reset');
+  if (el) el.innerText = `Next daily reset in ${h}h ${m}m (at 12:00 AM).`;
+}, 1000);
+
+/* ---------- Dashboard stats ---------- */
+function renderDashboardStats() {
+  const today = todayStr();
+  const todays = allOrders.filter(o => o.date === today && o.status !== 'cancelled');
+  const revenue = todays.reduce((s, o) => s + (o.total || 0), 0);
+  const pending = allOrders.filter(o => o.status === 'pending').length;
+  document.getElementById('stat-today-orders').innerText = todays.length;
+  document.getElementById('stat-today-revenue').innerText = money(revenue);
+  document.getElementById('stat-pending').innerText = pending;
+}
+
+function renderLatestOrders() {
+  const el = document.getElementById('latest-orders');
+  const latest = allOrders.slice(0, 5);
+  if (!latest.length) {
+    el.innerHTML = '<p class="text-gray-500 text-sm">No orders yet.</p>';
+    return;
+  }
+  el.innerHTML = latest.map(o => `
+    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+      <div class="min-w-0">
+        <p class="font-semibold text-sm truncate">#${esc(o.orderNumber || '—')} · ${esc(o.customerName)}</p>
+        <p class="text-xs text-gray-500">${fmtTime(o.createdAt)} · ${esc(o.fulfillment)} · ${esc(o.customerPhone)}</p>
+      </div>
+      <div class="text-right ml-2 flex-shrink-0">
+        <p class="font-bold text-farmRed text-sm">${money(o.total)}</p>
+        <span class="text-xs px-2 py-0.5 rounded-full ${statusBadge(o.status)}">${esc(o.status)}</span>
+      </div>
+    </div>`).join('');
+}
+
+function statusBadge(s) {
+  return {
+    pending:  'bg-yellow-100 text-yellow-800',
+    preparing:'bg-orange-100 text-orange-800',
+    ready:    'bg-green-100 text-green-800',
+    completed:'bg-gray-200 text-gray-700',
+    cancelled:'bg-red-100 text-red-700'
+  }[s] || 'bg-gray-100 text-gray-700';
+}
+
+function updatePendingBadge() {
+  const p = allOrders.filter(o => o.status === 'pending').length;
+  const b = document.getElementById('pending-count');
+  if (!b) return;
+  b.innerText = p;
+  b.classList.toggle('hidden', p === 0);
+}
+
+/* ---------- Orders ---------- */
+function filterOrders(f) {
+  currentOrderFilter = f;
+  ['all','pending','preparing','ready','completed','cancelled'].forEach(x => {
+    const b = document.getElementById('of-' + x);
+    if (!b) return;
+    if (x === f) {
+      b.classList.remove('bg-gray-200','text-gray-700');
+      b.classList.add('bg-farmRed','text-white');
+    } else {
+      b.classList.remove('bg-farmRed','text-white');
+      b.classList.add('bg-gray-200','text-gray-700');
+    }
+  });
+  renderOrders();
+}
+
+function renderOrders() {
+  const el = document.getElementById('orders-list');
+  if (!el) return;
+  const q = (document.getElementById('order-search')?.value || '').toLowerCase().trim();
+  let list = allOrders;
+  if (currentOrderFilter !== 'all') list = list.filter(o => o.status === currentOrderFilter);
+  if (q) list = list.filter(o =>
+    (o.customerPhone || '').toLowerCase().includes(q) ||
+    (o.customerName  || '').toLowerCase().includes(q) ||
+    String(o.orderNumber || '').includes(q)
+  );
+  if (!list.length) {
+    el.innerHTML = '<p class="text-gray-500 text-center py-8">No orders match.</p>';
+    return;
+  }
+  el.innerHTML = list.map(o => orderCard(o)).join('');
+}
+
+function orderCard(o) {
+  const itemsHtml = (o.items || []).map(i => {
+    const opts = i.options || {};
+    const optBits = [opts.size, opts.crust, opts.base].filter(Boolean).join(' · ');
+    const extras = (opts.extras && opts.extras.length) ? ` <span class="text-gray-500 text-xs">(+ ${opts.extras.map(esc).join(', ')})</span>` : '';
+    return `<li class="flex justify-between gap-3 text-sm">
+      <span class="min-w-0">${i.qty}× ${esc(i.name)}${optBits ? ` <span class="text-gray-500 text-xs">(${esc(optBits)})</span>` : ''}${extras}</span>
+      <span class="font-semibold whitespace-nowrap">${money((i.price || 0) * i.qty)}</span>
+    </li>`;
+  }).join('');
+
+  let actions = '';
+  if (o.status === 'pending') {
+    actions = `<button type="button" onclick="setStatus('${o.id}','preparing')" class="bg-orange-500 text-white text-xs font-bold px-3 py-1.5 rounded-full hover:bg-orange-600 transition"><i class="fas fa-fire mr-1"></i> Start Preparing</button>
+      <button type="button" onclick="setStatus('${o.id}','cancelled')" class="bg-red-100 text-red-700 text-xs font-bold px-3 py-1.5 rounded-full hover:bg-red-200 transition"><i class="fas fa-times mr-1"></i> Cancel</button>`;
+  } else if (o.status === 'preparing') {
+    actions = `<button type="button" onclick="setStatus('${o.id}','ready')" class="bg-green-600 text-white text-xs font-bold px-3 py-1.5 rounded-full hover:bg-green-700 transition"><i class="fas fa-check mr-1"></i> Mark Ready</button>
+      <button type="button" onclick="setStatus('${o.id}','cancelled')" class="bg-red-100 text-red-700 text-xs font-bold px-3 py-1.5 rounded-full hover:bg-red-200 transition">Cancel</button>`;
+  } else if (o.status === 'ready') {
+    actions = `<button type="button" onclick="setStatus('${o.id}','completed')" class="bg-gray-700 text-white text-xs font-bold px-3 py-1.5 rounded-full hover:bg-gray-800 transition"><i class="fas fa-flag-checkered mr-1"></i> Complete</button>
+      <button type="button" onclick="setStatus('${o.id}','cancelled')" class="bg-red-100 text-red-700 text-xs font-bold px-3 py-1.5 rounded-full hover:bg-red-200 transition">Cancel</button>`;
+  } else if (o.status === 'completed') {
+    actions = `<button type="button" onclick="setStatus('${o.id}','ready')" class="bg-gray-200 text-gray-700 text-xs font-bold px-3 py-1.5 rounded-full hover:bg-gray-300 transition"><i class="fas fa-undo mr-1"></i> Reopen</button>`;
+  } else if (o.status === 'cancelled') {
+    actions = `<button type="button" onclick="setStatus('${o.id}','pending')" class="bg-yellow-100 text-yellow-800 text-xs font-bold px-3 py-1.5 rounded-full hover:bg-yellow-200 transition"><i class="fas fa-undo mr-1"></i> Restore</button>`;
+  }
+
+  const fulfillHtml = o.fulfillment === 'delivery'
+    ? `<p class="text-sm text-gray-600 mt-1"><i class="fas fa-motorcycle mr-1 text-farmRed"></i>${esc(o.address)}${o.note ? ` <em class="text-gray-400">(${esc(o.note)})</em>` : ''}</p>`
+    : `<p class="text-sm text-gray-600 mt-1"><i class="fas fa-store mr-1 text-farmRed"></i>Collection</p>`;
+
+  return `<div class="order-card status-${o.status} bg-white rounded-xl shadow p-4" data-order-id="${o.id}">
+    <div class="flex flex-wrap items-start justify-between gap-2 mb-3">
+      <div class="min-w-0 flex-1">
+        <p class="font-bold text-lg">#${esc(o.orderNumber || '—')} · ${esc(o.customerName)}</p>
+        <p class="text-sm text-gray-500">
+          <i class="fas fa-phone mr-1"></i><a href="tel:${esc(o.customerPhone)}" class="hover:underline">${esc(o.customerPhone)}</a>
+          · ${fmtTime(o.createdAt)} · ${fmtDate(o.createdAt)}
+        </p>
+        ${fulfillHtml}
+      </div>
+      <div class="text-right flex-shrink-0">
+        <span class="text-xs px-2 py-1 rounded-full font-bold ${statusBadge(o.status)}">${esc(o.status.toUpperCase())}</span>
+        <p class="font-bold text-farmRed text-xl mt-1">${money(o.total)}</p>
+        <p class="text-xs text-gray-400">${esc(o.fulfillment)}</p>
+      </div>
+    </div>
+    <ul class="space-y-1 bg-gray-50 rounded-lg p-3 mb-3">${itemsHtml}</ul>
+    <div class="flex flex-wrap gap-2">${actions}</div>
+  </div>`;
+}
+
+async function setStatus(id, status) {
+  if (!db) return;
+  try {
+    await db.collection('orders').doc(id).update({
+      status,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (e) {
+    alert('Failed to update: ' + e.message);
+  }
+}
+
+/* ---------- Products ---------- */
+const CATEGORY_LABELS = { pizza:'🍕 Pizzas', side:'🍟 Sides', dip:'🥣 Dips', drink:'🥤 Drinks' };
+
+function renderProducts() {
+  const el = document.getElementById('products-list');
+  if (!el) return;
+  if (!allProducts.length) {
+    el.innerHTML = '<p class="text-gray-500 text-center py-8">No products yet. Visit the customer site once — it seeds the products collection automatically.</p>';
+    return;
+  }
+  const groups = { pizza:[], side:[], dip:[], drink:[] };
+  allProducts.forEach(p => { if (groups[p.category]) groups[p.category].push(p); });
+
+  let html = '';
+  Object.keys(groups).forEach(cat => {
+    if (!groups[cat].length) return;
+    // stable order by numeric suffix if present, otherwise name
+    groups[cat].sort((a, b) => a.name.localeCompare(b.name));
+    html += `<div class="bg-white rounded-xl shadow overflow-hidden">
+      <div class="bg-gray-50 px-4 py-3 border-b flex items-center justify-between">
+        <h3 class="font-bold text-lg">${CATEGORY_LABELS[cat]}</h3>
+        <span class="text-xs text-gray-500">${groups[cat].length} item${groups[cat].length !== 1 ? 's' : ''}</span>
+      </div>
+      <div class="divide-y">`;
+    groups[cat].forEach(p => {
+      const priceField = cat === 'pizza' ? 'basePrice' : 'price';
+      const currentPrice = (typeof p[priceField] === 'number') ? p[priceField]
+                         : (typeof p.price === 'number') ? p.price : 0;
+      const soldOut = p.available === false;
+      const label = cat === 'pizza' ? 'Medium price' : 'Price';
+
+      html += `<div class="flex flex-wrap items-center gap-3 p-4">
+        <img src="${esc(p.image || '')}" alt=""
+          onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22><rect width=%2280%22 height=%2280%22 fill=%22%23D32F2F%22/></svg>'"
+          class="h-14 w-14 object-cover rounded-lg bg-gradient-to-br from-farmRed to-farmYellow flex-shrink-0">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <p class="font-semibold truncate">${esc(p.name)}</p>
+            ${soldOut ? '<span class="soldout-badge text-[10px] font-bold px-2 py-0.5 rounded-full">SOLD OUT</span>' : ''}
+          </div>
+          <p class="text-xs text-gray-500 truncate">${esc(p.desc || '')}</p>
+          <p class="text-[11px] text-gray-400 mt-0.5">${label}</p>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <span class="text-gray-500">£</span>
+          <label class="sr-only" for="price-${p.id}">Price for ${esc(p.name)}</label>
+          <input type="number" step="0.01" min="0" value="${Number(currentPrice).toFixed(2)}"
+            id="price-${p.id}" name="price-${p.id}" data-id="${p.id}" data-field="${priceField}"
+            class="price-input w-24 p-2 border rounded-lg text-right font-semibold focus:ring-2 focus:ring-farmRed">
+          <button type="button" onclick="savePrice('${p.id}','${priceField}',this)"
+            class="bg-farmRed text-white text-sm font-bold px-3 py-2 rounded-lg hover:bg-red-700 transition">
+            <i class="fas fa-save"></i> Save
+          </button>
+          <button type="button" onclick="toggleAvailability('${p.id}',${soldOut},this)"
+            class="text-sm font-bold px-3 py-2 rounded-lg transition ${soldOut ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">
+            <i class="fas ${soldOut ? 'fa-eye' : 'fa-eye-slash'}"></i> ${soldOut ? 'Bring back' : 'Sold out'}
+          </button>
+        </div>
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+  el.innerHTML = html;
+}
+
+async function savePrice(id, field, btn) {
+  if (!db) return;
+  const input = document.querySelector(`.price-input[data-id="${id}"][data-field="${field}"]`);
+  if (!input) return;
+  const val = parseFloat(input.value);
+  if (isNaN(val) || val < 0) { alert('Enter a valid price.'); return; }
+  btn.disabled = true;
+  const original = btn.innerHTML;
+  btn.innerHTML = 'Saving…';
+  try {
+    await db.collection('products').doc(id).update({
+      [field]: val,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    btn.innerHTML = '<i class="fas fa-check"></i> Saved';
+    btn.classList.remove('bg-farmRed');
+    btn.classList.add('bg-green-600');
+    setTimeout(() => {
+      btn.innerHTML = original;
+      btn.classList.remove('bg-green-600');
+      btn.classList.add('bg-farmRed');
+      btn.disabled = false;
+    }, 1400);
+  } catch (e) {
+    alert('Failed: ' + e.message);
+    btn.innerHTML = original;
+    btn.disabled = false;
+  }
+}
+
+async function toggleAvailability(id, currentlySoldOut, btn) {
+  if (!db) return;
+  btn.disabled = true;
+  try {
+    await db.collection('products').doc(id).update({
+      available: currentlySoldOut,   // if sold out → true (bring back); if available → false
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (e) {
+    alert('Failed: ' + e.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* ---------- Customers ---------- */
+function renderCustomers() {
+  const tb = document.getElementById('customers-tbody');
+  if (!tb) return;
+  const q = (document.getElementById('customer-search')?.value || '').toLowerCase().trim();
+  let list = allCustomers;
+  if (q) list = list.filter(c =>
+    (c.phone || '').toLowerCase().includes(q) ||
+    (c.name  || '').toLowerCase().includes(q)
+  );
+  document.getElementById('customer-total').innerText =
+    `${list.length} customer${list.length !== 1 ? 's' : ''}`;
+  if (!list.length) {
+    tb.innerHTML = '<tr><td colspan="6" class="text-center text-gray-500 py-8">No customers yet.</td></tr>';
+    return;
+  }
+  tb.innerHTML = list.map(c => `
+    <tr class="border-t hover:bg-gray-50">
+      <td class="px-4 py-3 font-semibold">${esc(c.name || '—')}</td>
+      <td class="px-4 py-3"><a href="tel:${esc(c.phone || '')}" class="text-farmRed hover:underline">${esc(c.phone || '—')}</a></td>
+      <td class="px-4 py-3 text-gray-600 max-w-xs truncate">${esc(c.lastAddress || '—')}</td>
+      <td class="px-4 py-3 text-right font-semibold">${c.orderCount || 0}</td>
+      <td class="px-4 py-3 text-right font-bold text-farmRed">${money(c.totalSpent)}</td>
+      <td class="px-4 py-3 text-gray-500 text-xs">${fmtDate(c.lastOrderAt)}</td>
+    </tr>`).join('');
+}
+
+/* ---------- Store settings ---------- */
+function applySettingsUI() {
+  const toggle = document.getElementById('accept-orders-toggle');
+  const text = document.getElementById('accept-status-text');
+  const msg = document.getElementById('closed-message');
+  if (!toggle) return;
+  toggle.checked = storeSettings.acceptingOrders;
+  text.innerText = storeSettings.acceptingOrders
+    ? 'Customers can place orders on the site.'
+    : 'Online ordering is paused for customers.';
+  text.className = 'text-sm mt-0.5 ' + (storeSettings.acceptingOrders ? 'text-green-600' : 'text-red-600');
+  if (msg && document.activeElement !== msg) msg.value = storeSettings.closedMessage || '';
+}
+
+async function saveStoreSettings(explicitSave) {
+  if (!db) return;
+  const accepting = document.getElementById('accept-orders-toggle').checked;
+  const message = document.getElementById('closed-message').value.trim();
+  try {
+    await db.collection('settings').doc('store').set({
+      acceptingOrders: accepting,
+      closedMessage: message,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
+    if (explicitSave) {
+      const s = document.getElementById('settings-saved');
+      s.classList.remove('hidden');
+      setTimeout(() => s.classList.add('hidden'), 2000);
+    }
+  } catch (e) {
+    alert('Failed to save settings: ' + e.message);
+  }
 }
 </script>
 </body>
