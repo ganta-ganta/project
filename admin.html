@@ -334,8 +334,6 @@
 /* ============================================================
    FARM PIZZA — ADMIN DASHBOARD
    Features: auto-print, manual print, WhatsApp delivery share
-   Map links use POSTCODE ONLY for precise navigation.
-   Waze uses the working deep-link format.
    ============================================================ */
 const firebaseConfig = {
   apiKey: "AIzaSyAZPSxsmQTY9MEIiP588lJC2ZX00dPQeTk",
@@ -403,7 +401,7 @@ function esc(s){
 }
 
 /* ============================================================
-   WHATSAPP DELIVERY SHARE — MAPS USE POSTCODE ONLY
+   WHATSAPP DELIVERY SHARE
    ============================================================ */
 function buildWhatsAppMessage(order) {
   const name = order.customerName || 'Customer';
@@ -591,9 +589,49 @@ function showToastMsg(text) {
 }
 
 /* ============================================================
-   PRINTING — THERMAL PRINTER OPTIMIZED
-   Using system monospace font, no icons, high contrast
+   PRINTING — ESC/POS THERMAL POS OPTIMIZED
+   Simulates Font A / Font B dot-matrix style using monospace
+   fonts, bold weights, and strict character-grid layout.
    ============================================================ */
+
+/* Character width for 80mm paper at Font A (12×24) ≈ 42 chars */
+const RECEIPT_CHAR_WIDTH = 42;
+const REPORT_CHAR_WIDTH = 42;
+
+function padRight(str, len) {
+  str = String(str == null ? '' : str);
+  if (str.length >= len) return str.slice(0, len);
+  return str + ' '.repeat(len - str.length);
+}
+
+function padLeft(str, len) {
+  str = String(str == null ? '' : str);
+  if (str.length >= len) return str.slice(0, len);
+  return ' '.repeat(len - str.length) + str;
+}
+
+function centerText(str, len) {
+  str = String(str == null ? '' : str);
+  if (str.length >= len) return str.slice(0, len);
+  const totalPad = len - str.length;
+  const leftPad = Math.floor(totalPad / 2);
+  const rightPad = totalPad - leftPad;
+  return ' '.repeat(leftPad) + str + ' '.repeat(rightPad);
+}
+
+/* Build a two-column row: left text, right text, padded to width */
+function twoCol(left, right, width) {
+  left = String(left == null ? '' : left);
+  right = String(right == null ? '' : right);
+  const rightLen = right.length;
+  const leftMax = width - rightLen - 1; // 1 space gap minimum
+  if (left.length > leftMax) {
+    left = left.slice(0, leftMax);
+  }
+  const gap = width - left.length - rightLen;
+  return left + ' '.repeat(Math.max(gap, 1)) + right;
+}
+
 function buildReceiptHTML(order) {
   const items = order.items || [];
   const orderDate = order.createdAtMs ? new Date(order.createdAtMs) : new Date();
@@ -602,141 +640,144 @@ function buildReceiptHTML(order) {
     hour:'2-digit', minute:'2-digit'
   });
 
-  let itemsHtml = '';
+  const W = RECEIPT_CHAR_WIDTH;
+  const divider = '='.repeat(W);
+  const thinDivider = '-'.repeat(W);
+
+  /* ---- Build receipt as plain pre-formatted text ---- */
+  let lines = [];
+
+  // Header — centered
+  lines.push(centerText('FARM PIZZA', W));
+  lines.push(centerText('325 Vicarage Farm Road', W));
+  lines.push(centerText('Hounslow, TW5 0DR', W));
+  lines.push(centerText('Tel: 0208 737 5731', W));
+  lines.push(centerText('Tel: 0208 230 0023', W));
+  lines.push(divider);
+
+  // Order number & fulfillment — centered
+  lines.push(centerText('ORDER #' + (order.orderNumber || '-'), W));
+  lines.push(centerText(order.fulfillment === 'delivery' ? '*** DELIVERY ***' : '*** COLLECTION ***', W));
+  lines.push(centerText(dateStr, W));
+  lines.push(divider);
+
+  // Customer details — left aligned
+  lines.push('Name : ' + (order.customerName || '-'));
+  lines.push('Phone: ' + (order.customerPhone || '-'));
+  if (order.fulfillment === 'delivery') {
+    lines.push('Deliver to:');
+    lines.push('  ' + (order.address || '-'));
+    if (order.postcode) lines.push('  Postcode: ' + order.postcode.toUpperCase());
+  } else {
+    lines.push('Collect from store');
+  }
+  if (order.note) {
+    lines.push('');
+    lines.push('NOTE: ' + order.note);
+  }
+  lines.push(divider);
+
+  // Items header
+  lines.push(twoCol('ITEM', 'PRICE', W));
+  lines.push(thinDivider);
+
+  // Items — left aligned with price right aligned
   items.forEach(i => {
     const opts = i.options || {};
     const optBits = [opts.size, opts.crust, opts.base].filter(Boolean).join(' / ');
-    const extras = (opts.extras && opts.extras.length) ? ` + ${opts.extras.join(', ')}` : '';
+    const extras = (opts.extras && opts.extras.length) ? ' + ' + opts.extras.join(', ') : '';
     const hh = opts.isHalfAndHalf ? ' [HALF & HALF]' : '';
     const lineTotal = (i.price || 0) * (i.qty || 1);
-    itemsHtml += `
-      <tr>
-        <td style="padding:4px 2px;border-bottom:1px dotted #888;vertical-align:top;">
-          <div style="font-weight:bold;">${i.qty}x ${escapeHtml(i.name)}${hh}</div>
-          ${optBits ? `<div style="font-size:10px;color:#222;margin-top:1px;">${escapeHtml(optBits)}${escapeHtml(extras)}</div>` : (extras ? `<div style="font-size:10px;color:#222;margin-top:1px;">${escapeHtml(extras)}</div>` : '')}
-        </td>
-        <td style="padding:4px 2px;border-bottom:1px dotted #888;text-align:right;vertical-align:top;font-weight:bold;white-space:nowrap;">
-          £${lineTotal.toFixed(2)}
-        </td>
-      </tr>`;
+
+    // Item name line
+    const itemLabel = i.qty + 'x ' + i.name + hh;
+    lines.push(twoCol(itemLabel, '£' + lineTotal.toFixed(2), W));
+
+    // Options line (indented, smaller style)
+    if (optBits || extras) {
+      const optLine = '   ' + optBits + extras;
+      // Wrap long option lines
+      const maxOpt = W - 3;
+      for (let p = 0; p < optLine.length; p += maxOpt) {
+        lines.push(optLine.slice(p, p + maxOpt));
+      }
+    }
   });
 
-  const fulfill = order.fulfillment === 'delivery' ? 'DELIVERY' : 'COLLECTION';
-  const addressLine = order.fulfillment === 'delivery'
-    ? `${escapeHtml(order.address || '')}${order.postcode ? ' · ' + escapeHtml(order.postcode.toUpperCase()) : ''}`
-    : '325 Vicarage Farm Road, Hounslow, TW5 0DR';
-  const note = order.note ? `<div style="margin-top:5px;padding:5px;background:#f5f5f5;border:1px solid #ccc;font-size:11px;"><strong>Note:</strong> ${escapeHtml(order.note)}</div>` : '';
+  lines.push(thinDivider);
 
+  // Total
+  lines.push(divider);
+  lines.push(twoCol('TOTAL', '£' + (order.total || 0).toFixed(2), W));
+  lines.push(divider);
+
+  // Footer — centered
+  lines.push('');
+  lines.push(centerText('Thank you for ordering!', W));
+  lines.push(centerText('We will call to confirm.', W));
+  lines.push(centerText('farmpizza.co.uk', W));
+  lines.push('');
+  lines.push('');
+
+  const receiptText = lines.join('\n');
+
+  /* ---- Render inside a <pre> with thermal-friendly font ---- */
   return `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
 <title>Order #${order.orderNumber || ''}</title>
 <style>
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
-    margin: 0;
-    padding: 0;
     background: #fff;
     color: #000;
   }
   body {
-    font-family: 'Courier New', Courier, 'Lucida Console', monospace;
     width: 80mm;
     margin: 0 auto;
-    padding: 4px 3px;
-    font-size: 12px;
-    line-height: 1.3;
-    font-weight: 600;
+    padding: 2mm 1mm;
+  }
+  pre {
+    font-family: 'Courier New', 'Courier', 'Lucida Console', 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.25;
+    font-weight: 700;
+    letter-spacing: 0;
+    white-space: pre;
+    word-wrap: normal;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
     -webkit-font-smoothing: none;
     -moz-osx-font-smoothing: unset;
     font-smooth: never;
-    text-rendering: optimizeLegibility;
-    letter-spacing: 0.2px;
+    text-rendering: optimizeSpeed;
+    -webkit-text-size-adjust: none;
+    text-size-adjust: none;
   }
-  .center { text-align: center; }
-  .logo { font-size: 22px; font-weight: 900; letter-spacing: 2px; }
-  .sub { font-size: 10px; color: #000; margin-top: 1px; }
-  .divider { border-top: 1px solid #000; margin: 5px 0; }
-  .big { font-size: 17px; font-weight: 900; letter-spacing: 1px; }
-  table { width: 100%; border-collapse: collapse; }
-  .totals td { padding: 2px 0; }
-  .grand { font-size: 16px; font-weight: 900; border-top: 2px solid #000; padding-top: 4px; }
-  .badge { display:inline-block; padding:2px 8px; border:1.5px solid #000; font-size:11px; font-weight:900; letter-spacing: 1px; }
-  .footer { margin-top: 8px; font-size: 10px; text-align: center; line-height: 1.4; font-weight: 600; }
-  .label { font-weight: 900; }
   @media print {
-    body {
-      width: 80mm;
-      margin: 0;
-      padding: 3px 2px;
-      -webkit-font-smoothing: none;
-      font-smooth: never;
-      font-weight: 700;
-      font-size: 12px;
-    }
     @page {
       size: 80mm auto;
       margin: 0;
     }
-    .no-print { display: none; }
+    html, body {
+      width: 80mm;
+      margin: 0;
+      padding: 1mm 0.5mm;
+    }
+    pre {
+      font-size: 13px;
+      line-height: 1.2;
+      font-weight: 900;
+      -webkit-font-smoothing: none;
+      font-smooth: never;
+    }
   }
 </style>
 </head>
 <body>
-  <div class="center">
-    <div class="logo">FARM PIZZA</div>
-    <div class="sub">325 Vicarage Farm Road, Hounslow, TW5 0DR</div>
-    <div class="sub">0208 737 5731 / 0208 230 0023</div>
-  </div>
-
-  <div class="divider"></div>
-
-  <div class="center">
-    <div class="big">ORDER #${order.orderNumber || '-'}</div>
-    <div class="badge">${fulfill}</div>
-    <div class="sub" style="margin-top:3px;">${dateStr}</div>
-  </div>
-
-  <div class="divider"></div>
-
-  <div style="font-size:12px; line-height:1.5;">
-    <div><span class="label">Name:</span> ${escapeHtml(order.customerName || '-')}</div>
-    <div><span class="label">Phone:</span> ${escapeHtml(order.customerPhone || '-')}</div>
-    <div><span class="label">${order.fulfillment === 'delivery' ? 'Deliver:' : 'Collect:'}</span> ${addressLine}</div>
-    ${note}
-  </div>
-
-  <div class="divider"></div>
-
-  <table>
-    <thead>
-      <tr>
-        <th style="text-align:left;font-size:10px;border-bottom:2px solid #000;padding:3px 2px;font-weight:900;letter-spacing:1px;">ITEM</th>
-        <th style="text-align:right;font-size:10px;border-bottom:2px solid #000;padding:3px 2px;font-weight:900;letter-spacing:1px;">PRICE</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${itemsHtml || '<tr><td colspan="2" style="padding:5px;text-align:center;font-size:11px;">No items</td></tr>'}
-    </tbody>
-  </table>
-
-  <div class="divider"></div>
-
-  <table class="totals">
-    <tr class="grand">
-      <td style="letter-spacing:1px;">TOTAL</td>
-      <td style="text-align:right;letter-spacing:1px;">£${(order.total || 0).toFixed(2)}</td>
-    </tr>
-  </table>
-
-  <div class="divider"></div>
-
-  <div class="footer">
-    Thank you for ordering with Farm Pizza!<br>
-    We'll call you shortly to confirm.<br>
-    <strong style="font-size:11px;">farmpizza.co.uk</strong>
-  </div>
+<pre>${escapeHtml(receiptText)}</pre>
 </body>
 </html>`;
 }
@@ -773,7 +814,7 @@ function printOrder(order) {
 }
 
 /* ============================================================
-   DAILY SALES REPORT — THERMAL OPTIMIZED
+   DAILY SALES REPORT — ESC/POS OPTIMIZED
    ============================================================ */
 function buildDailySalesReportHTML() {
   const today = todayStr();
@@ -802,18 +843,50 @@ function buildDailySalesReportHTML() {
     weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'
   });
 
-  let rowsHtml = '';
+  const W = REPORT_CHAR_WIDTH;
+  const divider = '='.repeat(W);
+  const thinDivider = '-'.repeat(W);
+
+  let lines = [];
+
+  // Header — centered
+  lines.push(centerText('FARM PIZZA', W));
+  lines.push(centerText('325 Vicarage Farm Road', W));
+  lines.push(centerText('Hounslow, TW5 0DR', W));
+  lines.push(centerText('Tel: 0208 737 5731', W));
+  lines.push(divider);
+  lines.push(centerText('DAILY SALES REPORT', W));
+  lines.push(centerText(reportDate, W));
+  lines.push(divider);
+
+  // Column header
+  lines.push(twoCol('CUSTOMER / PHONE', 'TOTAL', W));
+  lines.push(thinDivider);
+
+  // Customer rows — with order count in the middle
   customers.forEach((c, idx) => {
-    const orderNums = c.orders.map(o => '#' + (o.orderNumber || '-')).join(', ');
-    rowsHtml += `
-      <tr>
-        <td style="padding:3px 1px;border-bottom:1px dotted #888;font-size:11px;">${idx+1}</td>
-        <td style="padding:3px 1px;border-bottom:1px dotted #888;font-size:11px;font-weight:700;">${escapeHtml(c.name)}</td>
-        <td style="padding:3px 1px;border-bottom:1px dotted #888;font-size:11px;">${escapeHtml(c.phone)}</td>
-        <td style="padding:3px 1px;border-bottom:1px dotted #888;font-size:10px;color:#222;">${escapeHtml(orderNums)}</td>
-        <td style="padding:3px 1px;border-bottom:1px dotted #888;font-size:11px;text-align:right;font-weight:700;">£${c.total.toFixed(2)}</td>
-      </tr>`;
+    const label = (idx + 1) + '. ' + c.name;
+    lines.push(twoCol(label, '£' + c.total.toFixed(2), W));
+    const subLine = '   ' + c.phone + '  (' + c.orders.length + ' order' + (c.orders.length !== 1 ? 's' : '') + ')';
+    lines.push(subLine);
   });
+
+  lines.push(thinDivider);
+
+  // Grand total
+  lines.push(divider);
+  lines.push(twoCol('TOTAL SALES', '£' + grandTotal.toFixed(2), W));
+  lines.push(twoCol('CUSTOMERS', String(customers.length), W));
+  lines.push(twoCol('ORDERS', String(todays.length), W));
+  lines.push(divider);
+
+  // Footer
+  lines.push('');
+  lines.push(centerText('Generated ' + new Date().toLocaleString('en-GB', {hour:'2-digit',minute:'2-digit'}), W));
+  lines.push(centerText('Farm Pizza Admin', W));
+  lines.push('');
+
+  const reportText = lines.join('\n');
 
   return `<!DOCTYPE html>
 <html>
@@ -821,89 +894,56 @@ function buildDailySalesReportHTML() {
 <meta charset="utf-8">
 <title>Daily Sales Report — ${today}</title>
 <style>
-  * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; background: #fff; color: #000; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: #fff;
+    color: #000;
+  }
   body {
-    font-family: 'Courier New', Courier, 'Lucida Console', monospace;
     width: 80mm;
     margin: 0 auto;
-    padding: 4px 3px;
-    font-size: 11px;
-    line-height: 1.3;
-    font-weight: 700;
-    -webkit-font-smoothing: none;
-    font-smooth: never;
-    letter-spacing: 0.2px;
+    padding: 2mm 1mm;
   }
-  .center { text-align: center; }
-  .logo { font-size: 20px; font-weight: 900; letter-spacing: 2px; }
-  .sub { font-size: 9px; color: #000; margin-top: 1px; }
-  .divider { border-top: 1px solid #000; margin: 5px 0; }
-  .title { font-size: 15px; font-weight: 900; margin: 3px 0; letter-spacing: 1px; }
-  .date { font-size: 10px; color: #000; }
-  table { width: 100%; border-collapse: collapse; }
-  th { text-align: left; font-size: 9px; border-bottom: 2px solid #000; padding: 3px 1px; font-weight: 900; }
-  .grand-total { font-size: 14px; font-weight: 900; border-top: 2px solid #000; padding-top: 4px; }
-  .footer { margin-top: 6px; font-size: 9px; text-align: center; font-weight: 600; }
+  pre {
+    font-family: 'Courier New', 'Courier', 'Lucida Console', 'Consolas', monospace;
+    font-size: 12px;
+    line-height: 1.25;
+    font-weight: 700;
+    letter-spacing: 0;
+    white-space: pre;
+    word-wrap: normal;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: unset;
+    font-smooth: never;
+    text-rendering: optimizeSpeed;
+    -webkit-text-size-adjust: none;
+    text-size-adjust: none;
+  }
   @media print {
-    body {
+    @page {
+      size: 80mm auto;
+      margin: 0;
+    }
+    html, body {
       width: 80mm;
       margin: 0;
-      padding: 3px 2px;
+      padding: 1mm 0.5mm;
+    }
+    pre {
+      font-size: 12px;
+      line-height: 1.2;
+      font-weight: 900;
       -webkit-font-smoothing: none;
       font-smooth: never;
-      font-weight: 800;
     }
-    @page { size: 80mm auto; margin: 0; }
   }
 </style>
 </head>
 <body>
-  <div class="center">
-    <div class="logo">FARM PIZZA</div>
-    <div class="sub">325 Vicarage Farm Road, Hounslow, TW5 0DR</div>
-    <div class="sub">0208 737 5731 / 0208 230 0023</div>
-  </div>
-
-  <div class="divider"></div>
-
-  <div class="center">
-    <div class="title">DAILY SALES REPORT</div>
-    <div class="date">${reportDate}</div>
-  </div>
-
-  <div class="divider"></div>
-
-  <table>
-    <thead>
-      <tr>
-        <th style="width:16px;">#</th>
-        <th>Customer</th>
-        <th>Phone</th>
-        <th style="width:45px;">Orders</th>
-        <th style="text-align:right;width:45px;">Total</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${rowsHtml || '<tr><td colspan="5" style="padding:6px;text-align:center;font-size:10px;">No orders today.</td></tr>'}
-    </tbody>
-  </table>
-
-  <div class="divider"></div>
-
-  <table>
-    <tr class="grand-total">
-      <td style="text-align:left;">TOTAL (${customers.length} customers)</td>
-      <td style="text-align:right;">£${grandTotal.toFixed(2)}</td>
-    </tr>
-  </table>
-
-  <div class="divider"></div>
-
-  <div class="footer">
-    Generated ${new Date().toLocaleString('en-GB', {hour:'2-digit',minute:'2-digit'})}<br>
-    Farm Pizza Admin
-  </div>
+<pre>${escapeHtml(reportText)}</pre>
 </body>
 </html>`;
 }
